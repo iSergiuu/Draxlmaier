@@ -8,10 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "Completeaza-ma") // TODO: Numele tabelului pentru Plângeri
+@Table(name = "COMPLAINT")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,27 +17,24 @@ public class Complaint {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Completeaza-ma") // TODO: Numele coloanei ID
-    private Long id;
+    @Column(name = "complaint_id")
+    private Integer id;
 
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană titlu problemă
+    @Column(name = "title")
     private String title;
 
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană descriere detaliată
+    @Column(name = "description")
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană status plângere
+    @Column(name = "status")
     private ComplaintStatus status;
 
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană data creării
-    private LocalDateTime createdAt;
-
-    @ManyToOne
-    @JoinColumn(name = "Completeaza-ma") // TODO: Nume coloană Foreign Key către ID-ul Echipamentului defect
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asset_id")
     private Asset asset;
 
-    @ManyToOne
-    @JoinColumn(name = "Completeaza-ma") // TODO: Nume coloană Foreign Key către ID-ul Angajatului care raportează
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empl_id")
     private Employee reporter;
 }

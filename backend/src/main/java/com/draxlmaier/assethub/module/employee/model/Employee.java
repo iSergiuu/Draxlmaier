@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "Completeaza-ma") // TODO: Numele tabelului pentru Angajați
+@Table(name = "EMPLOYEE")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,23 +16,20 @@ public class Employee {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Completeaza-ma") // TODO: Numele coloanei ID
-    private Long id;
+    @Column(name = "empl_id")
+    private Integer id;
 
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană prenume
-    private String firstName;
+    @Column(name = "name")
+    private String name;
 
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană nume de familie
-    private String lastName;
-
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană email
+    @Column(name = "email")
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Completeaza-ma") // TODO: Nume coloană rol
+    @Column(name = "role")
     private Role role;
 
-    @ManyToOne
-    @JoinColumn(name = "Completeaza-ma") // TODO: Nume coloană Foreign Key către ID-ul Departamentului
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dept_id")
     private Department department;
 }
