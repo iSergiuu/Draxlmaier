@@ -86,3 +86,31 @@ INSERT INTO COMPLAINT_COMMENT (complaint_id, empl_id, message, created_at) VALUE
 INSERT INTO COMPLAINT_WORKFLOW (complaint_id, empl_id, old_status, current_status, changed_at) VALUES
 (1, 3, NULL, 'NEW', CURRENT_TIMESTAMP);
 
+
+
+
+
+
+CREATE VIEW raport_plangeri AS
+SELECT 
+	emp.name || ' - "' || com.description || '" - '|| ast.name AS detalii_raport,
+    com.status AS status_plangere
+FROM COMPLAINT AS com
+JOIN EMPLOYEE AS emp ON com.empl_id = emp.empl_id
+JOIN ASSET AS ast ON com.asset_id = ast.asset_id;
+
+
+CREATE VIEW vw_detalii_plangeri AS
+SELECT 
+    com.complaint_id,
+    com.title AS titlu_plangere,
+    com.status AS status_plangere,
+    com.description AS descriere_plangere,
+    emp.name AS nume_angajat,
+    dep.name AS nume_departament,
+    ast.name AS nume_echipament,
+    ast.serial_number AS serie_echipament
+FROM COMPLAINT AS com
+JOIN EMPLOYEE AS emp ON com.empl_id = emp.empl_id
+JOIN DEPARTMENT AS dep ON emp.dept_id = dep.dept_id
+JOIN ASSET AS ast ON com.asset_id = ast.asset_id;
