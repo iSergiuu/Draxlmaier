@@ -3,13 +3,12 @@ package com.draxlmaier.assethub.module.employee.model;
 import com.draxlmaier.assethub.module.department.model.Department;
 import com.draxlmaier.assethub.module.employee.model.enums.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
-@Table(name = "EMPLOYEE")
+@Table(name = "employee")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Employee {
@@ -19,11 +18,23 @@ public class Employee {
     @Column(name = "empl_id")
     private Integer id;
 
-    @Column(name = "name")
-    private String name;
+    @Column(name = "first_name")
+    private String firstName;
 
-    @Column(name = "email")
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
+
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "security_number")
+    private String securityNumber;
+
+    @Column(name = "is_registered")
+    private Boolean isRegistered = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
