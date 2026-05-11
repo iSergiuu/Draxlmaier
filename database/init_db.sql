@@ -89,6 +89,7 @@ CREATE TABLE employees (
     role_id         UUID        NOT NULL,
     is_active       BOOLEAN     DEFAULT TRUE,
     -- [ÎMBUNĂTĂȚIRE #3] Parolă hash pentru autentificare backend
+    employee_number VARCHAR(50) UNIQUE,
     password_hash   VARCHAR(255),
     created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
