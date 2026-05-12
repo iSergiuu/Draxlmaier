@@ -1,27 +1,24 @@
 package com.draxlmaier.assethub.module.department.model;
 
-import com.draxlmaier.assethub.module.employee.model.Employee;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.util.UUID;
 
 @Entity
-@Table(name = "DEPARTMENT")
+@Table(name = "departments")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Department {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "dept_id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-    @Column(name = "name")
+    @Column(nullable = false)
     private String name;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "responsible_empl_id")
-    private Employee responsibleEmployee;
+    @Column(name = "created_at")
+    private java.time.OffsetDateTime createdAt;
 }

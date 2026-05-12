@@ -1,42 +1,42 @@
 package com.draxlmaier.assethub.module.complaint.model;
 
-import com.draxlmaier.assethub.module.complaint.model.enums.ComplaintStatus;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
+import lombok.*;
+import java.util.UUID;
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "COMPLAINT_WORKFLOW")
+@Table(name = "complaint_workflow")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ComplaintWorkflow {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "workflow_id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "complaint_id")
+    @JoinColumn(name = "complaint_id", nullable = false)
     private Complaint complaint;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empl_id")
-    private Employee modifier;
+    @JoinColumn(name = "changed_by_id", nullable = false)
+    private Employee changedBy;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "old_status")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "old_status_id")
     private ComplaintStatus oldStatus;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "current_status")
-    private ComplaintStatus currentStatus;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "new_status_id", nullable = false)
+    private ComplaintStatus newStatus;
 
-    @Column(name = "changed_at")
-    private LocalDateTime changedAt;
+    @Column(columnDefinition = "TEXT")
+    private String comment;
+
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
 }

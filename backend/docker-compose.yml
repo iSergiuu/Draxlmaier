@@ -1,15 +1,15 @@
 version: '3.8'
 
 services:
-  postgres-db:
+  db:
     image: postgres:15
-    container_name: assethub_postgres
+    container_name: assethub-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: assethub
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: assethub_db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../database/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql

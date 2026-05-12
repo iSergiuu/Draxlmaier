@@ -1,40 +1,64 @@
 package com.draxlmaier.assethub.module.complaint.model;
 
 import com.draxlmaier.assethub.module.asset.model.Asset;
-import com.draxlmaier.assethub.module.complaint.model.enums.ComplaintStatus;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.util.UUID;
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "COMPLAINT")
+@Table(name = "complaints")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Complaint {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "complaint_id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-    @Column(name = "title")
+    @Column(name = "ticket_number", insertable = false, updatable = false)
+    private Integer ticketNumber;
+
+    @Column(nullable = false)
     private String title;
 
-    @Column(name = "description")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private ComplaintStatus status;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "asset_id")
+    @JoinColumn(name = "asset_id", nullable = false)
     private Asset asset;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empl_id")
-    private Employee reporter;
+    @JoinColumn(name = "author_id", nullable = false)
+    private Employee author;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "status_id", nullable = false)
+    private ComplaintStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_id")
+    private Employee assignedTo;
+
+    @Column(name = "priority")
+    private String priority;
+
+    @Column(name = "due_date")
+    private OffsetDateTime dueDate;
+
+    @Column(name = "resolved_at")
+    private OffsetDateTime resolvedAt;
+
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
 }

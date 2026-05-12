@@ -2,29 +2,41 @@ package com.draxlmaier.assethub.module.asset.model;
 
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.util.UUID;
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "ASSET")
+@Table(name = "assets")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Asset {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "asset_id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-    @Column(name = "name")
+    @Column(nullable = false)
     private String name;
 
-    @Column(name = "serial_number")
+    @Column(name = "serial_number", unique = true, nullable = false)
     private String serialNumber;
 
+    @Column(name = "category")
+    private String category;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empl_id")
-    private Employee owner;
+    @JoinColumn(name = "assigned_to_id")
+    private Employee assignedTo;
+
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
 }

@@ -2,10 +2,16 @@ package com.draxlmaier.assethub.module.employee.repository;
 
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
+
     Optional<Employee> findByEmail(String email);
-    Optional<Employee> findBySecurityNumberAndIsRegisteredFalse(String securityNumber);
+
+    Optional<Employee> findByEmployeeNumber(String employeeNumber);
+
     boolean existsByEmail(String email);
 }

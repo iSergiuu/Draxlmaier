@@ -1,12 +1,14 @@
 package com.draxlmaier.assethub.module.employee.model;
 
 import com.draxlmaier.assethub.module.department.model.Department;
-import com.draxlmaier.assethub.module.employee.model.enums.Role;
+import com.draxlmaier.assethub.module.employee.model.Role;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.UUID;
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "employee")
+@Table(name = "employees")
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,33 +16,38 @@ import lombok.*;
 public class Employee {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "empl_id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
-
-    @Column(name = "email", unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password")
-    private String password;
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
 
-    @Column(name = "security_number")
-    private String securityNumber;
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
 
-    @Column(name = "is_registered")
-    private Boolean isRegistered = false;
+    @Column(name = "employee_number", unique = true)
+    private String employeeNumber;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dept_id")
+    @JoinColumn(name = "department_id", nullable = false)
     private Department department;
+
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 }
