@@ -3,15 +3,16 @@ package com.draxlmaier.assethub.module.complaint.model;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.UUID;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "complaint_comments")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ComplaintComment {
 
     @Id
@@ -30,14 +31,11 @@ public class ComplaintComment {
     private String message;
 
     @Column(name = "is_internal")
-    private Boolean isInternal = false;
+    private boolean internal;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
-
-    @Column(name = "deleted_at")
-    private OffsetDateTime deletedAt;
 }

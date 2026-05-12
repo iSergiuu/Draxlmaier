@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,43 +21,47 @@ public class AssetController {
 
     private final AssetService assetService;
 
-    // POST /api/assets - Crearea unui asset nou
+    // Doar Admin și Responsabilul de Departament pot crea asset-uri noi
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> createAsset(@Valid @RequestBody AssetRequestDTO requestDTO) {
         AssetResponseDTO response = assetService.createAsset(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // GET /api/assets - Returnează lista cu toate asset-urile
+    // Oricine este autentificat (USER, DEPT_RESPONSIBLE, ADMIN) poate vedea lista de asset-uri
     @GetMapping
     public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
         List<AssetResponseDTO> response = assetService.getAllAssets();
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/assets/{id} - Returnează un singur asset după ID
+    // Oricine este autentificat poate vedea detaliile unui asset
     @GetMapping("/{id}")
     public ResponseEntity<AssetResponseDTO> getAssetById(@PathVariable UUID id) {
         AssetResponseDTO response = assetService.getAssetById(id);
         return ResponseEntity.ok(response);
     }
 
-    // PUT /api/assets/{id} - Actualizează detaliile unui asset
+    // Doar Admin și Responsabilul de Departament pot edita un asset
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> updateAsset(@PathVariable UUID id, @Valid @RequestBody AssetRequestDTO requestDTO) {
         AssetResponseDTO response = assetService.updateAsset(id, requestDTO);
         return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/assets/{id} - Șterge un asset din baza de date
+    // Doar Admin poate șterge definitiv un asset din sistem
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<Void> deleteAsset(@PathVariable UUID id) {
         assetService.deleteAsset(id);
         return ResponseEntity.noContent().build();
     }
 
-    // POST /api/assets/{id}/assign - Alocă un asset unui angajat
+    // Doar Admin și Responsabilul de Departament pot aloca echipamente angajaților
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> assignAsset(
             @PathVariable UUID id,
             @Valid @RequestBody ClaimAssetRequestDTO requestDTO) {

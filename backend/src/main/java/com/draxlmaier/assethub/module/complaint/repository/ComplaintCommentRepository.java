@@ -9,6 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface ComplaintCommentRepository extends JpaRepository<ComplaintComment, UUID> {
-
-    List<ComplaintComment> findByComplaintIdOrderByCreatedAtDesc(UUID complaintId);
+    List<ComplaintComment> findAllByComplaintIdOrderByCreatedAtAsc(UUID complaintId);
 }

@@ -6,10 +6,11 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "complaint_statuses")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ComplaintStatus {
 
     @Id
@@ -22,8 +23,8 @@ public class ComplaintStatus {
     private String description;
 
     @Column(name = "is_terminal")
-    private Boolean isTerminal;
+    private boolean terminal;
 
-    @Column(name = "sort_order")
+    @Column(name = "sort_order", columnDefinition = "SMALLINT")
     private Short sortOrder;
 }

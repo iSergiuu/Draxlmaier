@@ -4,15 +4,16 @@ import com.draxlmaier.assethub.module.asset.model.Asset;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.UUID;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "complaints")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Complaint {
 
     @Id
@@ -36,7 +37,7 @@ public class Complaint {
     @JoinColumn(name = "author_id", nullable = false)
     private Employee author;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "status_id", nullable = false)
     private ComplaintStatus status;
 
@@ -44,8 +45,8 @@ public class Complaint {
     @JoinColumn(name = "assigned_to_id")
     private Employee assignedTo;
 
-    @Column(name = "priority")
-    private String priority;
+    @Column(length = 20)
+    private String priority; // LOW, MEDIUM, HIGH, CRITICAL
 
     @Column(name = "due_date")
     private OffsetDateTime dueDate;
@@ -53,7 +54,7 @@ public class Complaint {
     @Column(name = "resolved_at")
     private OffsetDateTime resolvedAt;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
