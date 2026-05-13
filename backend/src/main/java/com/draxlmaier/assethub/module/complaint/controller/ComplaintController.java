@@ -1,8 +1,11 @@
 package com.draxlmaier.assethub.module.complaint.controller;
 
+import com.draxlmaier.assethub.module.complaint.dto.request.CommentRequestDTO;
 import com.draxlmaier.assethub.module.complaint.dto.request.ComplaintRequestDTO;
 import com.draxlmaier.assethub.module.complaint.dto.request.StatusChangeRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.response.CommentResponseDTO;
 import com.draxlmaier.assethub.module.complaint.dto.response.ComplaintResponseDTO;
+import com.draxlmaier.assethub.module.complaint.service.CommentService;
 import com.draxlmaier.assethub.module.complaint.service.ComplaintService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,32 +23,48 @@ import java.util.UUID;
 public class ComplaintController {
 
     private final ComplaintService complaintService;
+    private final CommentService commentService; // <-- Am adăugat serviciul de comentarii
 
-    // Oricine este logat (USER, DEPT_RESPONSIBLE, ADMIN) poate raporta o problemă
+    // --- RUTE PENTRU PLÂNGERI ---
+
     @PostMapping
     public ResponseEntity<ComplaintResponseDTO> createComplaint(@Valid @RequestBody ComplaintRequestDTO requestDTO) {
         ComplaintResponseDTO response = complaintService.createComplaint(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Vizualizarea tuturor plângerilor (pentru administrare)
     @GetMapping
     public ResponseEntity<List<ComplaintResponseDTO>> getAllComplaints() {
         return ResponseEntity.ok(complaintService.getAllComplaints());
     }
 
-    // Detaliile unei anumite plângeri
     @GetMapping("/{id}")
     public ResponseEntity<ComplaintResponseDTO> getComplaintById(@PathVariable UUID id) {
         return ResponseEntity.ok(complaintService.getComplaintById(id));
     }
 
-    // DOAR ADMIN și DEPT_RESPONSIBLE pot schimba statusul (ex: din NEW în IN_PROGRESS)
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<ComplaintResponseDTO> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody StatusChangeRequestDTO statusDTO) {
         return ResponseEntity.ok(complaintService.updateStatus(id, statusDTO));
+    }
+
+    // --- RUTE PENTRU COMENTARII ---
+
+    // Oricine este logat poate lăsa un comentariu
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<CommentResponseDTO> addComment(
+            @PathVariable UUID id,
+            @Valid @RequestBody CommentRequestDTO requestDTO) {
+        CommentResponseDTO response = commentService.addComment(id, requestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // Aducerea tuturor comentariilor unui tichet
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<List<CommentResponseDTO>> getCommentsByComplaintId(@PathVariable UUID id) {
+        return ResponseEntity.ok(commentService.getCommentsByComplaintId(id));
     }
 }
