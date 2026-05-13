@@ -238,7 +238,7 @@ INSERT INTO departments (id, name) VALUES
     ('00000000-0000-0000-0000-000000000002', 'HR'),
     ('00000000-0000-0000-0000-000000000003', 'Finance');
 
-INSERT INTO employees (id, email, first_name, last_name, department_id, role_id, password_hash)
+INSERT INTO employees (id, email, first_name, last_name, department_id, role_id, employee_number, password_hash)
 SELECT
     '00000000-0000-0000-0000-000000000010',
     'admin@draexlmaier.com',
@@ -246,8 +246,9 @@ SELECT
     'System',
     '00000000-0000-0000-0000-000000000001',
     r.id,
+    '777',
     -- [NOTĂ] Înlocuiți acest hash cu unul generat de backend înainte de deploy
-    '$2b$12$placeholder_hash_replace_before_deploy'
+    '$2b$12$h3D1E/u.S7qT.6bJdJb9L.u3G8U4X8h/Xn.uQ1o/aXf0VzXv3rZ3.'
 FROM roles r WHERE r.code = 'ADMIN';
 
 -- Setare manager departament IT = admin-ul creat

@@ -8,9 +8,31 @@ export default function Login() {
         setCredentials({ ...credentials, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Se face login cu:", credentials);
+        
+        try {
+            const response = await fetch('http://localhost:8080/api/auth/login', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(credentials), 
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Logare cu succes! Date primite:", data);
+                
+
+            } else {
+                console.error("Autentificare eșuată. Verifică email-ul și parola.");
+                alert("Email sau parolă incorecte!");
+            }
+        } catch (error) {
+            console.error("A apărut o eroare de rețea:", error);
+            alert("Nu ne-am putut conecta la server.");
+        }
     };
 
     return (
