@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Login() {
     const [credentials, setCredentials] = useState({ email: '', password: '' });
+    
+    // Inițializăm funcția de navigare
+    const navigate = useNavigate(); 
 
     const handleChange = (e) => {
         setCredentials({ ...credentials, [e.target.name]: e.target.value });
@@ -12,6 +15,7 @@ export default function Login() {
         e.preventDefault();
         
         try {
+            // Asigură-te că URL-ul de mai jos corespunde cu cel din Spring Boot!
             const response = await fetch('http://localhost:8080/api/auth/login', { 
                 method: 'POST',
                 headers: {
@@ -22,11 +26,9 @@ export default function Login() {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Logare cu succes! Date primite:", data);
-                
-
+                localStorage.setItem('jwt_token', data.accessToken);
+                navigate('/dashboard'); 
             } else {
-                console.error("Autentificare eșuată. Verifică email-ul și parola.");
                 alert("Email sau parolă incorecte!");
             }
         } catch (error) {
@@ -45,16 +47,31 @@ export default function Login() {
                 </div>
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
-                    <input name="email" type="email" required placeholder="Email instituțional" value={credentials.email} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-teal-500" />
+                    <input 
+                        name="email" 
+                        type="email" 
+                        required 
+                        placeholder="Email instituțional" 
+                        value={credentials.email} 
+                        onChange={handleChange} 
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-teal-500" 
+                    />
 
-                    <input name="password" type="password" required placeholder="Parolă" value={credentials.password} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-teal-500" />
+                    <input 
+                        name="password" 
+                        type="password" 
+                        required 
+                        placeholder="Parolă" 
+                        value={credentials.password} 
+                        onChange={handleChange} 
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-teal-500" 
+                    />
 
                     <button type="submit" className="w-full py-2 px-4 border border-transparent rounded text-white bg-teal-600 hover:bg-teal-700 font-medium">
                         Intră în cont
                     </button>
                 </form>
 
-                {/* --- BUTONUL DE NAVIGARE SPRE REGISTER --- */}
                 <div className="text-center mt-4 border-t pt-4">
                     <p className="text-sm text-gray-600">
                         Nu ai încă un cont?{' '}
