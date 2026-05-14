@@ -247,8 +247,8 @@ SELECT
     '00000000-0000-0000-0000-000000000001',
     r.id,
     '777',
-    -- [NOTĂ] Înlocuiți acest hash cu unul generat de backend înainte de deploy
-    '$2b$12$h3D1E/u.S7qT.6bJdJb9L.u3G8U4X8h/Xn.uQ1o/aXf0VzXv3rZ3.'
+    -- [NOTĂ] Înlocuiți acest hash cu unul generat de backend înainte de deploy password123
+    '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu'
 FROM roles r WHERE r.code = 'ADMIN';
 
 -- Setare manager departament IT = admin-ul creat
