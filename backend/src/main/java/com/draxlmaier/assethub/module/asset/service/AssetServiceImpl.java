@@ -26,27 +26,6 @@ public class AssetServiceImpl implements AssetService {
     private final AssetMapper assetMapper;
 
     @Override
-    @Transactional
-    public AssetResponseDTO createAsset(AssetRequestDTO requestDTO) {
-        Asset asset = assetMapper.toEntity(requestDTO);
-        asset.setCreatedAt(OffsetDateTime.now());
-
-        if (requestDTO.getAssignedToId() != null) {
-            Employee employee = employeeRepository.findById(requestDTO.getAssignedToId())
-                    .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit după ID!"));
-            asset.setAssignedTo(employee);
-        }
-        else if (requestDTO.getAssignedToEmail() != null && !requestDTO.getAssignedToEmail().trim().isEmpty()) {
-            Employee employee = employeeRepository.findByEmail(requestDTO.getAssignedToEmail())
-                    .orElseThrow(() -> new RuntimeException("Angajatul cu email-ul " + requestDTO.getAssignedToEmail() + " nu a fost găsit!"));
-            asset.setAssignedTo(employee);
-        }
-
-        Asset savedAsset = assetRepository.save(asset);
-        return assetMapper.toResponseDTO(savedAsset);
-    }
-
-    @Override
     public List<AssetResponseDTO> getAllAssets() {
         return assetRepository.findAll().stream()
                 .map(assetMapper::toResponseDTO)
@@ -55,61 +34,76 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public AssetResponseDTO getAssetById(UUID id) {
-        Asset asset = assetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Asset-ul nu a fost găsit!"));
-        return assetMapper.toResponseDTO(asset);
+        return assetRepository.findById(id)
+                .map(assetMapper::toResponseDTO)
+                .orElseThrow(() -> new RuntimeException("Asset-ul nu a fost găsit"));
     }
 
     @Override
     @Transactional
     public AssetResponseDTO updateAsset(UUID id, AssetRequestDTO requestDTO) {
-        Asset existingAsset = assetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Asset-ul nu a fost găsit!"));
+        // 1. Căutăm echipamentul existent
+        Asset asset = assetRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Echipamentul nu a fost găsit"));
 
-        existingAsset.setName(requestDTO.getName());
-        existingAsset.setSerialNumber(requestDTO.getSerialNumber());
-        existingAsset.setCategory(requestDTO.getCategory());
-        existingAsset.setUpdatedAt(OffsetDateTime.now());
+        // 2. Actualizăm câmpurile de bază
+        asset.setName(requestDTO.getName());
+        asset.setSerialNumber(requestDTO.getSerialNumber());
+        asset.setCategory(requestDTO.getCategory());
+        asset.setUpdatedAt(OffsetDateTime.now());
 
-        if (requestDTO.getAssignedToId() != null) {
-            Employee employee = employeeRepository.findById(requestDTO.getAssignedToId())
-                    .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit după ID!"));
-            existingAsset.setAssignedTo(employee);
-        }
-        else if (requestDTO.getAssignedToEmail() != null && !requestDTO.getAssignedToEmail().trim().isEmpty()) {
+        // 3. Dacă s-a trimis un email pentru alocare, actualizăm și posesorul
+        if (requestDTO.getAssignedToEmail() != null && !requestDTO.getAssignedToEmail().isBlank()) {
             Employee employee = employeeRepository.findByEmail(requestDTO.getAssignedToEmail())
-                    .orElseThrow(() -> new RuntimeException("Angajatul cu email-ul " + requestDTO.getAssignedToEmail() + " nu a fost găsit!"));
-            existingAsset.setAssignedTo(employee);
-        }
-        else {
-            existingAsset.setAssignedTo(null);
+                    .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit"));
+            asset.setAssignedTo(employee);
+        } else {
+            asset.setAssignedTo(null); // Dacă email-ul e gol, scoatem alocarea
         }
 
-        Asset updatedAsset = assetRepository.save(existingAsset);
-        return assetMapper.toResponseDTO(updatedAsset);
+        // 4. Salvăm și returnăm rezultatul
+        Asset savedAsset = assetRepository.save(asset);
+        return assetMapper.toResponseDTO(savedAsset);
+    }
+
+    @Override
+    public void deleteAsset(UUID id) {
+
     }
 
     @Override
     @Transactional
-    public void deleteAsset(UUID id) {
-        Asset asset = assetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Asset-ul nu a fost găsit!"));
-        assetRepository.delete(asset);
+    public AssetResponseDTO createAsset(AssetRequestDTO requestDTO) {
+        assetRepository.findBySerialNumber(requestDTO.getSerialNumber())
+                .ifPresent(a -> {
+                    throw new RuntimeException("Echipamentul cu această serie există deja!");
+                });
+
+        Asset asset = assetMapper.toEntity(requestDTO);
+        asset.setCreatedAt(OffsetDateTime.now());
+
+        if (requestDTO.getAssignedToEmail() != null && !requestDTO.getAssignedToEmail().isBlank()) {
+            Employee employee = employeeRepository.findByEmail(requestDTO.getAssignedToEmail())
+                    .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit"));
+            asset.setAssignedTo(employee);
+        }
+
+        return assetMapper.toResponseDTO(assetRepository.save(asset));
     }
 
+    // ACEASTA ESTE METODA CARE LIPSEA:
     @Override
     @Transactional
     public AssetResponseDTO assignAsset(UUID assetId, ClaimAssetRequestDTO requestDTO) {
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new RuntimeException("Asset-ul nu a fost găsit!"));
+                .orElseThrow(() -> new RuntimeException("Echipamentul nu a fost găsit"));
 
         Employee employee = employeeRepository.findById(requestDTO.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit!"));
+                .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit"));
 
         asset.setAssignedTo(employee);
         asset.setUpdatedAt(OffsetDateTime.now());
 
-        Asset savedAsset = assetRepository.save(asset);
-        return assetMapper.toResponseDTO(savedAsset);
+        return assetMapper.toResponseDTO(assetRepository.save(asset));
     }
 }

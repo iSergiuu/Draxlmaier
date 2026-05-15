@@ -7,37 +7,28 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AssetMapper {
-    public Asset toEntity(AssetRequestDTO requestDTO){
-        if (requestDTO == null){
-            return null;
-        }
 
-        return Asset.builder()
-                .name(requestDTO.getName())
-                .serialNumber(requestDTO.getSerialNumber())
-                .category(requestDTO.getCategory())
-                .build();
-    }
+    public AssetResponseDTO toResponseDTO(Asset asset) {
+        if (asset == null) return null;
 
-    public AssetResponseDTO toResponseDTO(Asset asset){
-        if (asset == null){
-            return null;
-        }
-
-        AssetResponseDTO.AssetResponseDTOBuilder builder = AssetResponseDTO.builder()
+        return AssetResponseDTO.builder()
                 .id(asset.getId())
                 .name(asset.getName())
                 .serialNumber(asset.getSerialNumber())
                 .category(asset.getCategory())
+                .assignedToName(asset.getAssignedTo() != null ?
+                        asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName() : "Neatribuit")
                 .createdAt(asset.getCreatedAt())
-                .updatedAt(asset.getUpdatedAt());
+                .build();
+    }
 
-        if (asset.getAssignedTo() != null){
-            builder.assignedToId(asset.getAssignedTo().getId());
+    public Asset toEntity(AssetRequestDTO dto) {
+        if (dto == null) return null;
 
-            builder.assignedToName(asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName());
-        }
-
-        return builder.build();
+        return Asset.builder()
+                .name(dto.getName())
+                .serialNumber(dto.getSerialNumber())
+                .category(dto.getCategory())
+                .build();
     }
 }

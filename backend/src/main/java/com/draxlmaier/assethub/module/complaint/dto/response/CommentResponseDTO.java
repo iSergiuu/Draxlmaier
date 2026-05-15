@@ -17,7 +17,7 @@ public class CommentResponseDTO {
     private String message;
     private String authorName;
 
-    @JsonProperty("isInternal") 
+    @JsonProperty("isInternal")
     private boolean isInternal;
 
     private OffsetDateTime createdAt;
