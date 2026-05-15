@@ -59,4 +59,13 @@
         --text-main: #fdf2f2; --text-muted: #fca5a5; --color-primary: #e3000f;
         --color-primary-hover: #b9000c; --border-color: #5c2b2b;
     }
+
+    /* Seteaza fundalul intregii pagini conform temei active */
+    body, html {
+        background-color: var(--brand-bg);
+        color: var(--brand-text);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+    }
 }
