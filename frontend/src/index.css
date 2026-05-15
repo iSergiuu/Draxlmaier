@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+/* 1. Învățăm Tailwind să folosească noile noastre culori */
+@theme {
+    --color-brand-bg: var(--bg-main);
+    --color-brand-sidebar: var(--bg-sidebar);
+    --color-brand-card: var(--bg-card);
+    --color-brand-text: var(--text-main);
+    --color-brand-muted: var(--text-muted);
+    --color-brand-primary: var(--color-primary);
+    --color-brand-primary-hover: var(--color-primary-hover);
+    --color-brand-border: var(--border-color);
+}
+
+/* 2. Definim temele noastre globale */
+@layer base {
+    /* Tema 1: Light (Default) */
+    :root {
+        --bg-main: #f9fafb;
+        --bg-sidebar: #0f172a;
+        --bg-card: #ffffff;
+        --text-main: #111827;
+        --text-muted: #6b7280;
+        --color-primary: #0d9488;
+        --color-primary-hover: #0f766e;
+        --border-color: #e5e7eb;
+    }
+
+    /* Tema 2: Dark Mode */
+    .theme-dark {
+        --bg-main: #111827;
+        --bg-sidebar: #020617;
+        --bg-card: #1f2937;
+        --text-main: #f9fafb;
+        --text-muted: #9ca3af;
+        --color-primary: #14b8a6;
+        --color-primary-hover: #0d9488;
+        --border-color: #374151;
+    }
+
+    /* Tema 3: DRX (Culorile companiei) */
+    .theme-drx {
+        --bg-main: #fdf2f2;
+        --bg-sidebar: #1a1a1a;
+        --bg-card: #ffffff;
+        --text-main: #171717;
+        --text-muted: #525252;
+        --color-primary: #e3000f;
+        --color-primary-hover: #b9000c;
+        --border-color: #fca5a5;
+    }
+}
