@@ -90,22 +90,38 @@ export default function Dashboard() {
         e.preventDefault();
         setIsSubmitting(true);
 
-        const newComplaint = {
+        const token = localStorage.getItem('jwt_token');
+
+        const payload = {
             title: complaintTitle,
             description: complaintDescription,
             assetId: selectedAsset.id,
             priority: complaintPriority
         };
 
-        // PANA FACEM BACKEND-UL, DOAR AFISAM IN CONSOLA
-        console.log("Se trimite catre Java:", newComplaint);
+        try {
+            const response = await fetch('http://localhost:8080/api/complaints', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
 
-        // Simulam o intarziere de 1 secunda ca sa vezi animatia butonului
-        setTimeout(() => {
-            alert(`Tichet creat cu succes pentru: ${selectedAsset.name}!`);
+            if (response.ok) {
+                alert(`Tichet creat cu succes pentru: ${selectedAsset.name}!`);
+                closeReportModal();
+            } else {
+                const errorData = await response.json().catch(() => null);
+                alert(`Eroare la creare tichet: ${errorData?.message || 'Date invalide'}`);
+            }
+        } catch (err) {
+            console.error("Eroare la trimiterea plângerii:", err);
+            alert("Nu am putut contacta serverul. Asigură-te că backend-ul este pornit!");
+        } finally {
             setIsSubmitting(false);
-            closeReportModal();
-        }, 1000);
+        }
     };
 
     if (loading) {
@@ -172,6 +188,18 @@ export default function Dashboard() {
                                                 Profilul Meu
                                             </button>
 
+                                            {/* --- NOU: BUTONUL SPRE PROBLEMELE MELE --- */}
+                                            <button
+                                                onClick={() => {
+                                                    navigate('/complaints');
+                                                    setIsMenuOpen(false);
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center justify-between"
+                                            >
+                                                Problemele mele
+                                                <span className="w-2 h-2 rounded-full bg-brand-primary"></span>
+                                            </button>
+
                                             {isAdmin && (
                                                 <button
                                                     onClick={() => {
@@ -231,16 +259,13 @@ export default function Dashboard() {
             {/* --- POPUP-UL PENTRU RAPORTAREA PROBLEMEI (MODAL) --- */}
             {isModalOpen && selectedAsset && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Fundalul intunecat care inchide fereastra daca dai click pe el */}
                     <div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={closeReportModal}
                     ></div>
 
-                    {/* Fereastra propriu-zisa */}
                     <div className="relative bg-brand-card rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-brand-border animate-in fade-in zoom-in-95 duration-200">
-
-                        {/* Antet Modal */}
+                        
                         <div className="bg-brand-primary px-6 py-4 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-white">Sesizare nouă</h3>
                             <button
@@ -251,20 +276,14 @@ export default function Dashboard() {
                             </button>
                         </div>
 
-                        {/* Informatii Asset */}
                         <div className="px-6 py-4 border-b border-brand-border bg-brand-bg">
                             <p className="text-sm text-brand-muted">Echipament afectat:</p>
                             <p className="font-semibold text-brand-text">{selectedAsset.name}</p>
                         </div>
 
-                        {/* Formularul */}
                         <form onSubmit={handleSubmitComplaint} className="p-6 space-y-4">
-
-                            {/* Titlu */}
                             <div>
-                                <label className="block text-sm font-medium text-brand-text mb-1">
-                                    Subiectul problemei
-                                </label>
+                                <label className="block text-sm font-medium text-brand-text mb-1">Subiectul problemei</label>
                                 <input
                                     type="text"
                                     required
@@ -275,11 +294,8 @@ export default function Dashboard() {
                                 />
                             </div>
 
-                            {/* Prioritate */}
                             <div>
-                                <label className="block text-sm font-medium text-brand-text mb-1">
-                                    Nivel de urgență (Prioritate)
-                                </label>
+                                <label className="block text-sm font-medium text-brand-text mb-1">Nivel de urgență (Prioritate)</label>
                                 <select
                                     value={complaintPriority}
                                     onChange={(e) => setComplaintPriority(e.target.value)}
@@ -292,11 +308,8 @@ export default function Dashboard() {
                                 </select>
                             </div>
 
-                            {/* Descriere */}
                             <div>
-                                <label className="block text-sm font-medium text-brand-text mb-1">
-                                    Descrie detaliat ce s-a întâmplat
-                                </label>
+                                <label className="block text-sm font-medium text-brand-text mb-1">Descrie detaliat ce s-a întâmplat</label>
                                 <textarea
                                     required
                                     rows="4"
@@ -307,7 +320,6 @@ export default function Dashboard() {
                                 ></textarea>
                             </div>
 
-                            {/* Butoane Actiune */}
                             <div className="pt-4 flex justify-end gap-3 border-t border-brand-border">
                                 <button
                                     type="button"
@@ -325,7 +337,6 @@ export default function Dashboard() {
                                 </button>
                             </div>
                         </form>
-
                     </div>
                 </div>
             )}
