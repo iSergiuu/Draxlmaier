@@ -5,6 +5,7 @@ import com.draxlmaier.assethub.module.asset.repository.AssetRepository;
 import com.draxlmaier.assethub.module.complaint.dto.request.ComplaintRequestDTO;
 import com.draxlmaier.assethub.module.complaint.dto.request.StatusChangeRequestDTO;
 import com.draxlmaier.assethub.module.complaint.dto.response.ComplaintResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.response.WorkflowResponseDTO;
 import com.draxlmaier.assethub.module.complaint.mapper.ComplaintMapper;
 import com.draxlmaier.assethub.module.complaint.model.Complaint;
 import com.draxlmaier.assethub.module.complaint.model.ComplaintStatus;
@@ -48,7 +49,7 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .orElseThrow(() -> new RuntimeException("Asset-ul nu a fost găsit"));
 
         ComplaintStatus initialStatus = statusRepository.findByCode("NEW")
-                .orElseThrow(() -> new RuntimeException("Statusul NEW nu există în DB"));
+                .orElseThrow(() -> new RuntimeException("Statusul NEW nu există în baza de date"));
 
         Complaint complaint = complaintMapper.toEntity(requestDTO);
         complaint.setAuthor(author);
@@ -58,15 +59,7 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         Complaint savedComplaint = complaintRepository.save(complaint);
 
-        ComplaintWorkflow workflow = ComplaintWorkflow.builder()
-                .complaint(savedComplaint)
-                .changedBy(author)
-                .oldStatus(null)
-                .newStatus(initialStatus)
-                .comment("Tichet deschis")
-                .createdAt(OffsetDateTime.now())
-                .build();
-        workflowRepository.save(workflow);
+        saveWorkflowStep(savedComplaint, author, null, initialStatus, "Tichet deschis");
 
         return complaintMapper.toResponseDTO(savedComplaint);
     }
@@ -91,11 +84,14 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint complaint = complaintRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Plângerea nu a fost găsită"));
 
+        ComplaintStatus oldStatus = complaint.getStatus();
+
         ComplaintStatus newStatus = statusRepository.findById(statusDTO.getNewStatusId())
-                .orElseThrow(() -> new RuntimeException("Statusul nou nu este valid"));
+                .orElseThrow(() -> new RuntimeException("Statusul nou selectat nu este valid"));
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Employee currentUser = employeeRepository.findByEmail(email).get();
+        Employee currentUser = employeeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilizatorul curent nu a fost găsit"));
 
         entityManager.createNativeQuery("SET LOCAL app.current_user_id = '" + currentUser.getId() + "'").executeUpdate();
 
@@ -106,6 +102,36 @@ public class ComplaintServiceImpl implements ComplaintService {
             complaint.setResolvedAt(OffsetDateTime.now());
         }
 
-        return complaintMapper.toResponseDTO(complaintRepository.save(complaint));
+        Complaint savedComplaint = complaintRepository.save(complaint);
+
+        saveWorkflowStep(savedComplaint, currentUser, oldStatus, newStatus, statusDTO.getComment());
+
+        return complaintMapper.toResponseDTO(savedComplaint);
+    }
+
+    @Override
+    public List<WorkflowResponseDTO> getComplaintWorkflow(UUID complaintId) {
+        // Returnează tot istoricul pentru timeline-ul din frontend
+        return workflowRepository.findAllByComplaintIdOrderByCreatedAtAsc(complaintId).stream()
+                .map(w -> WorkflowResponseDTO.builder()
+                        .changedBy(w.getChangedBy().getFirstName() + " " + w.getChangedBy().getLastName())
+                        .oldStatus(w.getOldStatus() != null ? w.getOldStatus().getCode() : "N/A")
+                        .newStatus(w.getNewStatus().getCode())
+                        .comment(w.getComment() != null ? w.getComment() : "Fără comentarii")
+                        .createdAt(w.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private void saveWorkflowStep(Complaint complaint, Employee user, ComplaintStatus oldStatus, ComplaintStatus newStatus, String comment) {
+        ComplaintWorkflow workflow = ComplaintWorkflow.builder()
+                .complaint(complaint)
+                .changedBy(user)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .comment(comment)
+                .createdAt(OffsetDateTime.now())
+                .build();
+        workflowRepository.save(workflow);
     }
 }

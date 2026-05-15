@@ -2,6 +2,7 @@ package com.draxlmaier.assethub.module.complaint.controller;
 
 import com.draxlmaier.assethub.module.complaint.dto.request.CommentRequestDTO;
 import com.draxlmaier.assethub.module.complaint.dto.request.ComplaintRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.response.WorkflowResponseDTO;
 import com.draxlmaier.assethub.module.complaint.dto.request.StatusChangeRequestDTO;
 import com.draxlmaier.assethub.module.complaint.dto.response.CommentResponseDTO;
 import com.draxlmaier.assethub.module.complaint.dto.response.ComplaintResponseDTO;
@@ -66,5 +67,10 @@ public class ComplaintController {
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<CommentResponseDTO>> getCommentsByComplaintId(@PathVariable UUID id) {
         return ResponseEntity.ok(commentService.getCommentsByComplaintId(id));
+    }
+
+    @GetMapping("/{id}/workflow")
+    public ResponseEntity<List<WorkflowResponseDTO>> getWorkflow(@PathVariable UUID id) {
+        return ResponseEntity.ok(complaintService.getComplaintWorkflow(id));
     }
 }
