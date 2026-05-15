@@ -3,9 +3,12 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
-import AdminDashboard from './pages/admin/AdminDashboard';
 import MyComplaints from './pages/MyComplaints';
-import ComplaintDetails from './pages/ComplaintDetails'; // Am adus pagina nouă aici
+import ComplaintDetails from './pages/ComplaintDetails';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminAssets from './pages/admin/AdminAssets';
+import AdminEmployees from './pages/admin/AdminEmployees';
+import AdminDepartments from './pages/admin/AdminDepartments';
 
 function App() {
     return (
@@ -18,13 +21,23 @@ function App() {
 
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                
+
+
+                {/* Aici se încarcă AdminAssets în interiorul Layout-ului */}
+                <Route path="/admin" element={<AdminLayout />}>
+                    {/* Când accesezi /admin, te redirecționează automat la /admin/assets */}
+                    <Route index element={<Navigate to="assets" replace />} />
+
+                    <Route path="assets" element={<AdminAssets />} />
+                    <Route path="employees" element={<AdminEmployees />} />
+                    <Route path="departments" element={<AdminDepartments />} />
+                </Route>
+
                 {/* Rutele pentru tichete */}
                 <Route path="/complaints" element={<MyComplaints />} />
                 <Route path="/complaint/:id" element={<ComplaintDetails />} />
 
-                {/* (Opțional dar recomandat) Dacă scrie un link greșit, îl trimitem la login */}
+                {/* Dacă scrie un link greșit, îl trimitem la login */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </BrowserRouter>
