@@ -12,7 +12,7 @@
     --color-brand-border: var(--border-color);
 }
 
-/* 2. Definim temele noastre globale */
+/* 2. Definim temele noastre globale  */
 @layer base {
     /* Tema 1: Light (Default) */
     :root {
