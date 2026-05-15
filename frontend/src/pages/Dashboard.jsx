@@ -176,7 +176,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* --- LISTA DE ASSET-URI --- */}
+                {/* --- LISTA DE  ASSET-URI --- */}
                 {myAssets.length === 0 ? (
                     <div className="bg-white p-8 text-center rounded-xl shadow-sm border border-gray-200">
                         <p className="text-gray-500">Nu ai niciun asset asignat în acest moment.</p>
