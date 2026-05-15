@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ThemeSwitcher from '../components/ThemeSwitcher';
+import UserMenu from '../components/UserMenu';
 
 export default function Profile() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
-    // Starea utilizatorului care se potrivește cu DTO-ul din Java
+
     const [user, setUser] = useState({
         firstName: '',
         lastName: '',
@@ -15,21 +16,20 @@ export default function Profile() {
         role: '',
         employeeNumber: '',
         joinedAt: '',
-        totalTickets: 0 // NOU: Starea pentru numărul de tichete
+        totalTickets: 0
     });
 
     useEffect(() => {
         const fetchProfileData = async () => {
             try {
-                const token = localStorage.getItem('jwt_token');
-                
-                // Dacă nu ești logat, te trimite la login
+                // Verificam ambele chei ca sa fim siguri
+                const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+
                 if (!token) {
                     navigate('/login');
                     return;
                 }
 
-                // Chemăm API-ul tău funcțional
                 const response = await fetch('http://localhost:8080/api/employees/me', {
                     method: 'GET',
                     headers: {
@@ -40,26 +40,27 @@ export default function Profile() {
 
                 if (response.ok) {
                     const data = await response.json();
-                    
-                    // Populăm interfața cu datele din JSON-ul primit
+
                     setUser({
                         firstName: data.firstName || 'N/A',
                         lastName: data.lastName || 'N/A',
                         email: data.email || 'N/A',
-                        department: data.departmentName || 'N/A', 
+                        department: data.departmentName || 'N/A',
                         role: data.roleCode || 'USER',
                         employeeNumber: data.employeeNumber || 'N/A',
                         joinedAt: data.createdAt ? new Date(data.createdAt).toLocaleDateString('ro-RO') : 'Necunoscut',
-                        totalTickets: data.totalTickets || 0 // NOU: Prindem numărul de tichete trimis de Java (va fi 5 momentan)
+                        totalTickets: data.totalTickets || 0
                     });
                 } else if (response.status === 401 || response.status === 403) {
+                    // Daca expira sesiunea
                     localStorage.removeItem('jwt_token');
+                    localStorage.removeItem('token');
                     navigate('/login');
                 } else {
                     setError('Eroare la aducerea datelor din profil.');
                 }
             } catch (err) {
-                console.error("Eroare rețea:", err);
+                console.error("Eroare retea:", err);
                 setError('Nu ne-am putut conecta la serverul Spring Boot.');
             } finally {
                 setLoading(false);
@@ -70,18 +71,18 @@ export default function Profile() {
     }, [navigate]);
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center text-teal-600 font-medium">Se încarcă profilul...</div>;
+        return <div className="min-h-screen flex items-center justify-center text-brand-primary font-medium bg-brand-bg">Se încarcă profilul...</div>;
     }
 
     if (error) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
-                <div className="text-red-600 font-bold bg-red-50 p-4 rounded-xl border border-red-200">
+            <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-brand-bg">
+                <div className="text-red-600 font-bold bg-red-900/50 p-4 rounded-xl border border-red-500 text-red-200">
                     {error}
                 </div>
-                <button 
-                    onClick={() => navigate('/dashboard')} 
-                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-800 font-medium"
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="px-4 py-2 bg-brand-card border border-brand-border text-brand-text rounded hover:bg-black/5 font-medium transition-colors"
                 >
                     Înapoi la Dashboard
                 </button>
@@ -90,57 +91,65 @@ export default function Profile() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-2xl mx-auto space-y-6">
-                
-                {/* Buton de întoarcere */}
-                <button 
-                    onClick={() => navigate('/dashboard')}
-                    className="flex items-center text-teal-600 hover:text-teal-700 font-medium transition-colors"
-                >
-                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Înapoi la Dashboard
-                </button>
+        <div className="min-h-screen bg-brand-bg p-8 transition-colors duration-300">
+            <div className="max-w-3xl mx-auto space-y-6">
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    {/* Antet colorat (făcut mai subțire) */}
-                    <div className="h-24 bg-teal-600"></div>
-                    
-                    <div className="px-8 pb-8 pt-8">
-                        
-                        {/* Titlu Profil */}
+                {/* Antetul Nou (la fel ca in Dashboard) */}
+                <div className="bg-brand-card p-6 rounded-xl shadow-sm border border-brand-border flex justify-between items-center relative transition-colors duration-300">
+                    <div>
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="flex items-center text-brand-primary hover:opacity-80 font-medium transition-opacity mb-2"
+                        >
+                            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Înapoi la Dashboard
+                        </button>
+                        <h1 className="text-2xl font-bold text-brand-text">Profilul Meu</h1>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <ThemeSwitcher />
+                        <UserMenu />
+                    </div>
+                </div>
+
+                {/* Cardul cu Profilul */}
+                <div className="bg-brand-card rounded-xl shadow-sm border border-brand-border overflow-hidden transition-colors duration-300">
+                    {/* Antet colorat (in culoarea temei curente) */}
+                    <div className="h-24 bg-brand-primary transition-colors duration-300"></div>
+
+                    <div className="px-8 pb-8 pt-6">
+
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{user.firstName} {user.lastName}</h1>
-                            <p className="text-gray-500 font-medium mt-1">{user.role} • Departamentul {user.department}</p>
+                            <h1 className="text-3xl font-bold text-brand-text">{user.firstName} {user.lastName}</h1>
+                            <p className="text-brand-muted font-medium mt-1">{user.role} • Departamentul {user.department}</p>
                         </div>
 
-                        {/* Detalii aduse din baza de date */}
                         <div className="mt-8">
-                            <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
-                                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-6">
+                            <div className="bg-brand-bg p-6 rounded-lg border border-brand-border transition-colors duration-300">
+                                <h3 className="text-sm font-semibold text-brand-muted uppercase tracking-wider mb-6">
                                     Informații Profesionale
                                 </h3>
-                                {/* Am modificat aici pentru a permite mai mult spațiu pentru noua secțiune: gap-y-8 */}
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-4">
                                     <div>
-                                        <p className="text-sm text-gray-500 mb-1">Email Instituțional</p>
-                                        <p className="font-medium text-gray-900">{user.email}</p>
+                                        <p className="text-sm text-brand-muted mb-1">Email Instituțional</p>
+                                        <p className="font-medium text-brand-text">{user.email}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500 mb-1">Marcă Angajat</p>
-                                        <p className="font-medium text-gray-900">{user.employeeNumber}</p>
+                                        <p className="text-sm text-brand-muted mb-1">Marcă Angajat</p>
+                                        <p className="font-medium text-brand-text">{user.employeeNumber}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500 mb-1">Membru din</p>
-                                        <p className="font-medium text-gray-900">{user.joinedAt}</p>
+                                        <p className="text-sm text-brand-muted mb-1">Membru din</p>
+                                        <p className="font-medium text-brand-text">{user.joinedAt}</p>
                                     </div>
-                                    {/* NOU: Secțiunea pentru afișarea numărului de tichete cu un "badge" vizual */}
                                     <div>
-                                        <p className="text-sm text-gray-500 mb-1">Sesizări Trimise</p>
+                                        <p className="text-sm text-brand-muted mb-1">Sesizări Trimise</p>
                                         <div className="flex items-center">
-                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-bold bg-teal-100 text-teal-800">
+                                            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-bold bg-brand-bg border border-brand-primary text-brand-primary">
                                                 {user.totalTickets} tichete
                                             </span>
                                         </div>

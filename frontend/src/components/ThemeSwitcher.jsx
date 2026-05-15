@@ -1,34 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Temele noastre pe coloane (Dark sus, Light jos)
+// Temele noastre pe coloane
 const themeColumns = [
     {
-        dark:  { id: 'theme-dark', name: 'Teal Întunecat', primary: '#14b8a6', bgMain: '#0d1117' },
+        dark:  { id: 'theme-dark', name: 'Teal Intunecat', primary: '#14b8a6', bgMain: '#0d1117' },
         light: { id: 'light', name: 'Teal Luminos', primary: '#0d9488', bgMain: '#f9fafb' }
     },
     {
-        dark:  { id: 'theme-yellow-dark', name: 'Galben Întunecat', primary: '#facc15', bgMain: '#1c1917' },
+        dark:  { id: 'theme-yellow-dark', name: 'Galben Intunecat', primary: '#facc15', bgMain: '#1c1917' },
         light: { id: 'theme-yellow-light', name: 'Galben Luminos', primary: '#eab308', bgMain: '#fefce8' }
     },
     {
-        dark:  { id: 'theme-purple-dark', name: 'Indigo Întunecat', primary: '#818cf8', bgMain: '#1e1b4b' },
+        dark:  { id: 'theme-purple-dark', name: 'Indigo Intunecat', primary: '#818cf8', bgMain: '#1e1b4b' },
         light: { id: 'theme-purple-light', name: 'Indigo Luminos', primary: '#6366f1', bgMain: '#eef2ff' }
     },
     {
-        dark:  { id: 'theme-drx', name: 'DRX Întunecat', primary: '#e3000f', bgMain: '#241414' },
+        dark:  { id: 'theme-drx', name: 'DRX Intunecat', primary: '#e3000f', bgMain: '#241414' },
         light: { id: 'theme-drx-light', name: 'DRX Luminos', primary: '#e3000f', bgMain: '#fdf2f2' }
     }
 ];
 
 export default function ThemeSwitcher() {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isPinned, setIsPinned] = useState(false);
     const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'light');
-    const dropdownRef = useRef(null);
 
+    // Referinta pentru a detecta click-ul in afara meniului
+    const menuRef = useRef(null);
+
+    const isOpen = isHovered || isPinned;
+
+    // Logica pentru inchidere la click pe afara
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsPinned(false);
+                setIsHovered(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -46,12 +53,9 @@ export default function ThemeSwitcher() {
         if (col.light.id === currentTheme) activeThemeData = col.light;
     }
 
-    // Folosim un SVG cu doua poligoane. Nu mai exista nicio scapare de fundal "patrat" la colturi!
     const ThemeCircle = ({ theme, onClick, isMain = false }) => {
         const sizeClasses = isMain ? "w-8 h-8" : "w-6 h-6";
         const isSelected = !isMain && theme.id === currentTheme;
-
-        // Conturul e culoarea de accent pt cercul principal SAU pt cercul selectat. Restul au gri.
         const borderColor = (isMain || isSelected) ? theme.primary : '#9ca3af';
 
         return (
@@ -61,35 +65,33 @@ export default function ThemeSwitcher() {
                 className={`${sizeClasses} rounded-full cursor-pointer transition-transform hover:scale-110 shadow-sm flex items-center justify-center`}
                 style={{
                     border: `2px solid ${borderColor}`,
-                    backgroundColor: 'transparent',
+                    background: `linear-gradient(135deg, ${theme.bgMain} 50%, ${theme.primary} 50%)`,
                     padding: 0
                 }}
-            >
-                <svg viewBox="0 0 100 100" className="w-full h-full rounded-full overflow-hidden">
-                    {/* Triunghiul Stanga-Sus (Fundalul aplicatiei) */}
-                    <polygon points="0,100 0,0 100,0" fill={theme.bgMain} />
-                    {/* Triunghiul Dreapta-Jos (Culoarea de accent) */}
-                    <polygon points="0,100 100,100 100,0" fill={theme.primary} />
-                </svg>
-            </button>
+            />
         );
     };
 
     return (
-        <div className="relative" ref={dropdownRef}>
-
-            {/* Cercul din meniul de sus */}
-            <ThemeCircle
-                theme={activeThemeData}
-                onClick={() => setIsOpen(!isOpen)}
-                isMain={true}
-            />
+        <div
+            className="relative"
+            ref={menuRef}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            <div
+                onClick={() => setIsPinned(!isPinned)}
+                className={`p-1 rounded-full transition-colors cursor-pointer ${isPinned ? 'bg-black/10' : 'hover:bg-black/5'}`}
+            >
+                <ThemeCircle
+                    theme={activeThemeData}
+                    isMain={true}
+                />
+            </div>
 
             {isOpen && (
-                <div className="absolute right-0 mt-4 p-3 bg-brand-card border border-brand-border rounded-xl shadow-xl z-[100] animate-in fade-in zoom-in-95 duration-150">
-
+                <div className="absolute right-0 mt-2 p-3 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
                     <div className="flex flex-col gap-3">
-                        {/* Teme Intunecate */}
                         <div className="flex gap-3">
                             {themeColumns.map(col => (
                                 <ThemeCircle
@@ -99,8 +101,6 @@ export default function ThemeSwitcher() {
                                 />
                             ))}
                         </div>
-
-                        {/* Teme Luminoase */}
                         <div className="flex gap-3">
                             {themeColumns.map(col => (
                                 <ThemeCircle
@@ -111,7 +111,6 @@ export default function ThemeSwitcher() {
                             ))}
                         </div>
                     </div>
-
                 </div>
             )}
         </div>

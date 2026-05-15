@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Importam noua componenta pentru teme
 import ThemeSwitcher from '../../components/ThemeSwitcher';
+import UserMenu from '../../components/UserMenu';
 import {
     Laptop, Smartphone, Headphones, Monitor, Keyboard,
     Mouse, HardDrive, Plus, X, LayoutDashboard, Users,
-    Settings, LogOut, Info, AlertCircle
+    Settings, Info, AlertCircle
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -17,22 +17,12 @@ export default function AdminDashboard() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const navigate = useNavigate();
-    const adminEmail = localStorage.getItem('userEmail') || 'Admin';
 
-    // Functie pentru delogare
-    const handleLogout = () => {
-        localStorage.clear();
-        navigate('/login');
-    };
-
-    // Preluarea datelor de la backend
     const fetchAssets = () => {
-        // Aici am pus "token" in loc de "jwtToken" ca sa se potriveasca cu exemplul colegului
         const token = localStorage.getItem('token');
 
-        // Daca nu avem token, setam eroarea dar NU dam redirect, ca sa poti lucra la design
         if (!token) {
-            setError("Nu esti autentificat. Te rugam sa te loghezi pentru a vedea datele reale din baza de date.");
+            setError("Nu ești autentificat. Te rugăm să te loghezi pentru a vedea datele reale din baza de date.");
             setIsLoading(false);
             return;
         }
@@ -45,7 +35,7 @@ export default function AdminDashboard() {
             }
         })
             .then(res => {
-                if (!res.ok) throw new Error('Eroare la preluarea datelor de la backend (Lipsa permisiuni sau server oprit)');
+                if (!res.ok) throw new Error('Eroare la preluarea datelor de la backend (Lipsă permisiuni sau server oprit)');
                 return res.json();
             })
             .then(data => {
@@ -62,7 +52,6 @@ export default function AdminDashboard() {
         fetchAssets();
     }, []);
 
-    // Returneaza o iconita in functie de categoria asset-ului
     const getCategoryIcon = (category) => {
         if (!category) return <HardDrive className="w-6 h-6 text-brand-muted" />;
         const cat = category.toLowerCase();
@@ -76,7 +65,6 @@ export default function AdminDashboard() {
     };
 
     const totalAssets = assets.length;
-    // Consideram in stoc cele care nu au un ID de angajat asignat
     const inStockAssets = assets.filter(a => !a.assignedToId && !a.assigned_to_id).length;
     const defectiveAssets = 0;
 
@@ -95,7 +83,6 @@ export default function AdminDashboard() {
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 mt-4">
-                    {/* Am schimbat din <a> in <button> pentru a scapa de # in URL */}
                     <button className="w-full flex items-center px-4 py-3 bg-brand-primary rounded-lg text-white font-medium transition-colors">
                         <LayoutDashboard className="w-5 h-5 mr-3" />
                         Echipamente
@@ -109,13 +96,7 @@ export default function AdminDashboard() {
                         Departamente
                     </button>
                 </nav>
-
-                <div className="p-4 border-t border-gray-800">
-                    <button onClick={handleLogout} className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors">
-                        <LogOut className="w-5 h-5 mr-3" />
-                        Deconectare
-                    </button>
-                </div>
+                {/* Am eliminat div-ul de jos cu butonul de deconectare */}
             </div>
 
             {/* CONTINUT CENTRAL */}
@@ -124,13 +105,11 @@ export default function AdminDashboard() {
                 <header className="bg-brand-card shadow-sm border-b border-brand-border p-4 flex justify-between items-center transition-colors duration-300">
                     <h2 className="text-xl font-semibold text-brand-text">Gestiune Echipamente</h2>
 
-                    <div className="flex items-center gap-6 text-sm">
-                        {/* Componenta cu cerculetele pentru teme */}
-                        <ThemeSwitcher />
-
-                        <div className="text-brand-muted hidden md:block">
-                            Conectat ca: <span className="font-semibold text-brand-text">{adminEmail}</span>
+                    <div className="flex items-center gap-4 text-sm">
+                        <div className="relative group">
+                            <ThemeSwitcher />
                         </div>
+                        <UserMenu />
                     </div>
                 </header>
 
@@ -173,7 +152,7 @@ export default function AdminDashboard() {
                         <h3 className="text-lg font-bold text-brand-text">Toate Echipamentele</h3>
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="bg-brand-primary hover:bg-brand-primary-hover text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors shadow-sm"
+                            className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-opacity shadow-sm"
                         >
                             <Plus className="w-5 h-5 mr-1" />
                             Adaugă Echipament Nou
@@ -277,7 +256,7 @@ export default function AdminDashboard() {
                             <button className="px-4 py-2 border border-brand-border rounded-lg text-brand-text hover:bg-black/5 font-medium transition-colors">
                                 Schimbă Status
                             </button>
-                            <button className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-hover font-medium transition-colors">
+                            <button className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:opacity-90 font-medium transition-opacity">
                                 Editează
                             </button>
                         </div>
@@ -323,7 +302,7 @@ export default function AdminDashboard() {
 
                                 <div className="pt-4 flex justify-end gap-3">
                                     <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-brand-text border border-brand-border hover:bg-black/5 rounded-lg font-medium transition-colors">Anulează</button>
-                                    <button type="button" className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-hover font-medium transition-colors">Salvează Echipament</button>
+                                    <button type="button" className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:opacity-90 font-medium transition-opacity">Salvează Echipament</button>
                                 </div>
                             </form>
                         </div>
