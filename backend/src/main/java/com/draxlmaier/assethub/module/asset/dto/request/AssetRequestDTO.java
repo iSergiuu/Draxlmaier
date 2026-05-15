@@ -23,4 +23,6 @@ public class AssetRequestDTO {
     private String category;
 
     private UUID assignedToId;
+
+    private String assignedToEmail;
 }

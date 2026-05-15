@@ -33,7 +33,12 @@ public class AssetServiceImpl implements AssetService {
 
         if (requestDTO.getAssignedToId() != null) {
             Employee employee = employeeRepository.findById(requestDTO.getAssignedToId())
-                    .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit!"));
+                    .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit după ID!"));
+            asset.setAssignedTo(employee);
+        }
+        else if (requestDTO.getAssignedToEmail() != null && !requestDTO.getAssignedToEmail().trim().isEmpty()) {
+            Employee employee = employeeRepository.findByEmail(requestDTO.getAssignedToEmail())
+                    .orElseThrow(() -> new RuntimeException("Angajatul cu email-ul " + requestDTO.getAssignedToEmail() + " nu a fost găsit!"));
             asset.setAssignedTo(employee);
         }
 
@@ -68,9 +73,15 @@ public class AssetServiceImpl implements AssetService {
 
         if (requestDTO.getAssignedToId() != null) {
             Employee employee = employeeRepository.findById(requestDTO.getAssignedToId())
-                    .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit!"));
+                    .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit după ID!"));
             existingAsset.setAssignedTo(employee);
-        } else {
+        }
+        else if (requestDTO.getAssignedToEmail() != null && !requestDTO.getAssignedToEmail().trim().isEmpty()) {
+            Employee employee = employeeRepository.findByEmail(requestDTO.getAssignedToEmail())
+                    .orElseThrow(() -> new RuntimeException("Angajatul cu email-ul " + requestDTO.getAssignedToEmail() + " nu a fost găsit!"));
+            existingAsset.setAssignedTo(employee);
+        }
+        else {
             existingAsset.setAssignedTo(null);
         }
 

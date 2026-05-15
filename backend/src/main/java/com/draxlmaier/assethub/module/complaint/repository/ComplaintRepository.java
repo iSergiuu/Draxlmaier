@@ -10,6 +10,5 @@ import java.util.UUID;
 @Repository
 public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
     List<Complaint> findAllByAuthorId(UUID authorId);
-
     List<Complaint> findAllByAssetId(UUID assetId);
 }
