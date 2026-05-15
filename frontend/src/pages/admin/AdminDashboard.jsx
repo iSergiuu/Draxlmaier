@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+// Importam noua componenta pentru teme
+import ThemeSwitcher from '../../components/ThemeSwitcher';
 import {
     Laptop, Smartphone, Headphones, Monitor, Keyboard,
     Mouse, HardDrive, Plus, X, LayoutDashboard, Users,
-    Settings, LogOut, Info, AlertCircle, Palette
+    Settings, LogOut, Info, AlertCircle
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -14,32 +16,24 @@ export default function AdminDashboard() {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    // Citim tema salvata anterior, sau folosim 'light' default
-    const [theme, setTheme] = useState(localStorage.getItem('appTheme') || 'light');
-
     const navigate = useNavigate();
     const adminEmail = localStorage.getItem('userEmail') || 'Admin';
 
-    // Aplicam tema cand se schimba
-    useEffect(() => {
-        localStorage.setItem('appTheme', theme);
-        // Aplicam clasa pe toata pagina (tag-ul html)
-        if (theme === 'light') {
-            document.documentElement.className = '';
-        } else {
-            document.documentElement.className = theme;
-        }
-    }, [theme]);
-
+    // Functie pentru delogare
     const handleLogout = () => {
         localStorage.clear();
         navigate('/login');
     };
 
+    // Preluarea datelor de la backend
     const fetchAssets = () => {
-        const token = localStorage.getItem('jwtToken');
+        // Aici am pus "token" in loc de "jwtToken" ca sa se potriveasca cu exemplul colegului
+        const token = localStorage.getItem('token');
+
+        // Daca nu avem token, setam eroarea dar NU dam redirect, ca sa poti lucra la design
         if (!token) {
-            navigate('/login');
+            setError("Nu esti autentificat. Te rugam sa te loghezi pentru a vedea datele reale din baza de date.");
+            setIsLoading(false);
             return;
         }
 
@@ -51,7 +45,7 @@ export default function AdminDashboard() {
             }
         })
             .then(res => {
-                if (!res.ok) throw new Error('Eroare la preluarea datelor');
+                if (!res.ok) throw new Error('Eroare la preluarea datelor de la backend (Lipsa permisiuni sau server oprit)');
                 return res.json();
             })
             .then(data => {
@@ -68,6 +62,7 @@ export default function AdminDashboard() {
         fetchAssets();
     }, []);
 
+    // Returneaza o iconita in functie de categoria asset-ului
     const getCategoryIcon = (category) => {
         if (!category) return <HardDrive className="w-6 h-6 text-brand-muted" />;
         const cat = category.toLowerCase();
@@ -81,6 +76,7 @@ export default function AdminDashboard() {
     };
 
     const totalAssets = assets.length;
+    // Consideram in stoc cele care nu au un ID de angajat asignat
     const inStockAssets = assets.filter(a => !a.assignedToId && !a.assigned_to_id).length;
     const defectiveAssets = 0;
 
@@ -99,18 +95,19 @@ export default function AdminDashboard() {
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 mt-4">
-                    <a href="#" className="flex items-center px-4 py-3 bg-brand-primary rounded-lg text-white font-medium transition-colors">
+                    {/* Am schimbat din <a> in <button> pentru a scapa de # in URL */}
+                    <button className="w-full flex items-center px-4 py-3 bg-brand-primary rounded-lg text-white font-medium transition-colors">
                         <LayoutDashboard className="w-5 h-5 mr-3" />
                         Echipamente
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors">
+                    </button>
+                    <button className="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors text-left">
                         <Users className="w-5 h-5 mr-3" />
                         Angajați
-                    </a>
-                    <a href="#" className="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors">
+                    </button>
+                    <button className="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors text-left">
                         <Settings className="w-5 h-5 mr-3" />
                         Departamente
-                    </a>
+                    </button>
                 </nav>
 
                 <div className="p-4 border-t border-gray-800">
@@ -128,25 +125,18 @@ export default function AdminDashboard() {
                     <h2 className="text-xl font-semibold text-brand-text">Gestiune Echipamente</h2>
 
                     <div className="flex items-center gap-6 text-sm">
-                        {/* Selector de Teme */}
-                        <div className="flex items-center gap-2 text-brand-muted">
-                            <Palette className="w-4 h-4" />
-                            <select
-                                value={theme}
-                                onChange={(e) => setTheme(e.target.value)}
-                                className="bg-brand-bg text-brand-text border border-brand-border rounded px-2 py-1 focus:outline-none"
-                            >
-                                <option value="light">Mod Luminos</option>
-                                <option value="theme-dark">Mod Întunecat</option>
-                                <option value="theme-drx">Temă DRX</option>
-                            </select>
+                        {/* Componenta cu cerculetele pentru teme */}
+                        <ThemeSwitcher />
+
+                        <div className="text-brand-muted hidden md:block">
+                            Conectat ca: <span className="font-semibold text-brand-text">{adminEmail}</span>
                         </div>
-                        <div className="text-brand-muted">Conectat ca: <span className="font-semibold text-brand-text">{adminEmail}</span></div>
                     </div>
                 </header>
 
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-bg p-6 transition-colors duration-300">
 
+                    {/* Statistici Rapide */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div className="bg-brand-card rounded-xl p-6 shadow-sm border border-brand-border flex items-center transition-colors">
                             <div className="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
@@ -190,11 +180,20 @@ export default function AdminDashboard() {
                         </button>
                     </div>
 
-                    {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+                    {/* Afisare eroare centralizata */}
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-900/50 border border-red-500 text-red-200 rounded-lg flex items-center">
+                            <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <p>{error}</p>
+                        </div>
+                    )}
 
+                    {/* Lista Echipamentelor */}
                     <div className="bg-brand-card rounded-xl shadow-sm border border-brand-border overflow-hidden transition-colors">
                         {assets.length === 0 ? (
-                            <div className="p-8 text-center text-brand-muted">Niciun echipament înregistrat în sistem.</div>
+                            <div className="p-8 text-center text-brand-muted">
+                                {error ? "Nu se pot afișa echipamentele din cauza erorii de mai sus." : "Niciun echipament înregistrat în sistem."}
+                            </div>
                         ) : (
                             <ul className="divide-y divide-brand-border">
                                 {assets.map((asset) => (
@@ -213,9 +212,9 @@ export default function AdminDashboard() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-brand-bg text-brand-text border border-brand-border">
-                        {asset.category || "Fără categorie"}
-                      </span>
+                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-brand-bg text-brand-text border border-brand-border">
+                                                {asset.category || "Fără categorie"}
+                                            </span>
                                             <Info className="w-5 h-5 text-brand-muted hover:text-brand-primary transition-colors" />
                                         </div>
                                     </li>

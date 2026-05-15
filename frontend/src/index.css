@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* 1. Învățăm Tailwind să folosească noile noastre culori */
 @theme {
     --color-brand-bg: var(--bg-main);
     --color-brand-sidebar: var(--bg-sidebar);
@@ -12,41 +11,52 @@
     --color-brand-border: var(--border-color);
 }
 
-/* 2. Definim temele noastre globale  */
 @layer base {
-    /* Tema 1: Light (Default) */
+    /* ================= TEAL (STANDARD) ================= */
     :root {
-        --bg-main: #f9fafb;
-        --bg-sidebar: #0f172a;
-        --bg-card: #ffffff;
-        --text-main: #111827;
-        --text-muted: #6b7280;
-        --color-primary: #0d9488;
-        --color-primary-hover: #0f766e;
-        --border-color: #e5e7eb;
+        --bg-main: #f9fafb; --bg-sidebar: #0f172a; --bg-card: #ffffff;
+        --text-main: #111827; --text-muted: #6b7280; --color-primary: #0d9488;
+        --color-primary-hover: #0f766e; --border-color: #e5e7eb;
     }
-
-    /* Tema 2: Dark Mode */
     .theme-dark {
-        --bg-main: #111827;
-        --bg-sidebar: #020617;
-        --bg-card: #1f2937;
-        --text-main: #f9fafb;
-        --text-muted: #9ca3af;
-        --color-primary: #14b8a6;
-        --color-primary-hover: #0d9488;
-        --border-color: #374151;
+        --bg-main: #0d1117; --bg-sidebar: #02040a; --bg-card: #161b22;
+        --text-main: #f9fafb; --text-muted: #9ca3af; --color-primary: #14b8a6;
+        --color-primary-hover: #0d9488; --border-color: #30363d;
     }
 
-    /* Tema 3: DRX (Culorile companiei) */
+    /* ================= GALBEN ================= */
+    .theme-yellow-light {
+        --bg-main: #fefce8; --bg-sidebar: #1c1917; --bg-card: #ffffff;
+        --text-main: #1c1917; --text-muted: #78716c; --color-primary: #eab308;
+        --color-primary-hover: #ca8a04; --border-color: #fef08a;
+    }
+    .theme-yellow-dark {
+        --bg-main: #1c1917; --bg-sidebar: #0c0a09; --bg-card: #292524;
+        --text-main: #fafaf9; --text-muted: #a8a29e; --color-primary: #facc15;
+        --color-primary-hover: #eab308; --border-color: #44403c;
+    }
+
+    /* ================= INDIGO ================= */
+    .theme-purple-light {
+        --bg-main: #eef2ff; --bg-sidebar: #1e1b4b; --bg-card: #ffffff;
+        --text-main: #1e1b4b; --text-muted: #6366f1; --color-primary: #6366f1;
+        --color-primary-hover: #4f46e5; --border-color: #c7d2fe;
+    }
+    .theme-purple-dark {
+        --bg-main: #1e1b4b; --bg-sidebar: #0f172a; --bg-card: #312e81;
+        --text-main: #eef2ff; --text-muted: #818cf8; --color-primary: #818cf8;
+        --color-primary-hover: #6366f1; --border-color: #4338ca;
+    }
+
+    /* ================= RED (DRX) ================= */
+    .theme-drx-light {
+        --bg-main: #fdf2f2; --bg-sidebar: #1a1a1a; --bg-card: #ffffff;
+        --text-main: #171717; --text-muted: #525252; --color-primary: #e3000f;
+        --color-primary-hover: #b9000c; --border-color: #fca5a5;
+    }
     .theme-drx {
-        --bg-main: #fdf2f2;
-        --bg-sidebar: #1a1a1a;
-        --bg-card: #ffffff;
-        --text-main: #171717;
-        --text-muted: #525252;
-        --color-primary: #e3000f;
-        --color-primary-hover: #b9000c;
-        --border-color: #fca5a5;
+        --bg-main: #241414; --bg-sidebar: #0a0000; --bg-card: #3b1c1c;
+        --text-main: #fdf2f2; --text-muted: #fca5a5; --color-primary: #e3000f;
+        --color-primary-hover: #b9000c; --border-color: #5c2b2b;
     }
 }
