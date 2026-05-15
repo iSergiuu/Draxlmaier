@@ -33,14 +33,17 @@ export default function Dashboard() {
                     const data = await response.json();
                     setMyAssets(data);
                 } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('jwt_token');
-                    navigate('/login');
+                    // AM COMENTAT ASTEA TEMPORAR CA SA NU TE MAI DEA AFARA:
+                    // localStorage.removeItem('jwt_token');
+                    // navigate('/login');
+                    
+                    setError(`Eroare de Securitate (${response.status}): Backend-ul refuză cererea. Ai adăugat @CrossOrigin pe AssetController? Ai implementat metoda pe backend?`);
                 } else {
-                    setError('Eroare la aducerea datelor din baza de date.');
+                    setError(`Eroare de la server: ${response.status}`);
                 }
             } catch (err) {
                 console.error("Eroare de rețea:", err);
-                setError('Nu ne-am putut conecta la serverul Spring Boot.');
+                setError('Eroare CORS sau Backend Oprit. Verifică consola (F12).');
             } finally {
                 setLoading(false);
             }
@@ -64,7 +67,16 @@ export default function Dashboard() {
     }
 
     if (error) {
-        return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center space-y-4 p-8">
+                <div className="text-red-600 font-bold bg-red-50 p-4 rounded-xl border border-red-200">
+                    {error}
+                </div>
+                <button onClick={handleLogout} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    Înapoi la Login
+                </button>
+            </div>
+        );
     }
 
     return (
@@ -99,20 +111,32 @@ export default function Dashboard() {
                                     onClick={() => setIsMenuOpen(false)}
                                 ></div>
                                 
-                                {/* Fereastra meniului propriu-zis */}
-                                <div className="absolute right-6 top-20 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
-                                    <div className="py-2">
-                                        <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                            Contul meu
-                                        </div>
-                                        <button 
-                                            onClick={handleLogout}
-                                            className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium transition-colors"
-                                        >
-                                            Deconectare
-                                        </button>
+                               <div className="absolute right-6 top-20 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
+                                <div className="py-2">
+                                    <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                        Contul meu
                                     </div>
+                                    
+                                    {/* AICI ERA O MICA EROARE DE NAVIGARE: e doar '/profile', nu '/pages/Profile' */}
+                                    <button 
+                                        onClick={() => {
+                                            navigate('/profile'); 
+                                            setIsMenuOpen(false); 
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                                    >
+                                        Profilul Meu
+                                    </button>
+                                    
+                                    {/* Butonul de Logout pe care îl aveai deja */}
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium transition-colors"
+                                    >
+                                        Deconectare
+                                    </button>
                                 </div>
+                            </div>
                             </>
                         )}
                     </div>
