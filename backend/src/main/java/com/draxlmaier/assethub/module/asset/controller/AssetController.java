@@ -23,10 +23,8 @@ public class AssetController {
 
     // Doar Admin și Responsabilul de Departament pot crea asset-uri noi
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> createAsset(@Valid @RequestBody AssetRequestDTO requestDTO) {
-        AssetResponseDTO response = assetService.createAsset(requestDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(assetService.createAsset(requestDTO));
     }
 
     // Oricine este autentificat (USER, DEPT_RESPONSIBLE, ADMIN) poate vedea lista de asset-uri
@@ -35,6 +33,7 @@ public class AssetController {
         List<AssetResponseDTO> response = assetService.getAllAssets();
         return ResponseEntity.ok(response);
     }
+
 
     // Oricine este autentificat poate vedea detaliile unui asset
     @GetMapping("/{id}")

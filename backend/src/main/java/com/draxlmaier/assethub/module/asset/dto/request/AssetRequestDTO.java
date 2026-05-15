@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -13,16 +12,15 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AssetRequestDTO {
 
-    @NotBlank(message = "Numele este obligatoriu")
+    @NotBlank(message = "Numele echipamentului este obligatoriu")
     private String name;
 
-    @NotBlank(message = "Numărul serial este obligatoriu")
+    @NotBlank(message = "Numărul de serie este obligatoriu")
     private String serialNumber;
 
     @NotBlank(message = "Categoria este obligatorie")
     private String category;
 
-    private UUID assignedToId;
-
+    // Acesta este câmpul opțional din modal pentru atribuire rapidă
     private String assignedToEmail;
 }
