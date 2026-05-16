@@ -7,4 +7,12 @@ import java.util.UUID;
 
 @Repository
 public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
+
+    long countByAuthorDepartmentId(UUID departmentId);
+
+    long countByAuthorDepartmentIdAndStatusTerminalFalse(UUID departmentId);
+
+    long countByAuthorDepartmentIdAndStatusTerminalTrue(UUID departmentId);
+
+    long countByAuthorDepartmentIdAndEscalatedTrue(UUID departmentId);
 }
