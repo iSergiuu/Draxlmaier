@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class DepartmentServiceImpl {
+public class DepartmentServiceImpl implements DepartmentService {
     private final DepartmentRepository departmentRepository;
 
     @Override
