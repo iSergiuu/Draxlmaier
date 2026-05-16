@@ -2,35 +2,30 @@ package com.draxlmaier.assethub.module.dashboard.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
-import lombok.Data;
 
-@Data
 @Builder
-public class DashboardStatsDTO {
-
-    private AssetStatsDTO assets;
-    private TicketStatsDTO tickets;
-
-    @Data
+public record DashboardStatsDTO(
+        AssetStatsDTO assets,
+        TicketStatsDTO tickets
+) {
     @Builder
-    public static class AssetStatsDTO {
-        private long total;
-        private long allocated;
-        private long available;
-        private long broken;
-        private long deleted;
-    }
+    public record AssetStatsDTO(
+            long total,
+            long allocated,
+            long available,
+            long broken,
+            long deleted
+    ) {}
 
-    @Data
     @Builder
-    public static class TicketStatsDTO {
-        private long total;
+    public record TicketStatsDTO(
+            long total,
 
-        @JsonProperty("new")
-        private long newTickets;
+            @JsonProperty("new")
+            long newTickets,
 
-        private long inProgress;
-        private long resolved;
-        private long deleted;
-    }
+            long inProgress,
+            long resolved,
+            long deleted
+    ) {}
 }

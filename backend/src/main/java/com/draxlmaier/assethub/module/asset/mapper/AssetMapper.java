@@ -1,7 +1,7 @@
 package com.draxlmaier.assethub.module.asset.mapper;
 
-import com.draxlmaier.assethub.module.asset.dto.request.AssetRequestDTO;
-import com.draxlmaier.assethub.module.asset.dto.response.AssetResponseDTO;
+import com.draxlmaier.assethub.module.asset.dto.AssetRequestDTO;
+import com.draxlmaier.assethub.module.asset.dto.AssetResponseDTO;
 import com.draxlmaier.assethub.module.asset.model.Asset;
 import org.springframework.stereotype.Component;
 
@@ -16,9 +16,12 @@ public class AssetMapper {
                 .name(asset.getName())
                 .serialNumber(asset.getSerialNumber())
                 .category(asset.getCategory())
+                .assignedToId(asset.getAssignedTo() != null ? asset.getAssignedTo().getId() : null)
                 .assignedToName(asset.getAssignedTo() != null ?
                         asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName() : "Neatribuit")
+                .assignedToEmail(asset.getAssignedTo() != null ? asset.getAssignedTo().getEmail() : "Neatribuit") // Setăm email-ul aici
                 .createdAt(asset.getCreatedAt())
+                .updatedAt(asset.getUpdatedAt())
                 .build();
     }
 
@@ -26,9 +29,9 @@ public class AssetMapper {
         if (dto == null) return null;
 
         return Asset.builder()
-                .name(dto.getName())
-                .serialNumber(dto.getSerialNumber())
-                .category(dto.getCategory())
+                .name(dto.name())
+                .serialNumber(dto.serialNumber())
+                .category(dto.category())
                 .build();
     }
 }

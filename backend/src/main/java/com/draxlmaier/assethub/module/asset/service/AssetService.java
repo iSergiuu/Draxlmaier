@@ -1,8 +1,8 @@
 package com.draxlmaier.assethub.module.asset.service;
 
-import com.draxlmaier.assethub.module.asset.dto.request.AssetRequestDTO;
-import com.draxlmaier.assethub.module.asset.dto.request.ClaimAssetRequestDTO;
-import com.draxlmaier.assethub.module.asset.dto.response.AssetResponseDTO;
+import com.draxlmaier.assethub.module.asset.dto.AssetRequestDTO;
+import com.draxlmaier.assethub.module.asset.dto.ClaimAssetRequestDTO;
+import com.draxlmaier.assethub.module.asset.dto.AssetResponseDTO;
 
 import java.util.List;
 import java.util.UUID;

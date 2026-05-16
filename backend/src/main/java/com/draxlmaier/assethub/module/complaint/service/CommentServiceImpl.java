@@ -1,7 +1,7 @@
 package com.draxlmaier.assethub.module.complaint.service;
 
-import com.draxlmaier.assethub.module.complaint.dto.request.CommentRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.CommentResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentResponseDTO;
 import com.draxlmaier.assethub.module.complaint.model.Comment;
 import com.draxlmaier.assethub.module.complaint.model.Complaint;
 import com.draxlmaier.assethub.module.complaint.model.ComplaintWorkflow;
@@ -45,7 +45,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = Comment.builder()
                 .complaint(complaint)
                 .author(currentUser)
-                .message(requestDTO.getMessage())
+                .message(requestDTO.message())
                 .isInternal(requestDTO.isInternal())
                 .createdAt(OffsetDateTime.now())
                 .build();
@@ -56,11 +56,11 @@ public class CommentServiceImpl implements CommentService {
         ComplaintWorkflow workflowEntry = ComplaintWorkflow.builder()
                 .complaint(complaint)
                 .changedBy(currentUser)
-                .oldStatus(complaint.getStatus()) // Statusul nu se schimbă
-                .newStatus(complaint.getStatus()) // Rămâne același
-                .comment("Comentariu nou: " + (requestDTO.getMessage().length() > 30
-                        ? requestDTO.getMessage().substring(0, 30) + "..."
-                        : requestDTO.getMessage()))
+                .oldStatus(complaint.getStatus())
+                .newStatus(complaint.getStatus())
+                .comment("Comentariu nou: " + (requestDTO.message().length() > 30
+                        ? requestDTO.message().substring(0, 30) + "..."
+                        : requestDTO.message()))
                 .createdAt(OffsetDateTime.now())
                 .build();
         workflowRepository.save(workflowEntry);

@@ -51,6 +51,9 @@ public class Complaint {
     @Column(name = "due_date")
     private OffsetDateTime dueDate;
 
+    @Column(name = "is_escalated")
+    private boolean escalated = false;
+
     @Column(name = "resolved_at")
     private OffsetDateTime resolvedAt;
 

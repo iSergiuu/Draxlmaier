@@ -1,8 +1,8 @@
 package com.draxlmaier.assethub.module.employee.service;
 
-import com.draxlmaier.assethub.module.employee.dto.request.RegisterRequestDTO;
-import com.draxlmaier.assethub.module.employee.dto.response.AuthResponseDTO;
-import com.draxlmaier.assethub.module.employee.dto.request.LoginRequestDTO;
+import com.draxlmaier.assethub.module.employee.dto.RegisterRequestDTO;
+import com.draxlmaier.assethub.module.employee.dto.AuthResponseDTO;
+import com.draxlmaier.assethub.module.employee.dto.LoginRequestDTO;
 
 public interface AuthService {
     AuthResponseDTO register(RegisterRequestDTO request);

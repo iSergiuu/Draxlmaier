@@ -1,11 +1,11 @@
 package com.draxlmaier.assethub.module.complaint.controller;
 
-import com.draxlmaier.assethub.module.complaint.dto.request.CommentRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.request.ComplaintRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.WorkflowResponseDTO;
-import com.draxlmaier.assethub.module.complaint.dto.request.StatusChangeRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.CommentResponseDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.ComplaintResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.ComplaintRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.WorkflowResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.StatusChangeRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.ComplaintResponseDTO;
 import com.draxlmaier.assethub.module.complaint.service.CommentService;
 import com.draxlmaier.assethub.module.complaint.service.ComplaintService;
 import jakarta.validation.Valid;

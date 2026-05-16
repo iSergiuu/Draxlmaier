@@ -1,9 +1,9 @@
 package com.draxlmaier.assethub.module.complaint.service;
 
-import com.draxlmaier.assethub.module.complaint.dto.request.ComplaintRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.request.StatusChangeRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.ComplaintResponseDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.WorkflowResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.ComplaintRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.StatusChangeRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.ComplaintResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.WorkflowResponseDTO;
 
 import java.util.List;
 import java.util.UUID;
