@@ -1,7 +1,7 @@
 package com.draxlmaier.assethub.module.complaint.service;
 
-import com.draxlmaier.assethub.module.complaint.dto.request.CommentRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.CommentResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentResponseDTO;
 
 import java.util.List;
 import java.util.UUID;

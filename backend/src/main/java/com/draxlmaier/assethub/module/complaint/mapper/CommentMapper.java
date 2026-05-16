@@ -1,7 +1,7 @@
 package com.draxlmaier.assethub.module.complaint.mapper;
 
-import com.draxlmaier.assethub.module.complaint.dto.request.CommentRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.CommentResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.CommentResponseDTO;
 import com.draxlmaier.assethub.module.complaint.model.ComplaintComment;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +12,7 @@ public class CommentMapper {
         if (dto == null) return null;
 
         return ComplaintComment.builder()
-                .message(dto.getMessage())
+                .message(dto.message()) // Modificat pentru Record
                 .internal(dto.isInternal())
                 .build();
     }

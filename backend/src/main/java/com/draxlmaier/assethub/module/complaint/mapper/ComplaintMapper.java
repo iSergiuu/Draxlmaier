@@ -1,7 +1,7 @@
 package com.draxlmaier.assethub.module.complaint.mapper;
 
-import com.draxlmaier.assethub.module.complaint.dto.request.ComplaintRequestDTO;
-import com.draxlmaier.assethub.module.complaint.dto.response.ComplaintResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.ComplaintRequestDTO;
+import com.draxlmaier.assethub.module.complaint.dto.ComplaintResponseDTO;
 import com.draxlmaier.assethub.module.complaint.model.Complaint;
 import org.springframework.stereotype.Component;
 
@@ -12,9 +12,9 @@ public class ComplaintMapper {
         if (dto == null) return null;
 
         return Complaint.builder()
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .priority(dto.getPriority() != null ? dto.getPriority() : "MEDIUM")
+                .title(dto.title())
+                .description(dto.description())
+                .priority(dto.priority() != null ? dto.priority() : "MEDIUM")
                 .build();
     }
 

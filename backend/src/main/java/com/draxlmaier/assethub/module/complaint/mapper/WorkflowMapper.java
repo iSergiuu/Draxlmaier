@@ -1,6 +1,6 @@
 package com.draxlmaier.assethub.module.complaint.mapper;
 
-import com.draxlmaier.assethub.module.complaint.dto.response.WorkflowResponseDTO;
+import com.draxlmaier.assethub.module.complaint.dto.WorkflowResponseDTO;
 import com.draxlmaier.assethub.module.complaint.model.ComplaintWorkflow;
 import org.springframework.stereotype.Component;
 

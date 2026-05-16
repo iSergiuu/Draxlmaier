@@ -1,9 +1,9 @@
 package com.draxlmaier.assethub.module.employee.controller;
 
-import com.draxlmaier.assethub.module.employee.dto.request.RegisterRequestDTO;
-import com.draxlmaier.assethub.module.employee.dto.response.AuthResponseDTO;
+import com.draxlmaier.assethub.module.employee.dto.RegisterRequestDTO;
+import com.draxlmaier.assethub.module.employee.dto.AuthResponseDTO;
 import com.draxlmaier.assethub.module.employee.service.AuthService;
-import com.draxlmaier.assethub.module.employee.dto.request.LoginRequestDTO;
+import com.draxlmaier.assethub.module.employee.dto.LoginRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
