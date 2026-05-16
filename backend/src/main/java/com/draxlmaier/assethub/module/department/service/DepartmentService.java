@@ -9,5 +9,5 @@ import java.util.UUID;
 public interface DepartmentService {
     List<DepartmentResponseDTO> getAllDepartments();
 
-    DepartmentStatsDTO getDepartmentStats(UUID departmentId)
+    DepartmentStatsDTO getDepartmentStats(UUID departmentId);
 }
