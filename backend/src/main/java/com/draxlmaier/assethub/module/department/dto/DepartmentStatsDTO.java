@@ -1,4 +1,11 @@
 package com.draxlmaier.assethub.module.department.dto;
 
-public class DepartmentStatsDTO {
-}
+import java.util.UUID;
+
+public record DepartmentStatsDTO(
+        UUID departmentId,
+        long totalComplaits,
+        long openComplaints,
+        long resolvedComplaints,
+        long escalatedComplaints
+){}
