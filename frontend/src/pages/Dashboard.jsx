@@ -1,18 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
-import UserMenu from '../components/UserMenu'; // Importam noua componenta
+import UserMenu from '../components/UserMenu';
+import { Laptop, Smartphone, Monitor, Printer, HardDrive, Cpu, Box, Mouse } from 'lucide-react';
+
+// Aceasta este configurarea centralizata. 
+// Daca vrei sa adaugi un tip nou, doar adaugi un obiect aici.
+const ASSET_ICONS_CONFIG = [
+    { keywords: ['laptop', 'macbook', 'thinkpad'], icon: Laptop },
+    { keywords: ['phone', 'telefon', 'iphone', 'samsung'], icon: Smartphone },
+    { keywords: ['monitor', 'display'], icon: Monitor },
+    { keywords: ['printer', 'imprimanta', 'xerox'], icon: Printer },
+    { keywords: ['server'], icon: Cpu },
+    { keywords: ['storage', 'hdd', 'ssd'], icon: HardDrive },
+    { keywords: ['mouse'], icon: Mouse }
+];
 
 export default function Dashboard() {
     const [myAssets, setMyAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Stari pentru popup-ul de raportare
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
 
-    // Stari pentru formularul de raportare
     const [complaintTitle, setComplaintTitle] = useState('');
     const [complaintDescription, setComplaintDescription] = useState('');
     const [complaintPriority, setComplaintPriority] = useState('MEDIUM');
@@ -24,7 +35,6 @@ export default function Dashboard() {
         const fetchAssets = async () => {
             try {
                 const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-
                 if (!token) {
                     navigate('/login');
                     return;
@@ -42,13 +52,13 @@ export default function Dashboard() {
                     const data = await response.json();
                     setMyAssets(data);
                 } else if (response.status === 401 || response.status === 403) {
-                    setError(`Eroare de Securitate (${response.status}): Backend-ul refuza cererea. Ai adaugat @CrossOrigin pe AssetController?`);
+                    setError(`Eroare de Securitate (${response.status}): Backend-ul refuza cererea.`);
                 } else {
                     setError(`Eroare de la server: ${response.status}`);
                 }
             } catch (err) {
                 console.error("Eroare de retea:", err);
-                setError('Eroare CORS sau Backend Oprit. Verifica consola (F12).');
+                setError('Eroare CORS sau Backend Oprit.');
             } finally {
                 setLoading(false);
             }
@@ -65,29 +75,24 @@ export default function Dashboard() {
         navigate('/login');
     };
 
-    // Functia care deschide modalul
     const openReportModal = (asset) => {
         setSelectedAsset(asset);
-        // Resetam valorile din formular
         setComplaintTitle('');
         setComplaintDescription('');
         setComplaintPriority('MEDIUM');
         setIsModalOpen(true);
     };
 
-    // Functia care inchide modalul
     const closeReportModal = () => {
         setIsModalOpen(false);
         setSelectedAsset(null);
     };
 
-    // Functia care va trimite datele catre Java
     const handleSubmitComplaint = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-
         const payload = {
             title: complaintTitle,
             description: complaintDescription,
@@ -114,10 +119,26 @@ export default function Dashboard() {
             }
         } catch (err) {
             console.error("Eroare la trimiterea plangerii:", err);
-            alert("Nu am putut contacta serverul. Asigura-te ca backend-ul este pornit!");
+            alert("Nu am putut contacta serverul.");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Functia refactorizata care foloseste configuratia de mai sus
+    const getAssetIcon = (asset) => {
+        const searchString = `${asset.name || ''} ${asset.category || ''}`.toLowerCase();
+        
+        const found = ASSET_ICONS_CONFIG.find(item => 
+            item.keywords.some(keyword => searchString.includes(keyword))
+        );
+
+        if (found) {
+            const IconComponent = found.icon;
+            return <IconComponent className="w-8 h-8" />;
+        }
+        
+        return <Box className="w-8 h-8" />;
     };
 
     if (loading) {
@@ -141,7 +162,6 @@ export default function Dashboard() {
         <div className="min-h-screen bg-brand-bg p-8 transition-colors duration-300 relative">
             <div className="max-w-7xl mx-auto space-y-8">
 
-                {/* --- ANTETUL --- */}
                 <div className="bg-brand-card p-6 rounded-xl shadow-sm border border-brand-border flex justify-between items-center relative transition-colors duration-300">
                     <div>
                         <h1 className="text-2xl font-bold text-brand-text">Asset-urile Mele</h1>
@@ -150,12 +170,10 @@ export default function Dashboard() {
 
                     <div className="flex items-center gap-4">
                         <ThemeSwitcher />
-                        {/* Aici am inlocuit tot codul kilometric cu o singura componenta */}
                         <UserMenu />
                     </div>
                 </div>
 
-                {/* --- LISTA DE ASSET-URI --- */}
                 {myAssets.length === 0 ? (
                     <div className="bg-brand-card p-8 text-center rounded-xl shadow-sm border border-brand-border transition-colors duration-300">
                         <p className="text-brand-muted">Nu ai niciun asset asignat in acest moment.</p>
@@ -163,18 +181,27 @@ export default function Dashboard() {
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {myAssets.map((asset) => (
-                            <div key={asset.id} className="bg-brand-card p-6 rounded-2xl shadow-sm border border-brand-border transition-colors duration-300 hover:shadow-md">
-                                <h2 className="text-lg font-semibold text-brand-text">{asset.name}</h2>
-                                <p className="text-sm text-brand-muted mt-2">{asset.description || "Nicio descriere disponibila."}</p>
-                                <div className="mt-6 flex items-center justify-between">
-                                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-brand-bg text-brand-muted border border-brand-border">
+                            <div key={asset.id} className="bg-brand-card p-6 rounded-2xl shadow-sm border border-brand-border transition-colors duration-300 hover:shadow-md hover:border-brand-primary flex flex-col justify-between">
+                                
+                                <div className="flex items-start gap-4 mb-4">
+                                    <div className="p-3 bg-brand-bg rounded-xl border border-brand-border text-brand-primary shrink-0">
+                                        {getAssetIcon(asset)}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold text-brand-text leading-tight">{asset.name}</h2>
+                                        <p className="text-sm text-brand-muted mt-1 line-clamp-2">{asset.description || "Nicio descriere disponibila."}</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-auto pt-4 border-t border-brand-border flex items-center justify-between">
+                                    <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-brand-bg text-brand-muted border border-brand-border">
                                         SN: {asset.serialNumber || asset.serial_number || "N/A"}
                                     </span>
                                     <button
                                         onClick={() => openReportModal(asset)}
                                         className="text-sm font-bold text-brand-primary hover:opacity-80 transition-opacity"
                                     >
-                                        Raporteaza problema
+                                        Raporteaza
                                     </button>
                                 </div>
                             </div>
@@ -183,7 +210,6 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {/* --- POPUP-UL PENTRU RAPORTAREA PROBLEMEI (MODAL) --- */}
             {isModalOpen && selectedAsset && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div
@@ -203,9 +229,14 @@ export default function Dashboard() {
                             </button>
                         </div>
 
-                        <div className="px-6 py-4 border-b border-brand-border bg-brand-bg">
-                            <p className="text-sm text-brand-muted">Echipament afectat:</p>
-                            <p className="font-semibold text-brand-text">{selectedAsset.name}</p>
+                        <div className="px-6 py-4 border-b border-brand-border bg-brand-bg flex items-center gap-3">
+                            <div className="text-brand-primary opacity-80">
+                                {getAssetIcon(selectedAsset)}
+                            </div>
+                            <div>
+                                <p className="text-xs text-brand-muted">Echipament afectat:</p>
+                                <p className="font-semibold text-brand-text">{selectedAsset.name}</p>
+                            </div>
                         </div>
 
                         <form onSubmit={handleSubmitComplaint} className="p-6 space-y-4">
@@ -228,10 +259,10 @@ export default function Dashboard() {
                                     onChange={(e) => setComplaintPriority(e.target.value)}
                                     className="w-full bg-brand-bg text-brand-text border border-brand-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all"
                                 >
-                                    <option value="LOW">Scazuta (Nu ma blocheaza)</option>
-                                    <option value="MEDIUM">Medie (Ma incurca in lucru)</option>
-                                    <option value="HIGH">Radicata (Sunt partial blocat)</option>
-                                    <option value="CRITICAL">Critica (Nu pot lucra deloc)</option>
+                                    <option value="LOW">Scazuta</option>
+                                    <option value="MEDIUM">Medie</option>
+                                    <option value="HIGH">Ridicata</option>
+                                    <option value="CRITICAL">Critica</option>
                                 </select>
                             </div>
 
@@ -242,7 +273,7 @@ export default function Dashboard() {
                                     rows="4"
                                     value={complaintDescription}
                                     onChange={(e) => setComplaintDescription(e.target.value)}
-                                    placeholder="Te rog sa ne oferi cat mai multe detalii (cand a aparut, erori pe ecran etc.)..."
+                                    placeholder="Detalii..."
                                     className="w-full bg-brand-bg text-brand-text border border-brand-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-primary focus:outline-none resize-none transition-all"
                                 ></textarea>
                             </div>
