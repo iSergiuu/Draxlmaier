@@ -30,28 +30,35 @@ export default function Profile() {
                     return;
                 }
 
-                const response = await fetch('http://localhost:8080/api/employees/me', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
 
-                if (response.ok) {
-                    const data = await response.json();
+                // AICI E MAGIA: Facem 2 cereri simultane catre backend
+                // 1. Luam datele angajatului
+                // 2. Luam tichetele lui (pentru a le numara)
+                const [employeeRes, complaintsRes] = await Promise.all([
+                    fetch('http://localhost:8080/api/employees/me', { method: 'GET', headers }),
+                    fetch('http://localhost:8080/api/complaints', { method: 'GET', headers })
+                ]);
+
+                if (employeeRes.ok && complaintsRes.ok) {
+                    const empData = await employeeRes.json();
+                    const complaintsData = await complaintsRes.json();
 
                     setUser({
-                        firstName: data.firstName || 'N/A',
-                        lastName: data.lastName || 'N/A',
-                        email: data.email || 'N/A',
-                        department: data.departmentName || 'N/A',
-                        role: data.roleCode || 'USER',
-                        employeeNumber: data.employeeNumber || 'N/A',
-                        joinedAt: data.createdAt ? new Date(data.createdAt).toLocaleDateString('ro-RO') : 'Necunoscut',
-                        totalTickets: data.totalTickets || 0
+                        firstName: empData.firstName || 'N/A',
+                        lastName: empData.lastName || 'N/A',
+                        email: empData.email || 'N/A',
+                        department: empData.departmentName || 'N/A',
+                        role: empData.roleCode || 'USER',
+                        employeeNumber: empData.employeeNumber || 'N/A',
+                        joinedAt: empData.createdAt ? new Date(empData.createdAt).toLocaleDateString('ro-RO') : 'Necunoscut',
+                        // Numaram direct tichetele venite din backend:
+                        totalTickets: complaintsData.length 
                     });
-                } else if (response.status === 401 || response.status === 403) {
+                } else if (employeeRes.status === 401 || employeeRes.status === 403) {
                     // Daca expira sesiunea
                     localStorage.removeItem('jwt_token');
                     localStorage.removeItem('token');
