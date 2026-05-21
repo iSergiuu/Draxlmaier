@@ -2,15 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Circle } from 'lucide-react';
 
-const STATUS_UUID_MAP = {
-    'NEW': 'pune-uuid-aici-pentru-new',
-    'IN_REVIEW': 'pune-uuid-aici-pentru-in_review',
-    'IN_PROGRESS': 'pune-uuid-aici-pentru-in_progress',
-    'RESOLVED': 'pune-uuid-aici-pentru-resolved',
-    'CLOSED': 'pune-uuid-aici-pentru-closed',
-    'REJECTED': 'pune-uuid-aici-pentru-rejected'
-};
-
 export default function ComplaintDetails() {
     const { id } = useParams(); 
     const navigate = useNavigate();
@@ -68,7 +59,6 @@ export default function ComplaintDetails() {
         fetchTicketDetails();
     }, [id, navigate]);
 
-    // Funcție pentru trimiterea unui mesaj/comentariu normal
     const handleSendComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;
@@ -104,21 +94,15 @@ export default function ComplaintDetails() {
         }
     };
 
-    // Funcție pentru schimbarea statusului de către Admin
+    // Funcția care acum trimite direct textul către noul nostru backend
     const handleStatusChange = async () => {
-        // Luăm UUID-ul corect din dicționarul de sus
-        const uuidToUpdate = STATUS_UUID_MAP[selectedStatus];
-
-        if (!uuidToUpdate || uuidToUpdate.includes('pune-uuid')) {
-            alert("Atenție: Nu ai configurat UUID-urile în codul React (STATUS_UUID_MAP)!");
-            return;
-        }
-
         setIsUpdatingStatus(true);
         try {
             const token = localStorage.getItem('jwt_token');
+            
+            // payload-ul trimite exact textul selectat ("IN_PROGRESS", "RESOLVED" etc.)
             const payload = {
-                newStatusId: uuidToUpdate, 
+                newStatusId: selectedStatus, 
                 comment: statusComment
             };
 
@@ -172,7 +156,7 @@ export default function ComplaintDetails() {
                         Plângere #{ticket.ticketNumber || ticket.id.substring(0,6).toUpperCase()} — {ticket.title}
                     </h1>
                     
-                    {/* CONTROALE ADMIN - Design curat și premium */}
+                    {/* CONTROALE ADMIN - Design curat */}
                     {canChangeStatus && (
                         <div className="bg-white p-5 rounded-xl border border-teal-100 shadow-sm flex flex-col gap-4 min-w-[320px] md:min-w-[400px]">
                             <h3 className="text-xs font-bold text-teal-800 uppercase tracking-wider flex items-center gap-2">

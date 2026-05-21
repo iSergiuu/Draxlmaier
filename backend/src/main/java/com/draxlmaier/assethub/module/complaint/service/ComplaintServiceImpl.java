@@ -41,20 +41,16 @@ public class ComplaintServiceImpl implements ComplaintService {
     @Override
     @Transactional
     public ComplaintResponseDTO createComplaint(ComplaintRequestDTO requestDTO) {
-        // 1. Găsim autorul
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Employee author = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit"));
 
-        // 2. Găsim statusul inițial
-        ComplaintStatus initialStatus = statusRepository.findByCode("OPEN")
-                .orElseThrow(() -> new RuntimeException("Statusul OPEN nu a fost găsit"));
+        ComplaintStatus initialStatus = statusRepository.findByCode("NEW")
+                .orElseThrow(() -> new RuntimeException("Statusul NEW nu a fost găsit"));
 
-        // 3. Găsim Asset-ul - Modificat pentru Record
         Asset asset = assetRepository.findById(requestDTO.assetId())
                 .orElseThrow(() -> new RuntimeException("Echipamentul nu a fost găsit"));
 
-        // 4. Mapăm datele
         Complaint complaint = complaintMapper.toEntity(requestDTO);
         complaint.setAuthor(author);
         complaint.setAsset(asset);
@@ -62,7 +58,6 @@ public class ComplaintServiceImpl implements ComplaintService {
         complaint.setCreatedAt(OffsetDateTime.now());
         complaint.setEscalated(false);
 
-        // 5. Calculăm DUE DATE (SLA) folosind String-uri
         OffsetDateTime now = OffsetDateTime.now();
         String priority = (complaint.getPriority() != null) ? complaint.getPriority().toUpperCase() : "MEDIUM";
 
@@ -75,7 +70,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         Complaint savedComplaint = complaintRepository.save(complaint);
 
-        // 6. Salvăm în Workflow
         saveWorkflowStep(savedComplaint, author, null, initialStatus, "Tichet deschis automat.");
 
         return complaintMapper.toResponseDTO(savedComplaint);
@@ -102,8 +96,8 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .orElseThrow(() -> new RuntimeException("Plângerea nu a fost găsită"));
 
         ComplaintStatus oldStatus = complaint.getStatus();
-        // Modificat pentru Record
-        ComplaintStatus newStatus = statusRepository.findById(statusDTO.newStatusId())
+
+        ComplaintStatus newStatus = statusRepository.findByCode(statusDTO.newStatusId())
                 .orElseThrow(() -> new RuntimeException("Statusul nou selectat nu este valid"));
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -120,7 +114,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         }
 
         Complaint savedComplaint = complaintRepository.save(complaint);
-        // Modificat pentru Record
+
         saveWorkflowStep(savedComplaint, currentUser, oldStatus, newStatus, statusDTO.comment());
 
         return complaintMapper.toResponseDTO(savedComplaint);
