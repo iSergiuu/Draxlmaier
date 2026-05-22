@@ -2,45 +2,28 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import UserMenu from '../components/UserMenu';
-import { 
-    ArrowLeft, CheckCircle2, Send, Clock, User, Shield, Info, 
-    Activity, MessageSquare, MonitorSmartphone, ChevronDown 
-} from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Send, Clock, User, Shield, Info, Activity, MessageSquare, MonitorSmartphone, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
+const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
+const itemVariants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } } };
 
 export default function ComplaintDetails() {
     const { id } = useParams(); 
     const navigate = useNavigate();
-    
     const [ticket, setTicket] = useState(null);
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
     const [newComment, setNewComment] = useState('');
     const [sendingComment, setSendingComment] = useState(false);
-    
     const userRole = localStorage.getItem('userRole')?.toUpperCase();
     const canChangeStatus = userRole === 'ADMIN' || userRole === 'DEPT_RESPONSIBLE';
-    
     const [selectedStatus, setSelectedStatus] = useState('');
     const [statusComment, setStatusComment] = useState(''); 
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-
-    // State-uri pentru Dropdown-ul Custom
     const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
     const statusMenuRef = useRef(null);
-
     const workflowSteps = ['NEW', 'IN_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
     useEffect(() => {
@@ -48,44 +31,21 @@ export default function ComplaintDetails() {
             try {
                 const token = localStorage.getItem('jwt_token');
                 if (!token) { navigate('/login'); return; }
-
-                const ticketRes = await fetch(`http://localhost:8080/api/complaints/${id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                const commentsRes = await fetch(`http://localhost:8080/api/complaints/${id}/comments`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
+                const ticketRes = await fetch(`http://localhost:8080/api/complaints/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const commentsRes = await fetch(`http://localhost:8080/api/complaints/${id}/comments`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (ticketRes.ok) {
                     const ticketData = await ticketRes.json();
                     setTicket(ticketData);
                     setSelectedStatus(ticketData.status || ticketData.statusCode || 'NEW');
-                } else {
-                    throw new Error('Nu am putut incarca detaliile tichetului.');
-                }
-
-                if (commentsRes.ok) {
-                    const commentsData = await commentsRes.json();
-                    setComments(commentsData);
-                }
-            } catch (err) {
-                console.error(err);
-                setError('A aparut o eroare la conectarea cu serverul.');
-            } finally {
-                setLoading(false);
-            }
+                } else throw new Error('Eroare tichet.');
+                if (commentsRes.ok) setComments(await commentsRes.json());
+            } catch (err) { setError('Eroare de conexiune.'); } finally { setLoading(false); }
         };
         fetchTicketDetails();
     }, [id, navigate]);
 
-    // Inchide dropdown-ul la click in afara lui
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (statusMenuRef.current && !statusMenuRef.current.contains(event.target)) {
-                setIsStatusMenuOpen(false);
-            }
-        };
+        const handleClickOutside = (e) => { if (statusMenuRef.current && !statusMenuRef.current.contains(e.target)) setIsStatusMenuOpen(false); };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -93,308 +53,189 @@ export default function ComplaintDetails() {
     const handleSendComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;
-        
         setSendingComment(true);
         try {
             const token = localStorage.getItem('jwt_token');
             const response = await fetch(`http://localhost:8080/api/complaints/${id}/comments`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: newComment })
             });
-
             if (response.ok) {
-                const addedComment = await response.json().catch(() => ({
-                    id: Math.random(),
-                    message: newComment,
-                    authorName: 'Eu',
-                    createdAt: new Date().toISOString(),
-                    isMine: true
-                }));
-                
+                const addedComment = await response.json().catch(() => ({ id: Math.random(), message: newComment, authorName: 'Eu', createdAt: new Date().toISOString(), isMine: true }));
                 setComments([...comments, addedComment]);
                 setNewComment('');
             }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setSendingComment(false);
-        }
+        } finally { setSendingComment(false); }
     };
 
     const handleStatusChange = async () => {
         setIsUpdatingStatus(true);
         try {
             const token = localStorage.getItem('jwt_token');
-            const payload = { newStatusId: selectedStatus, comment: statusComment };
-
             const response = await fetch(`http://localhost:8080/api/complaints/${id}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newStatusId: selectedStatus, comment: statusComment })
             });
-
-            if (response.ok) {
-                alert("Status actualizat cu succes!");
-                window.location.reload(); 
-            } else {
-                const errData = await response.json().catch(() => null);
-                alert(`Eroare la actualizare: ${errData?.message || 'Date invalide'}`);
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Eroare de conexiune la schimbarea statusului.");
-        } finally {
-            setIsUpdatingStatus(false);
-        }
+            if (response.ok) window.location.reload(); 
+            else alert("Eroare la actualizare.");
+        } finally { setIsUpdatingStatus(false); }
     };
 
-    const getInitials = (name) => {
-        if (!name || name === 'Eu') return 'EU';
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    };
+    const getInitials = (name) => (!name || name === 'Eu') ? 'EU' : name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center text-brand-primary text-xl font-bold bg-brand-bg">Se incarca detaliile...</div>;
-    if (error) return <div className="min-h-screen flex flex-col items-center justify-center space-y-4 p-8 bg-brand-bg"><div className="text-red-600 font-bold bg-red-900/50 p-4 rounded-xl border border-red-500">{error}</div><button onClick={() => navigate('/complaints')} className="px-4 py-2 bg-brand-card text-brand-text rounded border border-brand-border">Inapoi</button></div>;
+    if (loading) return <div className="h-screen flex items-center justify-center text-brand-primary font-bold bg-brand-bg">Se incarca...</div>;
+    if (error) return <div className="h-screen flex items-center justify-center font-bold text-red-500 bg-brand-bg">{error}</div>;
     if (!ticket) return null;
 
     const currentStatus = (ticket.status || ticket.statusCode || 'NEW').toUpperCase();
+    const currentIndex = workflowSteps.indexOf(currentStatus);
 
     return (
-        <div className="min-h-screen bg-brand-bg font-sans transition-colors duration-300">
-            
-            {/* 1. TOP NAVBAR STICKY */}
-            <header className="sticky top-0 z-40 bg-brand-bg/80 backdrop-blur-lg border-b border-brand-border px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-6">
-                    <button 
-                        onClick={() => navigate('/complaints')} 
-                        className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-black/5 text-brand-muted hover:text-brand-text transition-colors"
-                    >
+        <div className="min-h-screen bg-brand-bg font-sans text-brand-text transition-colors duration-300 pb-16 selection:bg-brand-primary/30">
+            <header className="sticky top-0 z-50 bg-brand-bg/60 backdrop-blur-xl border-b border-brand-border/50 px-6 py-4 flex justify-between items-center shadow-sm">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate('/complaints')} className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-card border border-brand-border hover:border-brand-primary hover:text-brand-primary transition-all shadow-sm">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <div className="hidden md:flex items-center gap-3 border-l border-brand-border pl-6">
-                        <span className="font-mono text-sm text-brand-muted">#{ticket.ticketNumber || ticket.id.substring(0,6).toUpperCase()}</span>
-                        <span className="px-3 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 text-xs font-bold rounded-full flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
-                            {currentStatus.replace('_', ' ')}
-                        </span>
+                    <div className="hidden sm:flex flex-col">
+                        <span className="text-[10px] font-bold text-brand-muted uppercase tracking-wider">Tichet Suport</span>
+                        <span className="text-sm font-mono font-bold">#{ticket.ticketNumber || ticket.id.substring(0,8).toUpperCase()}</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <ThemeSwitcher />
-                    <UserMenu />
-                </div>
+                <div className="flex items-center gap-4"><ThemeSwitcher /><UserMenu /></div>
             </header>
 
-            {/* 2. MAIN LAYOUT (Split View) */}
-            <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8">
-                <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="show"
-                    className="flex flex-col lg:flex-row gap-8 items-start"
-                >
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+                
+                <motion.div variants={itemVariants} className="bg-gradient-to-br from-brand-card to-brand-bg border border-brand-border/60 rounded-[2rem] p-8 lg:p-10 shadow-xl shadow-brand-primary/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
                     
-                    {/* COLOANA STANGA: FOCUS */}
-                    <div className="w-full lg:flex-1 space-y-8">
-                        <motion.div variants={itemVariants}>
-                            <h1 className="text-3xl md:text-4xl font-black text-brand-text mb-4 leading-tight">{ticket.title}</h1>
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-brand-muted">
-                                <span className="flex items-center gap-1.5"><User className="w-4 h-4"/> {ticket.authorName}</span>
-                                <span>•</span>
-                                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4"/> {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('ro-RO', {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'}) : 'N/A'}</span>
+                    <div className="relative z-10 flex flex-col gap-6">
+                        <div>
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="px-3 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 text-xs font-black rounded-full uppercase tracking-wider">
+                                    {ticket.priority} PRIORITY
+                                </span>
+                                <span className="text-sm text-brand-muted flex items-center gap-1.5 font-medium"><Clock className="w-4 h-4"/> {new Date(ticket.createdAt).toLocaleString('ro-RO')}</span>
                             </div>
-                        </motion.div>
+                            <h1 className="text-4xl lg:text-5xl font-black leading-tight tracking-tight mb-2">{ticket.title}</h1>
+                        </div>
 
-                        <motion.div variants={itemVariants} className="bg-brand-card p-6 md:p-8 rounded-3xl border border-brand-border shadow-sm">
-                            <div className="prose prose-sm md:prose-base prose-invert max-w-none">
-                                <p className="text-brand-text leading-relaxed whitespace-pre-wrap">{ticket.description}</p>
-                            </div>
-                        </motion.div>
-
-                        <motion.div variants={itemVariants} className="pt-4">
-                            <h3 className="text-xl font-bold text-brand-text flex items-center gap-2 mb-6">
-                                <MessageSquare className="w-5 h-5 text-brand-primary" /> Firul discutiei
-                            </h3>
-                            
-                            <div className="space-y-6 mb-8">
-                                {comments.length === 0 ? (
-                                    <p className="text-brand-muted text-sm italic">Nu exista mesaje momentan.</p>
-                                ) : (
-                                    comments.map((comment, idx) => {
-                                        const isMine = comment.authorName === 'Eu' || comment.isMine;
-                                        return (
-                                            <div key={idx} className={`flex gap-4 ${isMine ? 'flex-row-reverse' : ''}`}>
-                                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 bg-brand-bg border border-brand-border">
-                                                    <span className={isMine ? 'text-brand-primary' : 'text-brand-muted'}>{getInitials(comment.authorName)}</span>
-                                                </div>
-                                                <div className={`flex flex-col max-w-[85%] ${isMine ? 'items-end' : 'items-start'}`}>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-xs font-bold text-brand-text">{comment.authorName || 'Echipa Suport'}</span>
-                                                        <span className="text-[10px] text-brand-muted">{comment.createdAt ? new Date(comment.createdAt).toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'}) : ''}</span>
-                                                    </div>
-                                                    <div className={`p-4 text-sm rounded-2xl ${isMine ? 'bg-brand-primary text-white rounded-tr-sm' : 'bg-brand-card border border-brand-border text-brand-text rounded-tl-sm'}`}>
-                                                        <p className="whitespace-pre-wrap">{comment.message}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-
-                            <form onSubmit={handleSendComment} className="bg-brand-card border border-brand-border p-2 rounded-2xl flex items-end gap-2 shadow-sm focus-within:ring-2 focus-within:ring-brand-primary/50 transition-all">
-                                <textarea 
-                                    value={newComment} 
-                                    onChange={(e) => setNewComment(e.target.value)} 
-                                    placeholder="Scrie o actualizare..." 
-                                    rows="1"
-                                    className="flex-1 bg-transparent border-none text-brand-text px-4 py-3 outline-none text-sm resize-none min-h-[44px] max-h-32" 
-                                />
-                                <button 
-                                    type="submit" 
-                                    disabled={sendingComment || !newComment.trim()} 
-                                    className="p-3 bg-brand-primary hover:opacity-90 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                                >
-                                    <Send className="w-5 h-5" />
-                                </button>
-                            </form>
-                        </motion.div>
-                    </div>
-
-                    {/* COLOANA DREAPTA: CONTEXT (Sticky) */}
-                    <div className="w-full lg:w-[350px] xl:w-[400px] shrink-0 space-y-6 lg:sticky lg:top-24">
-                        
-                        {/* 1. Actiuni Admin - ACUM CU DROPDOWN CUSTOM */}
-                        {canChangeStatus && (
-                            <motion.div variants={itemVariants} className="bg-brand-primary/10 border border-brand-primary/30 p-6 rounded-3xl">
-                                <h3 className="text-sm font-bold text-brand-primary uppercase tracking-wider mb-4 flex items-center gap-2">
-                                    <Shield className="w-4 h-4" /> Panou Rezolvare
-                                </h3>
-                                <div className="space-y-4">
-                                    
-                                    {/* Meniul de Status Custom */}
-                                    <div className="relative" ref={statusMenuRef}>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)}
-                                            className="w-full bg-brand-card border border-brand-border text-brand-text font-medium rounded-xl px-4 py-3 flex justify-between items-center text-sm uppercase hover:border-brand-primary/50 transition-colors shadow-sm"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${selectedStatus === currentStatus ? 'bg-brand-muted' : 'bg-brand-primary animate-pulse'}`}></div>
-                                                {selectedStatus ? selectedStatus.replace('_', ' ') : 'Selecteaza'}
-                                            </div>
-                                            <ChevronDown className={`w-4 h-4 text-brand-muted transition-transform duration-200 ${isStatusMenuOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-
-                                        <AnimatePresence>
-                                            {isStatusMenuOpen && (
-                                                <motion.div 
-                                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                                    transition={{ duration: 0.15 }}
-                                                    className="absolute z-50 w-full mt-2 bg-brand-card border border-brand-border rounded-xl shadow-xl overflow-hidden"
-                                                >
-                                                    {workflowSteps.map((step) => (
-                                                        <button
-                                                            key={step}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setSelectedStatus(step);
-                                                                setIsStatusMenuOpen(false);
-                                                            }}
-                                                            className={`w-full text-left px-4 py-3 text-sm font-bold uppercase transition-colors hover:bg-brand-primary/10 flex items-center justify-between ${selectedStatus === step ? 'bg-brand-primary/10 text-brand-primary' : 'text-brand-muted hover:text-brand-text'}`}
-                                                        >
-                                                            {step.replace('_', ' ')}
-                                                            {selectedStatus === step && <CheckCircle2 className="w-4 h-4 text-brand-primary" />}
-                                                        </button>
-                                                    ))}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-
-                                    <textarea 
-                                        value={statusComment}
-                                        onChange={(e) => setStatusComment(e.target.value)}
-                                        placeholder="Nota de sistem (obligatoriu)..."
-                                        rows="2"
-                                        className="w-full bg-brand-card border border-brand-border text-brand-text rounded-xl px-4 py-3 outline-none focus:ring-1 focus:ring-brand-primary text-sm resize-none shadow-sm"
-                                    />
-                                    <button 
-                                        onClick={handleStatusChange}
-                                        disabled={isUpdatingStatus || !statusComment.trim() || selectedStatus === currentStatus}
-                                        className="w-full bg-brand-primary text-white font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm shadow-sm flex justify-center items-center gap-2"
-                                    >
-                                        {isUpdatingStatus ? 'Se proceseaza...' : 'Actualizeaza Status'}
-                                    </button>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* 2. Informatii Contextuale */}
-                        <motion.div variants={itemVariants} className="bg-brand-card border border-brand-border p-6 rounded-3xl space-y-6">
-                            <div>
-                                <p className="text-xs text-brand-muted font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <MonitorSmartphone className="w-4 h-4" /> Echipament Afectat
-                                </p>
-                                <p className="text-sm font-semibold text-brand-text bg-brand-bg p-3 rounded-xl border border-brand-border">
-                                    {ticket.assetName || 'Nespecificat'}
-                                </p>
-                            </div>
-                            
-                            <div>
-                                <p className="text-xs text-brand-muted font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <Info className="w-4 h-4" /> Detalii Angajat
-                                </p>
-                                <div className="bg-brand-bg p-4 rounded-xl border border-brand-border space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-brand-muted">Departament</span>
-                                        <span className="text-sm font-semibold text-brand-text">{ticket.authorDepartment || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-brand-muted">Rol Sistem</span>
-                                        <span className="px-2 py-0.5 bg-brand-card border border-brand-border text-brand-text text-[10px] font-bold rounded uppercase">{ticket.authorRole || 'USER'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-brand-muted">Prioritate initiala</span>
-                                        <span className="text-sm font-bold text-brand-text">{ticket.priority || 'MEDIUM'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* 3. Workflow Stepper Minimalist */}
-                        <motion.div variants={itemVariants} className="bg-brand-card border border-brand-border p-6 rounded-3xl">
-                            <p className="text-xs text-brand-muted font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
-                                <Activity className="w-4 h-4" /> Parcurs Tichet
-                            </p>
-                            <div className="relative pl-3 space-y-6 before:absolute before:inset-0 before:ml-[1.1rem] before:w-px before:bg-brand-border before:z-0">
+                        <div className="mt-8 pt-8 border-t border-brand-border/40">
+                            <div className="flex justify-between items-center relative before:absolute before:top-1/2 before:-translate-y-1/2 before:left-0 before:w-full before:h-1 before:bg-brand-border/40 before:rounded-full before:-z-10">
+                                <div className="absolute top-1/2 -translate-y-1/2 left-0 h-1 bg-brand-primary rounded-full -z-10 transition-all duration-700" style={{ width: `${(currentIndex / (workflowSteps.length - 1)) * 100}%` }}></div>
+                                
                                 {workflowSteps.map((step, idx) => {
-                                    const currentIndex = workflowSteps.indexOf(currentStatus);
-                                    const isCompleted = idx <= currentIndex;
+                                    const isActive = idx <= currentIndex;
                                     const isCurrent = idx === currentIndex;
-                                    
                                     return (
-                                        <div key={step} className="relative flex items-center gap-4">
-                                            <div className={`z-10 w-3 h-3 rounded-full shrink-0 transition-colors duration-300 ${isCompleted ? 'bg-brand-primary shadow-[0_0_8px_rgba(var(--brand-primary-rgb),0.4)]' : 'bg-brand-bg border border-brand-border'} ${isCurrent ? 'ring-4 ring-brand-primary/20' : ''}`}></div>
-                                            <p className={`text-xs font-bold ${isCurrent ? 'text-brand-primary' : isCompleted ? 'text-brand-text' : 'text-brand-muted'}`}>{step.replace('_', ' ')}</p>
+                                        <div key={step} className="flex flex-col items-center gap-3 bg-brand-card px-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${isActive ? 'border-brand-primary bg-brand-card shadow-[0_0_15px_rgba(var(--brand-primary-rgb),0.3)]' : 'border-brand-border bg-brand-bg'}`}>
+                                                {idx < currentIndex ? <CheckCircle2 className="w-5 h-5 text-brand-primary"/> : <div className={`w-2.5 h-2.5 rounded-full ${isCurrent ? 'bg-brand-primary animate-pulse' : 'bg-brand-muted/30'}`}></div>}
+                                            </div>
+                                            <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${isActive ? 'text-brand-text' : 'text-brand-muted opacity-50'}`}>{step.replace('_', ' ')}</span>
                                         </div>
                                     );
                                 })}
                             </div>
-                        </motion.div>
-
+                        </div>
                     </div>
                 </motion.div>
-            </div>
+
+                <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-brand-card border border-brand-border/60 p-6 rounded-[2rem] shadow-lg flex items-center gap-5 hover:border-brand-primary/30 transition-colors">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-primary/10 flex items-center justify-center shrink-0">
+                            <MonitorSmartphone className="w-6 h-6 text-brand-primary"/>
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-0.5">Echipament Afectat</span>
+                            <span className="text-base font-bold truncate">{ticket.assetName || 'Nespecificat'}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-brand-card border border-brand-border/60 p-6 rounded-[2rem] shadow-lg flex items-center gap-5 hover:border-brand-primary/30 transition-colors">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-primary/10 flex items-center justify-center shrink-0">
+                            <User className="w-6 h-6 text-brand-primary"/>
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-0.5">Initiator • {ticket.authorDepartment}</span>
+                            <span className="text-base font-bold truncate">{ticket.authorName}</span>
+                        </div>
+                    </div>
+
+                    {canChangeStatus ? (
+                        <div className="bg-brand-card border-2 border-brand-primary/20 p-6 rounded-[2rem] shadow-lg shadow-brand-primary/5 flex flex-col justify-center gap-3">
+                            <div className="relative" ref={statusMenuRef}>
+                                <button onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)} className="w-full bg-brand-bg border border-brand-border hover:border-brand-primary/50 text-brand-text font-bold rounded-xl px-4 py-3 flex justify-between items-center text-sm uppercase transition-all">
+                                    {selectedStatus ? selectedStatus.replace('_', ' ') : 'Selecteaza status'}
+                                    <ChevronDown className={`w-4 h-4 text-brand-primary transition-transform ${isStatusMenuOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                <AnimatePresence>
+                                    {isStatusMenuOpen && (
+                                        <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-10}} className="absolute z-50 w-full mt-2 bg-brand-card border border-brand-border rounded-xl shadow-xl overflow-hidden py-1">
+                                            {workflowSteps.map((step) => (
+                                                <button key={step} onClick={() => {setSelectedStatus(step); setIsStatusMenuOpen(false);}} className="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-brand-primary/10 hover:text-brand-primary transition-colors">
+                                                    {step.replace('_', ' ')}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <div className="flex gap-2">
+                                <input value={statusComment} onChange={(e) => setStatusComment(e.target.value)} placeholder="Motiv..." className="flex-1 bg-brand-bg border border-brand-border rounded-xl px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-brand-primary transition-all"/>
+                                <button onClick={handleStatusChange} disabled={isUpdatingStatus || !statusComment.trim() || selectedStatus === currentStatus} className="bg-brand-primary text-white px-4 rounded-xl disabled:opacity-40 disabled:grayscale transition-all hover:scale-105 active:scale-95"><CheckCircle2 className="w-5 h-5"/></button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-brand-bg border border-brand-border/60 p-6 rounded-[2rem] flex flex-col items-center justify-center text-brand-muted opacity-60">
+                            <Shield className="w-6 h-6 mb-2"/>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Acces Restrictionat</span>
+                        </div>
+                    )}
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[600px]">
+                    
+                    <div className="bg-brand-card border border-brand-border/60 rounded-[2.5rem] p-8 md:p-10 flex flex-col shadow-xl">
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="p-2.5 bg-brand-primary/10 rounded-xl"><Info className="w-5 h-5 text-brand-primary"/></div>
+                            <h3 className="text-xl font-bold">Detalii Problema</h3>
+                        </div>
+                        <div className="flex-1 prose prose-sm md:prose-base prose-invert overflow-y-auto pr-4 custom-scrollbar">
+                            <p className="whitespace-pre-wrap leading-relaxed text-brand-text opacity-90">{ticket.description}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-brand-card border border-brand-border/60 rounded-[2.5rem] p-6 md:p-8 flex flex-col shadow-xl">
+                        <div className="flex items-center gap-3 mb-6 px-2">
+                            <div className="p-2.5 bg-brand-primary/10 rounded-xl"><MessageSquare className="w-5 h-5 text-brand-primary"/></div>
+                            <h3 className="text-xl font-bold">Discutie</h3>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-6 mb-6 px-2 custom-scrollbar">
+                            {comments.map((c, i) => (
+                                <div key={i} className={`flex gap-3 max-w-[85%] ${c.isMine || c.authorName === 'Eu' ? 'ml-auto flex-row-reverse' : ''}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ${c.isMine || c.authorName === 'Eu' ? 'bg-brand-primary text-white' : 'bg-brand-bg border border-brand-border text-brand-text'}`}>{getInitials(c.authorName)}</div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className={`flex items-center gap-2 ${c.isMine || c.authorName === 'Eu' ? 'justify-end' : ''}`}>
+                                            <span className="text-[11px] font-bold opacity-70">{c.authorName}</span>
+                                            <span className="text-[9px] font-bold opacity-40">{new Date(c.createdAt).toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'})}</span>
+                                        </div>
+                                        <div className={`p-4 text-sm leading-relaxed shadow-sm ${c.isMine || c.authorName === 'Eu' ? 'bg-brand-primary text-white rounded-2xl rounded-tr-sm' : 'bg-brand-bg border border-brand-border rounded-2xl rounded-tl-sm'}`}>
+                                            <p className="whitespace-pre-wrap m-0">{c.message}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <form onSubmit={handleSendComment} className="shrink-0 flex gap-2 bg-brand-bg p-2 rounded-3xl border border-brand-border focus-within:ring-2 focus-within:ring-brand-primary/30 transition-all">
+                            <input value={newComment} onChange={(e)=>setNewComment(e.target.value)} className="flex-1 bg-transparent px-5 py-3 outline-none text-sm placeholder:text-brand-muted" placeholder="Scrie un raspuns..."/>
+                            <button type="submit" disabled={sendingComment || !newComment} className="bg-brand-primary text-white p-3.5 rounded-2xl disabled:opacity-40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-md"><Send className="w-4 h-4"/></button>
+                        </form>
+                    </div>
+                </motion.div>
+
+            </motion.div>
         </div>
     );
 }
