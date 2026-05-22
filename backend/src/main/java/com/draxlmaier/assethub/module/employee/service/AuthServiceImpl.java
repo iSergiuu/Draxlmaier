@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -25,21 +27,28 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponseDTO register(RegisterRequestDTO request) {
+        // 1. Căutăm contul după codul DRX generat anterior
         Employee employee = employeeRepository.findByEmployeeNumber(request.employeeNumber())
                 .orElseThrow(() -> new BusinessException("Numărul de angajat " + request.employeeNumber() + " nu a fost găsit!"));
 
-        if (employee.getPasswordHash() != null) {
-            throw new BusinessException("Acest angajat are deja un cont creat!");
+        // 2. Verificăm dacă a fost deja finalizat contul
+        if (employee.getIsActive()) {
+            throw new BusinessException("Acest angajat are deja contul activat și finalizat!");
         }
 
-        if (employeeRepository.existsByEmail(request.email())) {
+        // 3. Ne asigurăm că email-ul nou introdus nu este folosit deja de ALT utilizator
+        Optional<Employee> existingEmail = employeeRepository.findByEmail(request.email());
+        if (existingEmail.isPresent() && !existingEmail.get().getId().equals(employee.getId())) {
             throw new BusinessException("Email-ul " + request.email() + " este deja utilizat!");
         }
 
+        // 4. Suprascriem datele temporare ("Test", "temp_...", etc.) cu datele reale introduse
         employee.setFirstName(request.firstName());
         employee.setLastName(request.lastName());
         employee.setEmail(request.email());
         employee.setPasswordHash(passwordEncoder.encode(request.password()));
+
+        // 5. Activăm oficial contul
         employee.setIsActive(true);
 
         employeeRepository.save(employee);
@@ -58,8 +67,13 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("Email sau parolă incorectă!");
         }
 
+        // Dacă contul e inactiv, verificăm dacă e un cont temporar
         if (!employee.getIsActive()) {
-            throw new BusinessException("Contul dumneavoastră este dezactivat!");
+            // Dacă email-ul NU este cel generat temporar, înseamnă că e un cont real care a fost suspendat/dezactivat
+            if (!employee.getEmail().startsWith("temp_")) {
+                throw new BusinessException("Contul dumneavoastră este dezactivat!");
+            }
+            // Dacă începe cu "temp_", îl lăsăm să treacă pentru ca React-ul să-l redirecționeze la /register
         }
 
         String token = jwtUtil.generateToken(employee.getEmail());
