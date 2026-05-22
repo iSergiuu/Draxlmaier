@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, LayoutDashboard, LogOut, ShieldAlert, ClipboardList, Bell, Check, MessageSquare, AlertTriangle } from 'lucide-react';
 import SockJS from 'sockjs-client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Client } from '@stomp/stompjs';
 
 export default function UserMenu() {
@@ -146,7 +147,6 @@ export default function UserMenu() {
     return (
         <div className="flex items-center gap-2">
             
-            {/* ================= CLOPOTEL NOTIFICARI ================= */}
             <div className="relative" ref={notifRef}>
                 <button 
                     onClick={() => { setIsNotifOpen(!isNotifOpen); closeMenu(); }}
@@ -160,50 +160,58 @@ export default function UserMenu() {
                     )}
                 </button>
 
-                {isNotifOpen && (
-                    <div className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="p-3 border-b border-brand-border bg-brand-bg flex justify-between items-center">
-                            <span className="font-bold text-brand-text text-sm">Notificari</span>
-                            {unreadCount > 0 && <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">{unreadCount} noi</span>}
-                        </div>
-                        
-                        <div className="max-h-80 overflow-y-auto divide-y divide-brand-border">
-                            {notifications.length === 0 ? (
-                                <p className="text-sm text-brand-muted text-center py-6">Nu ai notificari momentan.</p>
-                            ) : (
-                                notifications.map((notif) => (
-                                    <div 
-                                        key={notif.id} 
-                                        onClick={() => handleNotifClick(notif)}
-                                        className={`p-3 text-left transition-colors cursor-pointer flex gap-3 items-start ${notif.read ? 'hover:bg-black/5 opacity-70' : 'bg-brand-primary/5 hover:bg-brand-primary/10'}`}
-                                    >
-                                        <div className="mt-1 text-brand-primary">
-                                            {notif.title.toLowerCase().includes('comentariu') || notif.title.toLowerCase().includes('raspuns') 
-                                                ? <MessageSquare className="w-4 h-4" /> 
-                                                : <AlertTriangle className="w-4 h-4" />}
+                <AnimatePresence>
+                    {isNotifOpen && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: -15, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden"
+                        >
+                            <div className="p-3 border-b border-brand-border bg-brand-bg flex justify-between items-center">
+                                <span className="font-bold text-brand-text text-sm">Notificari</span>
+                                {unreadCount > 0 && <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">{unreadCount} noi</span>}
+                            </div>
+                            
+                            <div className="max-h-80 overflow-y-auto divide-y divide-brand-border">
+                                {notifications.length === 0 ? (
+                                    <p className="text-sm text-brand-muted text-center py-6">Nu ai notificari momentan.</p>
+                                ) : (
+                                    notifications.map((notif) => (
+                                        <div 
+                                            key={notif.id} 
+                                            onClick={() => handleNotifClick(notif)}
+                                            className={`p-3 text-left transition-colors cursor-pointer flex gap-3 items-start ${notif.read ? 'hover:bg-black/5 opacity-70' : 'bg-brand-primary/5 hover:bg-brand-primary/10'}`}
+                                        >
+                                            <div className="mt-1 text-brand-primary">
+                                                {notif.title.toLowerCase().includes('comentariu') || notif.title.toLowerCase().includes('raspuns') 
+                                                    ? <MessageSquare className="w-4 h-4" /> 
+                                                    : <AlertTriangle className="w-4 h-4" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`text-xs font-bold text-brand-text truncate ${notif.read ? '' : 'text-brand-primary'}`}>{notif.title}</p>
+                                                <p className="text-xs text-brand-muted mt-0.5 line-clamp-2">{notif.message}</p>
+                                                <span className="text-[10px] text-brand-muted block mt-1">
+                                                    {new Date(notif.createdAt).toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}
+                                                </span>
+                                            </div>
+                                            {!notif.read && (
+                                                <button 
+                                                    onClick={(e) => handleMarkAsRead(notif.id, e)}
+                                                    className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors mt-1"
+                                                    title="Marcheaza ca citit"
+                                                >
+                                                    <Check className="w-3 h-3" />
+                                                </button>
+                                            )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-xs font-bold text-brand-text truncate ${notif.read ? '' : 'text-brand-primary'}`}>{notif.title}</p>
-                                            <p className="text-xs text-brand-muted mt-0.5 line-clamp-2">{notif.message}</p>
-                                            <span className="text-[10px] text-brand-muted block mt-1">
-                                                {new Date(notif.createdAt).toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}
-                                            </span>
-                                        </div>
-                                        {!notif.read && (
-                                            <button 
-                                                onClick={(e) => handleMarkAsRead(notif.id, e)}
-                                                className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors mt-1"
-                                                title="Marcheaza ca citit"
-                                            >
-                                                <Check className="w-3 h-3" />
-                                            </button>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
+                                    ))
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* ================= MENIUL ORIGINAL (HOVER/PIN) ================= */}
@@ -222,61 +230,69 @@ export default function UserMenu() {
                     </svg>
                 </button>
 
-                {isOpen && (
-                    <div className="absolute right-0 top-10 pt-2 z-50">
-                        <div className="w-64 bg-brand-card border border-brand-border rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="py-2">
-                                <div className="px-4 py-3 text-xs font-semibold text-brand-muted uppercase tracking-wider border-b border-brand-border mb-1 bg-brand-bg/50">
-                                    Conectat ca: <span className="block text-brand-text truncate mt-1">{adminEmail}</span>
-                                </div>
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: -15, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute right-0 top-10 pt-2 z-50"
+                        >
+                            <div className="w-64 bg-brand-card border border-brand-border rounded-xl shadow-lg overflow-hidden">
+                                <div className="py-2">
+                                    <div className="px-4 py-3 text-xs font-semibold text-brand-muted uppercase tracking-wider border-b border-brand-border mb-1 bg-brand-bg/50">
+                                        Conectat ca: <span className="block text-brand-text truncate mt-1">{adminEmail}</span>
+                                    </div>
 
-                                <button
-                                    onClick={() => handleNavigate('/profile')}
-                                    className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center"
-                                >
-                                    <Users className="w-4 h-4 mr-3 text-brand-muted" />
-                                    Profilul Meu
-                                </button>
-
-                                <button
-                                    onClick={() => handleNavigate('/dashboard')}
-                                    className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center"
-                                >
-                                    <LayoutDashboard className="w-4 h-4 mr-3 text-brand-muted" />
-                                    Asset-urile Mele
-                                </button>
-
-                                <button
-                                    onClick={() => handleNavigate('/complaints')}
-                                    className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center"
-                                >
-                                    <ClipboardList className="w-4 h-4 mr-3 text-brand-primary" />
-                                    Problemele Mele
-                                </button>
-
-                                {isAdmin && (
                                     <button
-                                        onClick={() => handleNavigate('/admin')}
-                                        className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
+                                        onClick={() => handleNavigate('/profile')}
+                                        className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center"
                                     >
-                                        <ShieldAlert className="w-4 h-4 mr-3" />
-                                        Panou Administrator
+                                        <Users className="w-4 h-4 mr-3 text-brand-muted" />
+                                        Profilul Meu
                                     </button>
-                                )}
 
-                                <div className="border-t border-brand-border my-1"></div>
+                                    <button
+                                        onClick={() => handleNavigate('/dashboard')}
+                                        className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center"
+                                    >
+                                        <LayoutDashboard className="w-4 h-4 mr-3 text-brand-muted" />
+                                        Asset-urile Mele
+                                    </button>
 
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full text-left px-4 py-2.5 text-red-500 hover:bg-red-500/10 font-medium transition-colors flex items-center"
-                                >
-                                    <LogOut className="w-4 h-4 mr-3" />
-                                    Deconectare
-                                </button>
+                                    <button
+                                        onClick={() => handleNavigate('/complaints')}
+                                        className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-black/5 font-medium transition-colors flex items-center"
+                                    >
+                                        <ClipboardList className="w-4 h-4 mr-3 text-brand-primary" />
+                                        Problemele Mele
+                                    </button>
+
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleNavigate('/admin')}
+                                            className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
+                                        >
+                                            <ShieldAlert className="w-4 h-4 mr-3" />
+                                            Panou Administrator
+                                        </button>
+                                    )}
+
+                                    <div className="border-t border-brand-border my-1"></div>
+
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full text-left px-4 py-2.5 text-red-500 hover:bg-red-500/10 font-medium transition-colors flex items-center"
+                                    >
+                                        <LogOut className="w-4 h-4 mr-3" />
+                                        Deconectare
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
