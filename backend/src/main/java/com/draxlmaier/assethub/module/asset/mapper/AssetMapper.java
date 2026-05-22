@@ -19,7 +19,7 @@ public class AssetMapper {
                 .assignedToId(asset.getAssignedTo() != null ? asset.getAssignedTo().getId() : null)
                 .assignedToName(asset.getAssignedTo() != null ?
                         asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName() : "Neatribuit")
-                .assignedToEmail(asset.getAssignedTo() != null ? asset.getAssignedTo().getEmail() : "Neatribuit") // Setăm email-ul aici
+                .assignedToEmail(asset.getAssignedTo() != null ? asset.getAssignedTo().getEmail() : "Neatribuit")
                 .createdAt(asset.getCreatedAt())
                 .updatedAt(asset.getUpdatedAt())
                 .build();
