@@ -47,4 +47,10 @@ public class EmployeeController {
             @RequestParam int count) {
         return ResponseEntity.ok(employeeService.generateEmployeeCodes(departmentId, count));
     }
+
+    @DeleteMapping("/temporary-accounts")
+    public ResponseEntity<Void> deleteAllTemporaryAccounts() {
+        employeeService.deleteAllTemporaryAccounts();
+        return ResponseEntity.noContent().build(); // 204 No Content este standard pentru un DELETE de succes
+    }
 }

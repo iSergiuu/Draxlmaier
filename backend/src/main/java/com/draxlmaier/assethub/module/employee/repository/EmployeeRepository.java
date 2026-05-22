@@ -18,4 +18,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     boolean existsByEmail(String email);
 
     List<Employee> findAllByRoleCode(String roleCode);
+
+    List<Employee> findByIsActiveFalseAndEmailStartingWith(String emailPrefix);
 }

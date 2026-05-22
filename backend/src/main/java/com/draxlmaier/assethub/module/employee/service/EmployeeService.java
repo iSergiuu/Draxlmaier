@@ -14,4 +14,6 @@ public interface EmployeeService {
     EmployeeResponseDTO toggleEmployeeStatus(UUID id);
 
     List<EmployeeResponseDTO> generateEmployeeCodes(UUID departmentId, int count);
+
+    void deleteAllTemporaryAccounts();
 }

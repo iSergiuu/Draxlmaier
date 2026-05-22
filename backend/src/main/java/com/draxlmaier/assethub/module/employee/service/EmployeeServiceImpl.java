@@ -145,4 +145,11 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getCreatedAt()
         );
     }
+
+    @Override
+    @Transactional
+    public void deleteAllTemporaryAccounts() {
+        List<Employee> tempAccounts = employeeRepository.findByIsActiveFalseAndEmailStartingWith("temp_");
+        employeeRepository.deleteAll(tempAccounts);
+    }
 }
