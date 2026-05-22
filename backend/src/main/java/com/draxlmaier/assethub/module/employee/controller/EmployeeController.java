@@ -30,21 +30,21 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.getAllEmployees());
     }
 
-    // Endpoint pentru Editare (Rol / Departament)
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeResponseDTO> updateEmployee(@PathVariable UUID id, @RequestBody EmployeeRequestDTO request) {
         return ResponseEntity.ok(employeeService.updateEmployee(id, request));
     }
 
-    // Endpoint pentru Activare / Dezactivare
     @PatchMapping("/{id}/status")
     public ResponseEntity<EmployeeResponseDTO> toggleEmployeeStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(employeeService.toggleEmployeeStatus(id));
     }
 
-    // Endpoint NOU pentru generarea contului temporar
+    // Endpoint modificat pentru a accepta generarea multiplă de conturi temporare
     @PostMapping("/generate-temp-account")
-    public ResponseEntity<EmployeeResponseDTO> generateTempAccount(@RequestParam UUID departmentId) {
-        return ResponseEntity.ok(employeeService.generateEmployeeCode(departmentId));
+    public ResponseEntity<List<EmployeeResponseDTO>> generateTempAccounts(
+            @RequestParam UUID departmentId,
+            @RequestParam int count) {
+        return ResponseEntity.ok(employeeService.generateEmployeeCodes(departmentId, count));
     }
 }

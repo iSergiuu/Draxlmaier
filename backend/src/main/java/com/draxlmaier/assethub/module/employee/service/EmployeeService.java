@@ -13,5 +13,5 @@ public interface EmployeeService {
     EmployeeResponseDTO updateEmployee(UUID id, EmployeeRequestDTO request);
     EmployeeResponseDTO toggleEmployeeStatus(UUID id);
 
-    EmployeeResponseDTO generateEmployeeCode(UUID departmentId);
+    List<EmployeeResponseDTO> generateEmployeeCodes(UUID departmentId, int count);
 }

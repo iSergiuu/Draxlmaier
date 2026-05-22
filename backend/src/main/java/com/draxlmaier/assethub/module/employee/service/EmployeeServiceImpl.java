@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,40 +51,48 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
-    public EmployeeResponseDTO generateEmployeeCode(UUID departmentId){
-        // Căutăm departamentul trimis ca parametru din frontend
+    public List<EmployeeResponseDTO> generateEmployeeCodes(UUID departmentId, int count) {
+        // 1. Căutăm departamentul o singură dată, înainte de buclă
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new BusinessException("Departamentul specificat nu există!"));
 
-        String uniqueSuffix;
-        String uniqueCode;
-        String tempEmail;
-
-        do {
-            uniqueSuffix = UUID.randomUUID().toString().substring(0,6).toUpperCase();
-            uniqueCode = "DRX-" + uniqueSuffix;
-            tempEmail = "temp_" + uniqueSuffix.toLowerCase() + "@draxlmaier.com";
-        } while (employeeRepository.findByEmployeeNumber(uniqueCode).isPresent() ||
-                employeeRepository.findByEmail(tempEmail).isPresent());
-
-        Employee employee = new Employee();
-        employee.setEmployeeNumber(uniqueCode);
-
-        employee.setFirstName("Test");
-        employee.setLastName("Test");
-
-        employee.setEmail(tempEmail);
-        employee.setPasswordHash(passwordEncoder.encode("Temp123!"));
-        employee.setIsActive(false);
-
         Role userRole = roleRepository.findByCode("USER")
-                .orElseThrow(() -> new BusinessException("Rolul USER nu a fost gasit in baza de date!"));
-        employee.setRole(userRole);
+                .orElseThrow(() -> new BusinessException("Rolul USER nu a fost găsit în baza de date!"));
 
-        // Atribuim departamentul real găsit în baza de date
-        employee.setDepartment(department);
+        List<EmployeeResponseDTO> createdEmployees = new ArrayList<>();
+        String passwordHash = passwordEncoder.encode("Temp123!");
 
-        return mapToDTO(employeeRepository.save(employee));
+        // 2. Rulăm bucla pentru a genera numărul exact de conturi cerut
+        for (int i = 0; i < count; i++) {
+            String uniqueSuffix;
+            String uniqueCode;
+            String tempEmail;
+
+            // Generăm combinații unice pentru fiecare cont în parte
+            do {
+                uniqueSuffix = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+                uniqueCode = "DRX-" + uniqueSuffix;
+                tempEmail = "temp_" + uniqueSuffix.toLowerCase() + "@draxlmaier.com";
+            } while (employeeRepository.findByEmployeeNumber(uniqueCode).isPresent() ||
+                    employeeRepository.findByEmail(tempEmail).isPresent());
+
+            Employee employee = new Employee();
+            employee.setEmployeeNumber(uniqueCode);
+            employee.setFirstName("Test");
+            employee.setLastName("Test");
+            employee.setEmail(tempEmail);
+            employee.setPasswordHash(passwordHash);
+            employee.setIsActive(false);
+            employee.setRole(userRole);
+            employee.setDepartment(department);
+
+            // Salvăm angajatul și îl adăugăm în lista de răspuns
+            Employee savedEmployee = employeeRepository.save(employee);
+            createdEmployees.add(mapToDTO(savedEmployee));
+        }
+
+        // Returnăm lista cu toate conturile generate
+        return createdEmployees;
     }
 
     @Override
