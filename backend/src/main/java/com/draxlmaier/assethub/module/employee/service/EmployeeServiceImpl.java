@@ -50,7 +50,11 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
-    public EmployeeResponseDTO generateEmployeeCode(){
+    public EmployeeResponseDTO generateEmployeeCode(UUID departmentId){
+        // Căutăm departamentul trimis ca parametru din frontend
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new BusinessException("Departamentul specificat nu există!"));
+
         String uniqueSuffix;
         String uniqueCode;
         String tempEmail;
@@ -65,24 +69,19 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = new Employee();
         employee.setEmployeeNumber(uniqueCode);
 
-        // Completăm câmpurile text obligatorii cu "Test" pentru a fenta baza de date
         employee.setFirstName("Test");
         employee.setLastName("Test");
 
-        // Setăm datele temporare de autentificare
         employee.setEmail(tempEmail);
         employee.setPasswordHash(passwordEncoder.encode("Temp123!"));
         employee.setIsActive(false);
 
-        // Atribuim rolul standard
         Role userRole = roleRepository.findByCode("USER")
                 .orElseThrow(() -> new BusinessException("Rolul USER nu a fost gasit in baza de date!"));
         employee.setRole(userRole);
 
-        // Atribuim primul departament găsit pentru a evita eroarea de NULL pe department_id
-        Department tempDepartment = departmentRepository.findAll().stream().findFirst()
-                .orElseThrow(() -> new BusinessException("Trebuie să existe cel puțin un departament în DB!"));
-        employee.setDepartment(tempDepartment);
+        // Atribuim departamentul real găsit în baza de date
+        employee.setDepartment(department);
 
         return mapToDTO(employeeRepository.save(employee));
     }

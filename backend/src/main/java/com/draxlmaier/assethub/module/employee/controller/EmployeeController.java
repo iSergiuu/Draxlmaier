@@ -44,7 +44,7 @@ public class EmployeeController {
 
     // Endpoint NOU pentru generarea contului temporar
     @PostMapping("/generate-temp-account")
-    public ResponseEntity<EmployeeResponseDTO> generateTempAccount() {
-        return ResponseEntity.ok(employeeService.generateEmployeeCode());
+    public ResponseEntity<EmployeeResponseDTO> generateTempAccount(@RequestParam UUID departmentId) {
+        return ResponseEntity.ok(employeeService.generateEmployeeCode(departmentId));
     }
 }
