@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import { motion } from 'framer-motion';
 import UserMenu from '../components/UserMenu';
 import { Laptop, Smartphone, Monitor, Printer, HardDrive, Cpu, Box, Mouse } from 'lucide-react';
 
 // Aceasta este configurarea centralizata. 
-// Daca vrei sa adaugi un tip nou, doar adaugi un obiect aici.
 const ASSET_ICONS_CONFIG = [
     { keywords: ['laptop', 'macbook', 'thinkpad'], icon: Laptop },
     { keywords: ['phone', 'telefon', 'iphone', 'samsung'], icon: Smartphone },
@@ -15,6 +15,20 @@ const ASSET_ICONS_CONFIG = [
     { keywords: ['storage', 'hdd', 'ssd'], icon: HardDrive },
     { keywords: ['mouse'], icon: Mouse }
 ];
+
+// Variantele de animatie mutate in locul corect, in afara functiei
+const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1 }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export default function Dashboard() {
     const [myAssets, setMyAssets] = useState([]);
@@ -125,7 +139,6 @@ export default function Dashboard() {
         }
     };
 
-    // Functia refactorizata care foloseste configuratia de mai sus
     const getAssetIcon = (asset) => {
         const searchString = `${asset.name || ''} ${asset.category || ''}`.toLowerCase();
         
@@ -179,10 +192,19 @@ export default function Dashboard() {
                         <p className="text-brand-muted">Nu ai niciun asset asignat in acest moment.</p>
                     </div>
                 ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <motion.div 
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="show"
+                        className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+                    >
                         {myAssets.map((asset) => (
-                            <div key={asset.id} className="bg-brand-card p-6 rounded-2xl shadow-sm border border-brand-border transition-colors duration-300 hover:shadow-md hover:border-brand-primary flex flex-col justify-between">
-                                
+                            <motion.div 
+                                key={asset.id} 
+                                variants={itemVariants}
+                                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                                className="bg-brand-card p-6 rounded-2xl shadow-sm border border-brand-border transition-colors duration-300 hover:shadow-md hover:border-brand-primary flex flex-col justify-between"
+                            >
                                 <div className="flex items-start gap-4 mb-4">
                                     <div className="p-3 bg-brand-bg rounded-xl border border-brand-border text-brand-primary shrink-0">
                                         {getAssetIcon(asset)}
@@ -204,9 +226,9 @@ export default function Dashboard() {
                                         Raporteaza
                                     </button>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
                 )}
             </div>
 
