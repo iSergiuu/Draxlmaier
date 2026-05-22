@@ -13,6 +13,7 @@ import com.draxlmaier.assethub.module.complaint.model.ComplaintWorkflow;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintRepository;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintStatusRepository;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintWorkflowRepository;
+import com.draxlmaier.assethub.module.notification.service.NotificationManagerService;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
 import jakarta.persistence.EntityManager;
@@ -33,6 +34,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final ComplaintStatusRepository statusRepository;
     private final AssetRepository assetRepository;
+    private final NotificationManagerService notificationManager;
     private final EmployeeRepository employeeRepository;
     private final ComplaintWorkflowRepository workflowRepository;
     private final ComplaintMapper complaintMapper;
@@ -71,6 +73,9 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint savedComplaint = complaintRepository.save(complaint);
 
         saveWorkflowStep(savedComplaint, author, null, initialStatus, "Tichet deschis automat.");
+
+        String adminMsg = "Angajatul " + author.getFirstName() + " a deschis un tichet nou: " + savedComplaint.getTitle();
+        notificationManager.sendToAllAdmins("Tichet Nou", adminMsg, savedComplaint.getId());
 
         return complaintMapper.toResponseDTO(savedComplaint);
     }
@@ -116,6 +121,11 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint savedComplaint = complaintRepository.save(complaint);
 
         saveWorkflowStep(savedComplaint, currentUser, oldStatus, newStatus, statusDTO.comment());
+
+        if (!savedComplaint.getAuthor().getId().equals(currentUser.getId())) {
+            String userMsg = "Tichetul tau a fost trecut in statusul: " + newStatus.getCode() + ". Motiv: " + statusDTO.comment();
+            notificationManager.sendToUser(savedComplaint.getAuthor(), "Status Tichet Actualizat", userMsg, savedComplaint.getId());
+        }
 
         return complaintMapper.toResponseDTO(savedComplaint);
     }
