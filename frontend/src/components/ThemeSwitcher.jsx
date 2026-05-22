@@ -1,22 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Temele noastre pe coloane
+// Temele noastre pe coloane - Optimizate pentru contrast si aspect Premium SaaS
 const themeColumns = [
     {
-        dark:  { id: 'theme-dark', name: 'Teal Intunecat', primary: '#14b8a6', bgMain: '#0d1117' },
-        light: { id: 'light', name: 'Teal Luminos', primary: '#0d9488', bgMain: '#f9fafb' }
+        // 1. Ocean Teal - Odihnitor, profesional, excelent pentru ecrane mari
+        dark:  { id: 'theme-dark', name: 'Ocean Teal (Dark)', primary: '#14b8a6', bgMain: '#0f172a' }, // Fundal Slate (gri-albastrui)
+        light: { id: 'light', name: 'Ocean Teal (Light)', primary: '#0d9488', bgMain: '#f8fafc' }
     },
     {
-        dark:  { id: 'theme-yellow-dark', name: 'Galben Intunecat', primary: '#facc15', bgMain: '#1c1917' },
-        light: { id: 'theme-yellow-light', name: 'Galben Luminos', primary: '#eab308', bgMain: '#fefce8' }
+        // 2. Royal Indigo - Culoarea clasica a aplicatiilor de top (ex: Stripe)
+        dark:  { id: 'theme-purple-dark', name: 'Royal Indigo (Dark)', primary: '#818cf8', bgMain: '#09090b' }, // Fundal Zinc (foarte inchis)
+        light: { id: 'theme-purple-light', name: 'Royal Indigo (Light)', primary: '#4f46e5', bgMain: '#ffffff' } // Fundal alb pur
     },
     {
-        dark:  { id: 'theme-purple-dark', name: 'Indigo Intunecat', primary: '#818cf8', bgMain: '#1e1b4b' },
-        light: { id: 'theme-purple-light', name: 'Indigo Luminos', primary: '#6366f1', bgMain: '#eef2ff' }
+        // 3. Sunset Amber - O nuanta calda, prietenoasa, inlocuieste galbenul strident
+        dark:  { id: 'theme-yellow-dark', name: 'Sunset Amber (Dark)', primary: '#f97316', bgMain: '#1c1917' }, // Fundal Stone (gri cald)
+        light: { id: 'theme-yellow-light', name: 'Sunset Amber (Light)', primary: '#ea580c', bgMain: '#fffbeb' } // Fundal usor crem
     },
     {
-        dark:  { id: 'theme-drx', name: 'DRX Intunecat', primary: '#e3000f', bgMain: '#241414' },
-        light: { id: 'theme-drx-light', name: 'DRX Luminos', primary: '#e3000f', bgMain: '#fdf2f2' }
+        // 4. Crimson Rose - O alternativa eleganta si moderna la rosul agresiv
+        dark:  { id: 'theme-drx', name: 'Crimson Rose (Dark)', primary: '#f43f5e', bgMain: '#171717' }, // Fundal Neutral
+        light: { id: 'theme-drx-light', name: 'Crimson Rose (Light)', primary: '#e11d48', bgMain: '#fff1f2' } // Fundal cu o tenta extrem de fina de roz
     }
 ];
 
