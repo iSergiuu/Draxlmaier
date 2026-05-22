@@ -11,6 +11,7 @@ import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
 import com.draxlmaier.assethub.module.employee.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final RoleRepository roleRepository;
     private final DepartmentRepository departmentRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public EmployeeResponseDTO getMyProfile() {
@@ -49,19 +51,38 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public EmployeeResponseDTO generateEmployeeCode(){
+        String uniqueSuffix;
         String uniqueCode;
-        do{
-            uniqueCode = "DRX-" + UUID.randomUUID().toString().substring(0,6).toUpperCase();
-        } while (employeeRepository.findByEmployeeNumber(uniqueCode).isPresent());
+        String tempEmail;
+
+        do {
+            uniqueSuffix = UUID.randomUUID().toString().substring(0,6).toUpperCase();
+            uniqueCode = "DRX-" + uniqueSuffix;
+            tempEmail = "temp_" + uniqueSuffix.toLowerCase() + "@draxlmaier.com";
+        } while (employeeRepository.findByEmployeeNumber(uniqueCode).isPresent() ||
+                employeeRepository.findByEmail(tempEmail).isPresent());
 
         Employee employee = new Employee();
         employee.setEmployeeNumber(uniqueCode);
 
+        // Completăm câmpurile text obligatorii cu "Test" pentru a fenta baza de date
+        employee.setFirstName("Test");
+        employee.setLastName("Test");
+
+        // Setăm datele temporare de autentificare
+        employee.setEmail(tempEmail);
+        employee.setPasswordHash(passwordEncoder.encode("Temp123!"));
         employee.setIsActive(false);
 
+        // Atribuim rolul standard
         Role userRole = roleRepository.findByCode("USER")
                 .orElseThrow(() -> new BusinessException("Rolul USER nu a fost gasit in baza de date!"));
         employee.setRole(userRole);
+
+        // Atribuim primul departament găsit pentru a evita eroarea de NULL pe department_id
+        Department tempDepartment = departmentRepository.findAll().stream().findFirst()
+                .orElseThrow(() -> new BusinessException("Trebuie să existe cel puțin un departament în DB!"));
+        employee.setDepartment(tempDepartment);
 
         return mapToDTO(employeeRepository.save(employee));
     }
@@ -72,20 +93,17 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Angajatul nu a fost găsit!"));
 
-        // 1. Actualizăm Rolul (dacă a fost trimis)
         if (request.roleCode() != null && !request.roleCode().isBlank()) {
             Role role = roleRepository.findByCode(request.roleCode())
                     .orElseThrow(() -> new BusinessException("Rolul specificat nu există!"));
             employee.setRole(role);
         }
 
-        // 2. Actualizăm Departamentul (dacă a fost trimis)
         if (request.departmentId() != null) {
             Department department = departmentRepository.findById(request.departmentId())
                     .orElseThrow(() -> new BusinessException("Departamentul specificat nu există!"));
             employee.setDepartment(department);
         } else {
-            // Dacă trimitem null din frontend, înseamnă că îl scoatem din departament
             employee.setDepartment(null);
         }
 
@@ -98,13 +116,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Angajatul nu a fost găsit!"));
 
-        // Inversăm statusul (dacă e true devine false, dacă e false devine true)
         employee.setIsActive(!employee.getIsActive());
 
         return mapToDTO(employeeRepository.save(employee));
     }
 
-    // Metoda privată de mapare (neschimbată)
     private EmployeeResponseDTO mapToDTO(Employee employee) {
         String departmentName = employee.getDepartment() != null ? employee.getDepartment().getName() : "Neatribuit";
         String roleCode = employee.getRole() != null ? employee.getRole().getCode() : "USER";

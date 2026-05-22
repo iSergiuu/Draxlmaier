@@ -19,13 +19,13 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String email;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name")
     private String lastName;
 
     @Column(name = "employee_number", unique = true)
@@ -42,7 +42,7 @@ public class Employee {
     private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     private Department department;
 
     @Column(name = "created_at")

@@ -41,4 +41,10 @@ public class EmployeeController {
     public ResponseEntity<EmployeeResponseDTO> toggleEmployeeStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(employeeService.toggleEmployeeStatus(id));
     }
+
+    // Endpoint NOU pentru generarea contului temporar
+    @PostMapping("/generate-temp-account")
+    public ResponseEntity<EmployeeResponseDTO> generateTempAccount() {
+        return ResponseEntity.ok(employeeService.generateEmployeeCode());
+    }
 }
