@@ -27,13 +27,19 @@ public class AssetController {
         return ResponseEntity.status(HttpStatus.CREATED).body(assetService.createAsset(requestDTO));
     }
 
-    // Oricine este autentificat (USER, DEPT_RESPONSIBLE, ADMIN) poate vedea lista de asset-uri
+    // Oricine este autentificat (USER, DEPT_RESPONSIBLE, ADMIN) poate vedea lista totală de asset-uri (ex: panou de management)
     @GetMapping
     public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
         List<AssetResponseDTO> response = assetService.getAllAssets();
         return ResponseEntity.ok(response);
     }
 
+    // NOU: Endpoint special care returnează doar echipamentele utilizatorului conectat curent
+    @GetMapping("/me")
+    public ResponseEntity<List<AssetResponseDTO>> getMyAssets() {
+        List<AssetResponseDTO> response = assetService.getMyAssets();
+        return ResponseEntity.ok(response);
+    }
 
     // Oricine este autentificat poate vedea detaliile unui asset
     @GetMapping("/{id}")

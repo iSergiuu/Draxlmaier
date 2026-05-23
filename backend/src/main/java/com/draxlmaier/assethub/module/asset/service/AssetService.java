@@ -14,5 +14,5 @@ public interface AssetService {
     AssetResponseDTO updateAsset(UUID id, AssetRequestDTO requestDTO);
     void deleteAsset(UUID id);
     AssetResponseDTO assignAsset(UUID assetId, ClaimAssetRequestDTO requestDTO);
-
+    List<AssetResponseDTO> getMyAssets();
 }
