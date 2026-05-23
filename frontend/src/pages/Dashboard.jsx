@@ -10,7 +10,6 @@ import {
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import UserMenu from '../components/UserMenu';
 
-// ── Configurare icoane ────────────────────────────────────────────────────────
 const ASSET_ICONS_CONFIG = [
     { keywords: ['laptop', 'macbook', 'thinkpad', 'notebook'], icon: Laptop },
     { keywords: ['phone', 'telefon', 'iphone', 'samsung', 'smartphone'], icon: Smartphone },
@@ -23,7 +22,6 @@ const ASSET_ICONS_CONFIG = [
     { keywords: ['casti', 'căști', 'headset', 'headphones', 'audio', 'earphone'], icon: Headphones },
 ];
 
-// ── Animații ──────────────────────────────────────────────────────────────────
 const containerVariants = {
     hidden: { opacity: 0 },
     show:   { opacity: 1, transition: { staggerChildren: 0.07 } },
@@ -33,9 +31,9 @@ const itemVariants = {
     show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
 };
 
-// ── Componenta principală ─────────────────────────────────────────────────────
 export default function Dashboard() {
     const [myAssets, setMyAssets]           = useState([]);
+    const [openTicketsCount, setOpenTicketsCount] = useState(0);
     const [loading, setLoading]             = useState(true);
     const [error, setError]                 = useState(null);
     const [activeFilter, setActiveFilter]   = useState('Toate');
@@ -50,29 +48,47 @@ export default function Dashboard() {
 
     const navigate = useNavigate();
 
-    // ── Fetch ─────────────────────────────────────────────────────────────────
     useEffect(() => {
-        const fetchAssets = async () => {
+        const fetchData = async () => {
             try {
                 const token            = localStorage.getItem('jwt_token') || localStorage.getItem('token');
                 const currentUserEmail = localStorage.getItem('userEmail');
                 if (!token || !currentUserEmail) { navigate('/login'); return; }
 
-                const response = await fetch('http://localhost:8080/api/assets', {
-                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                });
+                const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-                if (response.ok) {
-                    const data     = await response.json();
-                    const filtered = data.filter(a => {
+                const [assetsRes, complaintsRes] = await Promise.all([
+                    fetch('http://localhost:8080/api/assets', { headers }),
+                    fetch('http://localhost:8080/api/complaints/me', { headers })
+                ]);
+
+                if (assetsRes.ok && complaintsRes.ok) {
+                    const assetsData = await assetsRes.json();
+                    const complaintsData = await complaintsRes.json();
+
+                    const activeComplaints = complaintsData.filter(c => {
+                        const s = (c.status || c.statusCode || '').toUpperCase();
+                        return s !== 'RESOLVED' && s !== 'CLOSED' && s !== 'REJECTED';
+                    });
+                    
+                    setOpenTicketsCount(activeComplaints.length);
+
+                    const activeAssetIds = new Set(activeComplaints.map(c => c.assetId));
+
+                    const filteredAssets = assetsData.filter(a => {
                         const email = a.assignedToEmail || a.assigned_to_email || '';
                         return email.toLowerCase() === currentUserEmail.toLowerCase();
-                    });
-                    setMyAssets(filtered);
-                } else if (response.status === 401 || response.status === 403) {
-                    setError(`Eroare de securitate (${response.status}): backend-ul refuză cererea.`);
+                    }).map(a => ({
+                        ...a,
+                        hasActiveTicket: activeAssetIds.has(a.id)
+                    }));
+                    
+                    setMyAssets(filteredAssets);
+
+                } else if (assetsRes.status === 401 || assetsRes.status === 403 || complaintsRes.status === 401 || complaintsRes.status === 403) {
+                    setError(`Eroare de securitate: backend-ul refuză cererea.`);
                 } else {
-                    setError(`Eroare de la server: ${response.status}`);
+                    setError(`Eroare de la server`);
                 }
             } catch (err) {
                 console.error('Eroare de rețea:', err);
@@ -81,10 +97,9 @@ export default function Dashboard() {
                 setLoading(false);
             }
         };
-        fetchAssets();
+        fetchData();
     }, [navigate]);
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
     const handleLogout = () => {
         ['jwt_token', 'token', 'userRole', 'userEmail'].forEach(k => localStorage.removeItem(k));
         navigate('/login');
@@ -145,6 +160,8 @@ export default function Dashboard() {
             if (res.ok) {
                 alert(`Tichet creat cu succes pentru: ${selectedAsset.name}!`);
                 closeReportModal();
+                setOpenTicketsCount(prev => prev + 1);
+                setMyAssets(prev => prev.map(a => a.id === selectedAsset.id ? { ...a, hasActiveTicket: true } : a));
             } else {
                 const errData = await res.json().catch(() => null);
                 alert(`Eroare la creare tichet: ${errData?.message || 'Date invalide'}`);
@@ -157,10 +174,9 @@ export default function Dashboard() {
         }
     };
 
-    const openTickets  = myAssets.filter(a => a.hasActiveTicket || a.has_active_ticket).length;
     const visibleAssets = filterAssets();
+    const functionalAssetsCount = myAssets.filter(a => !a.hasActiveTicket).length;
 
-    // ── Loading ───────────────────────────────────────────────────────────────
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-brand-bg transition-colors duration-300">
             <div className="flex flex-col items-center gap-4">
@@ -170,7 +186,6 @@ export default function Dashboard() {
         </div>
     );
 
-    // ── Error ─────────────────────────────────────────────────────────────────
     if (error) return (
         <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 bg-brand-bg transition-colors duration-300">
             <div className="bg-red-900/20 border border-red-500/30 text-red-400 px-6 py-4 rounded-xl text-sm max-w-md text-center">
@@ -185,15 +200,12 @@ export default function Dashboard() {
         </div>
     );
 
-    // ── UI ────────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-brand-bg transition-colors duration-300">
             <div className="w-full px-6 lg:px-10 py-8 space-y-8">
 
-                {/* ══ Topbar ══════════════════════════════════════════════════ */}
                 <div className="bg-brand-card border border-brand-border rounded-2xl px-6 py-5 flex justify-between items-center shadow-sm transition-colors duration-300">
                     <div className="flex items-center gap-4">
-                        {/* Logo / icon aplicatie */}
                         <div className="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center shrink-0">
                             <Package className="w-5 h-5 text-white" />
                         </div>
@@ -208,9 +220,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* ══ Statistici ══════════════════════════════════════════════ */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Total */}
                     <div className="bg-brand-card border border-brand-border rounded-2xl p-5 flex items-center gap-4 transition-colors duration-300">
                         <div className="w-11 h-11 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-primary shrink-0">
                             <Laptop className="w-5 h-5" />
@@ -221,30 +231,27 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Funcționale */}
                     <div className="bg-brand-card border border-brand-border rounded-2xl p-5 flex items-center gap-4 transition-colors duration-300">
                         <div className="w-11 h-11 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center text-green-500 shrink-0">
                             <CheckCircle className="w-5 h-5" />
                         </div>
                         <div>
                             <p className="text-xs text-brand-muted font-medium uppercase tracking-wide">Funcționale</p>
-                            <p className="text-2xl font-bold text-brand-text leading-tight">{myAssets.length - openTickets}</p>
+                            <p className="text-2xl font-bold text-brand-text leading-tight">{functionalAssetsCount}</p>
                         </div>
                     </div>
 
-                    {/* Tichete */}
                     <div className="bg-brand-card border border-brand-border rounded-2xl p-5 flex items-center gap-4 transition-colors duration-300">
                         <div className="w-11 h-11 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center text-amber-500 shrink-0">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>
                             <p className="text-xs text-brand-muted font-medium uppercase tracking-wide">Tichete deschise</p>
-                            <p className="text-2xl font-bold text-brand-text leading-tight">{openTickets}</p>
+                            <p className="text-2xl font-bold text-brand-text leading-tight">{openTicketsCount}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* ══ Inventar ════════════════════════════════════════════════ */}
                 {myAssets.length === 0 ? (
                     <div className="bg-brand-card border border-brand-border rounded-2xl p-12 text-center transition-colors duration-300">
                         <Box className="w-10 h-10 text-brand-muted mx-auto mb-3 opacity-40" />
@@ -252,7 +259,6 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     <>
-                        {/* Sub-header cu filtre */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <h2 className="text-sm font-semibold text-brand-text">
                                 Inventar
@@ -277,7 +283,6 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Grid carduri */}
                         <motion.div
                             variants={containerVariants}
                             initial="hidden"
@@ -285,7 +290,7 @@ export default function Dashboard() {
                             className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
                         >
                             {visibleAssets.map((asset) => {
-                                const hasTicket = asset.hasActiveTicket || asset.has_active_ticket;
+                                const hasTicket = asset.hasActiveTicket;
                                 return (
                                     <motion.div
                                         key={asset.id}
@@ -297,9 +302,7 @@ export default function Dashboard() {
                                                 : 'border-brand-border hover:border-brand-primary'
                                         }`}
                                     >
-                                        {/* Corpo card */}
                                         <div className="p-5 flex items-start gap-4 flex-1">
-                                            {/* Icoană echipament */}
                                             <div className="p-2.5 bg-brand-bg rounded-xl border border-brand-border text-brand-primary shrink-0">
                                                 {getAssetIcon(asset)}
                                             </div>
@@ -313,15 +316,14 @@ export default function Dashboard() {
                                             </div>
                                         </div>
 
-                                        {/* Footer card */}
                                         <div className="px-5 pb-5 pt-4 flex items-center justify-between border-t border-brand-border mt-auto">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-[10px] font-mono text-brand-muted bg-brand-bg border border-brand-border rounded-md px-2 py-0.5 w-fit">
                                                     SN: {asset.serialNumber || asset.serial_number || 'N/A'}
                                                 </span>
                                                 <span className="flex items-center gap-1.5 mt-1">
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${hasTicket ? 'bg-amber-400' : 'bg-green-500'}`} />
-                                                    <span className="text-[11px] text-brand-muted">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${hasTicket ? 'bg-amber-400 animate-pulse' : 'bg-green-500'}`} />
+                                                    <span className="text-[11px] text-brand-muted font-bold uppercase tracking-wider">
                                                         {hasTicket ? 'Tichet activ' : 'Funcțional'}
                                                     </span>
                                                 </span>
@@ -342,10 +344,8 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {/* ══ Modal sesizare ══════════════════════════════════════════════ */}
             {isModalOpen && selectedAsset && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Overlay */}
                     <div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={closeReportModal}
@@ -358,7 +358,6 @@ export default function Dashboard() {
                         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                         className="relative bg-brand-card border border-brand-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
                     >
-                        {/* Header modal */}
                         <div className="bg-brand-primary px-6 py-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -377,7 +376,6 @@ export default function Dashboard() {
                             </button>
                         </div>
 
-                        {/* Echipament afectat */}
                         <div className="px-6 py-3 border-b border-brand-border bg-brand-bg flex items-center gap-3 transition-colors duration-300">
                             <div className="p-2 bg-brand-card rounded-lg border border-brand-border text-brand-primary">
                                 {getAssetIcon(selectedAsset)}
@@ -388,10 +386,8 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* Formular */}
                         <form onSubmit={handleSubmitComplaint} className="p-6 space-y-5">
 
-                            {/* Subiect */}
                             <div>
                                 <label className="block text-xs font-semibold text-brand-muted mb-1.5 uppercase tracking-wide">
                                     Subiectul problemei
@@ -406,7 +402,6 @@ export default function Dashboard() {
                                 />
                             </div>
 
-                            {/* Prioritate */}
                             <div>
                                 <label className="block text-xs font-semibold text-brand-muted mb-2 uppercase tracking-wide">
                                     Nivel de urgență
@@ -434,7 +429,6 @@ export default function Dashboard() {
                                 </div>
                             </div>
 
-                            {/* Descriere */}
                             <div>
                                 <label className="block text-xs font-semibold text-brand-muted mb-1.5 uppercase tracking-wide">
                                     Descriere detaliată
@@ -449,7 +443,6 @@ export default function Dashboard() {
                                 />
                             </div>
 
-                            {/* Acțiuni */}
                             <div className="flex justify-end gap-3 pt-2 border-t border-brand-border">
                                 <button
                                     type="button"
