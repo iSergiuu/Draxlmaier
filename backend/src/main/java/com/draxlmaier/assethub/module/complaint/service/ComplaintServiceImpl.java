@@ -74,8 +74,9 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         saveWorkflowStep(savedComplaint, author, null, initialStatus, "Tichet deschis automat.");
 
-        String adminMsg = "Angajatul " + author.getFirstName() + " a deschis un tichet nou: " + savedComplaint.getTitle();
-        notificationManager.sendToAllAdmins("Tichet Nou", adminMsg, savedComplaint.getId());
+        // MODIFICARE AICI: Trimitem mesajul de confirmare către autorul tichetului, nu către admini
+        String userMsg = "Tichetul tău '" + savedComplaint.getTitle() + "' a fost înregistrat cu succes. Te vom notifica pe parcurs ce acesta va fi procesat.";
+        notificationManager.sendToUser(author, "Confirmare Creare Tichet", userMsg, savedComplaint.getId());
 
         return complaintMapper.toResponseDTO(savedComplaint);
     }
@@ -122,8 +123,9 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         saveWorkflowStep(savedComplaint, currentUser, oldStatus, newStatus, statusDTO.comment());
 
+        // Logica existentă: Dacă un admin/altcineva schimbă statusul, autorul primește email
         if (!savedComplaint.getAuthor().getId().equals(currentUser.getId())) {
-            String userMsg = "Tichetul tau a fost trecut in statusul: " + newStatus.getCode() + ". Motiv: " + statusDTO.comment();
+            String userMsg = "Tichetul tău a fost trecut în statusul: " + newStatus.getCode() + ". Motiv: " + statusDTO.comment();
             notificationManager.sendToUser(savedComplaint.getAuthor(), "Status Tichet Actualizat", userMsg, savedComplaint.getId());
         }
 
@@ -144,7 +146,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     }
 
     @Override
-    public List<ComplaintResponseDTO> getMyComplaints(){
+    public List<ComplaintResponseDTO> getMyComplaints() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         return complaintRepository.findAllByAuthorEmail(email).stream()
