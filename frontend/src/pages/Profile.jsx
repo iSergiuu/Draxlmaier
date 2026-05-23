@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Hash, Building2, Calendar, Ticket, CheckCircle, Clock, ArrowLeft, Package } from 'lucide-react';
+import { Mail, Hash, Building2, Calendar, Ticket, CheckCircle, Clock, ArrowLeft, Package, Eye, EyeOff } from 'lucide-react';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import UserMenu from '../components/UserMenu';
 
@@ -9,6 +9,7 @@ export default function Profile() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showEmployeeNumber, setShowEmployeeNumber] = useState(false);
 
     const [user, setUser] = useState({
         firstName: '',
@@ -177,17 +178,32 @@ export default function Profile() {
 
                             <div className="space-y-3.5">
                                 {[
-                                    { icon: Mail,      label: 'Email',          value: user.email },
-                                    { icon: Hash,      label: 'Cod de securitate',  value: user.employeeNumber },
-                                    { icon: Calendar,  label: 'Membru din',     value: user.joinedAt },
-                                ].map(({ icon: Icon, label, value }) => (
+                                    { icon: Mail,      label: 'Email',             value: user.email },
+                                    { icon: Hash,      label: 'Cod de securitate', value: user.employeeNumber, isSecret: true },
+                                    { icon: Calendar,  label: 'Membru din',        value: user.joinedAt },
+                                ].map(({ icon: Icon, label, value, isSecret }) => (
                                     <div key={label} className="flex items-start gap-3">
                                         <div className="w-7 h-7 rounded-lg bg-brand-bg border border-brand-border flex items-center justify-center shrink-0 mt-0.5">
                                             <Icon className="w-3.5 h-3.5 text-brand-primary" />
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold">{label}</p>
-                                            <p className="text-sm font-medium text-brand-text mt-0.5">{value}</p>
+                                        <div className="flex-1 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold">{label}</p>
+                                                <p className="text-sm font-medium text-brand-text mt-0.5 font-mono">
+                                                    {isSecret && !showEmployeeNumber 
+                                                        ? '••••••••' 
+                                                        : value}
+                                                </p>
+                                            </div>
+                                            {isSecret && (
+                                                <button 
+                                                    onClick={() => setShowEmployeeNumber(!showEmployeeNumber)}
+                                                    className="p-1.5 text-brand-muted hover:text-brand-primary transition-colors focus:outline-none"
+                                                    title={showEmployeeNumber ? "Ascunde" : "Arată"}
+                                                >
+                                                    {showEmployeeNumber ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -237,10 +253,10 @@ export default function Profile() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-brand-border rounded-xl overflow-hidden border border-brand-border">
                                 {[
                                     { label: 'Email instituțional', value: user.email,          icon: Mail },
-                                    { label: 'Cod de securitate',       value: user.employeeNumber,  icon: Hash },
+                                    { label: 'Cod de securitate',   value: user.employeeNumber, icon: Hash, isSecret: true },
                                     { label: 'Departament',         value: user.department,      icon: Building2 },
                                     { label: 'Dată angajare',       value: user.joinedAt,        icon: Calendar },
-                                ].map(({ label, value, icon: Icon }) => (
+                                ].map(({ label, value, icon: Icon, isSecret }) => (
                                     <div
                                         key={label}
                                         className="bg-brand-card px-5 py-4 flex items-center gap-4 transition-colors duration-300"
@@ -248,9 +264,24 @@ export default function Profile() {
                                         <div className="w-8 h-8 rounded-lg bg-brand-bg border border-brand-border flex items-center justify-center shrink-0">
                                             <Icon className="w-4 h-4 text-brand-primary" />
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold">{label}</p>
-                                            <p className="text-sm font-medium text-brand-text mt-0.5">{value}</p>
+                                        <div className="flex-1 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold">{label}</p>
+                                                <p className="text-sm font-medium text-brand-text mt-0.5 font-mono">
+                                                    {isSecret && !showEmployeeNumber 
+                                                        ? '••••••••' 
+                                                        : value}
+                                                </p>
+                                            </div>
+                                            {isSecret && (
+                                                <button 
+                                                    onClick={() => setShowEmployeeNumber(!showEmployeeNumber)}
+                                                    className="p-1.5 text-brand-muted hover:text-brand-primary transition-colors focus:outline-none"
+                                                    title={showEmployeeNumber ? "Ascunde" : "Arată"}
+                                                >
+                                                    {showEmployeeNumber ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -287,7 +318,7 @@ export default function Profile() {
                                         <p className="text-xs text-brand-muted mt-0.5">Vezi istoricul complet în problemele mele</p>
                                     </div>
                                     <button
-                                        onClick={() => navigate('//complaints')}
+                                        onClick={() => navigate('/complaints')}
                                         className="ml-auto text-xs font-semibold text-brand-primary hover:opacity-70 transition-opacity shrink-0"
                                     >
                                         Mergi →
