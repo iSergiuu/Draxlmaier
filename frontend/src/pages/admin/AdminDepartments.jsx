@@ -1,85 +1,284 @@
-import React, { useState, useEffect } from 'react';
-import { Building, Users, AlertCircle, Plus } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Building, Users, AlertCircle, Plus, Pencil, Trash2, X, Check, Package, MessageSquare, Loader2 } from 'lucide-react';
+
+const token = () => localStorage.getItem('token');
+const API = 'http://localhost:8080/api';
+
+function StatBadge({ icon: Icon, label, value, color }) {
+    return (
+        <div className="flex flex-col gap-1 bg-brand-bg rounded-lg p-3 border border-brand-border flex-1">
+            <div className="flex items-center gap-1.5 text-brand-muted text-xs">
+                <Icon size={12} />
+                <span>{label}</span>
+            </div>
+            <span className="text-brand-text font-bold text-lg leading-none" style={{ color }}>{value ?? '—'}</span>
+        </div>
+    );
+}
+
+function DeptCard({ dept, onEdit, onDelete, onSelect }) {
+    const [stats, setStats] = useState(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch(`${API}/departments/${dept.id}/stats`, {
+                    headers: { 'Authorization': `Bearer ${token()}` }
+                });
+                if (res.ok) setStats(await res.json());
+            } catch {}
+        };
+        fetchStats();
+    }, [dept.id]);
+
+    return (
+        <div className="bg-brand-card border border-brand-border rounded-xl shadow-sm hover:border-brand-primary/40 transition-all duration-200 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 pb-3">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-brand-bg rounded-lg text-brand-primary border border-brand-border">
+                        <Building size={20} />
+                    </div>
+                    <h4 className="text-base font-bold text-brand-text">{dept.name}</h4>
+                </div>
+                <div className="flex items-center gap-1">
+                    <button onClick={() => onEdit(dept)}
+                        className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors">
+                        <Pencil size={14} />
+                    </button>
+                    <button onClick={() => onDelete(dept)}
+                        className="p-1.5 rounded-lg text-brand-muted hover:text-red-400 hover:bg-red-400/10 transition-colors">
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="px-5 pb-4 flex gap-2">
+<StatBadge icon={Users}         label="Angajati"  value={dept.employeeCount ?? 0} color="#3b82f6" />
+                    <StatBadge icon={Package}       label="Asseturi"  value={dept.assetCount    ?? 0} color="#10b981" />
+                    <StatBadge icon={MessageSquare} label="Plangeri"  value={stats?.totalComplaits ?? 0} color="#f59e0b" />
+            </div>
+        </div>
+    );
+}
+
+function AddEditModal({ dept, onClose, onSave }) {
+    const [name, setName] = useState(dept?.name || '');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSave = async () => {
+        if (!name.trim()) return setError('Numele este obligatoriu.');
+        setSaving(true);
+        setError('');
+        try {
+            const method = dept ? 'PUT' : 'POST';
+            const url    = dept ? `${API}/departments/${dept.id}` : `${API}/departments`;
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+                body: JSON.stringify({ name: name.trim() })
+            });
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(txt || 'Eroare la salvare.');
+            }
+            onSave();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-brand-text">
+                        {dept ? 'Editeaza departament' : 'Departament nou'}
+                    </h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <input
+                    type="text"
+                    placeholder="Nume departament"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                    autoFocus
+                    className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
+                />
+
+                {error && (
+                    <p className="text-red-400 text-xs flex items-center gap-1.5">
+                        <AlertCircle size={12} /> {error}
+                    </p>
+                )}
+
+                <div className="flex gap-2">
+                    <button onClick={onClose}
+                        className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                        Anuleaza
+                    </button>
+                    <button onClick={handleSave} disabled={saving}
+                        className="flex-1 py-2 px-4 bg-brand-primary hover:opacity-90 text-white rounded-lg font-medium text-sm transition-opacity flex items-center justify-center gap-2 disabled:opacity-60">
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {dept ? 'Salveaza' : 'Adauga'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DeleteModal({ dept, onClose, onDeleted }) {
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError]       = useState('');
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        try {
+            const res = await fetch(`${API}/departments/${dept.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token()}` }
+            });
+            if (!res.ok) throw new Error('Eroare la stergere.');
+            onDeleted();
+        } catch (err) {
+            setError(err.message);
+            setDeleting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-brand-text">Sterge departament</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <p className="text-sm text-brand-muted">
+                    Esti sigur ca vrei sa stergi departamentul <span className="text-brand-text font-semibold">"{dept.name}"</span>? Actiunea nu poate fi anulata.
+                </p>
+
+                {error && (
+                    <p className="text-red-400 text-xs flex items-center gap-1.5">
+                        <AlertCircle size={12} /> {error}
+                    </p>
+                )}
+
+                <div className="flex gap-2">
+                    <button onClick={onClose}
+                        className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                        Anuleaza
+                    </button>
+                    <button onClick={handleDelete} disabled={deleting}
+                        className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                        {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        Sterge
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function AdminDepartments() {
     const [departments, setDepartments] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [isLoading, setIsLoading]     = useState(true);
+    const [error, setError]             = useState(null);
 
-    useEffect(() => {
-        const fetchDepartments = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setError("Nu ești autentificat.");
-                setIsLoading(false);
-                return;
-            }
+    const [addEditModal, setAddEditModal] = useState(null); // null | 'new' | dept object
+    const [deleteModal, setDeleteModal]   = useState(null); // null | dept object
 
-            try {
-                // Notă: Acest endpoint trebuie să existe în backend!
-                const res = await fetch('http://localhost:8080/api/departments', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Eroare la preluarea departamentelor (Endpoint-ul lipsește din backend).');
-
-                const data = await res.json();
-                setDepartments(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDepartments();
+    const fetchDepartments = useCallback(async () => {
+        const tok = token();
+        if (!tok) { setError("Nu esti autentificat."); setIsLoading(false); return; }
+        try {
+            const res = await fetch(`${API}/departments`, {
+                headers: { 'Authorization': `Bearer ${tok}` }
+            });
+            if (!res.ok) throw new Error('Eroare la preluarea departamentelor.');
+            setDepartments(await res.json());
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
 
-    if (isLoading) return <div className="h-full flex items-center justify-center text-brand-text">Se încarcă departamentele...</div>;
+    useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
+
+    const handleSaved = () => { setAddEditModal(null); fetchDepartments(); };
+    const handleDeleted = () => { setDeleteModal(null); fetchDepartments(); };
+    const handleSelect = (dept) => { /* poti extinde aici cu o pagina de detalii */ };
+
+    if (isLoading) return (
+        <div className="h-full flex items-center justify-center text-brand-muted gap-2">
+            <Loader2 size={18} className="animate-spin" /> Se incarca departamentele...
+        </div>
+    );
 
     return (
-        <>
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Header */}
+            <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-brand-text">Departamente</h3>
-                <button className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-opacity shadow-sm">
-                    <Plus className="w-5 h-5 mr-1" />
-                    Adaugă Departament
+                <button onClick={() => setAddEditModal('new')}
+                    className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-1.5 transition-opacity shadow-sm text-sm">
+                    <Plus size={18} /> Adauga Departament
                 </button>
             </div>
 
             {error && (
-                <div className="mb-6 p-4 bg-red-900/50 border border-red-500 text-red-200 rounded-lg flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <p>{error}</p>
+                <div className="p-4 bg-red-900/50 border border-red-500 text-red-200 rounded-lg flex items-center gap-3">
+                    <AlertCircle size={18} className="flex-shrink-0" />
+                    <p className="text-sm">{error}</p>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {departments.length === 0 && !error ? (
-                    <div className="col-span-full p-8 text-center bg-brand-card border border-brand-border rounded-xl text-brand-muted">
-                        Niciun departament configurat.
+                    <div className="col-span-full p-10 text-center bg-brand-card border border-brand-border rounded-xl text-brand-muted text-sm">
+                        Niciun departament configurat. Adauga primul departament.
                     </div>
                 ) : (
-                    departments.map((dept) => (
-                        <div key={dept.id} className="bg-brand-card p-6 rounded-xl border border-brand-border shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center mb-4">
-                                <div className="p-3 bg-brand-bg rounded-lg text-brand-primary mr-3 border border-brand-border">
-                                    <Building className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h4 className="text-lg font-bold text-brand-text">{dept.name}</h4>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 pt-4 border-t border-brand-border flex items-center justify-between text-sm">
-                                <span className="text-brand-muted flex items-center">
-                                    <Users className="w-4 h-4 mr-1" /> Angajați:
-                                </span>
-                                <span className="font-semibold text-brand-text">{dept.employeeCount || 0}</span>
-                            </div>
-                        </div>
+                    departments.map(dept => (
+                        <DeptCard
+                            key={dept.id}
+                            dept={dept}
+                            onEdit={(d) => setAddEditModal(d)}
+                            onDelete={(d) => setDeleteModal(d)}
+                            onSelect={handleSelect}
+                        />
                     ))
                 )}
             </div>
-        </>
+
+            {/* Modals */}
+            {addEditModal && (
+                <AddEditModal
+                    dept={addEditModal === 'new' ? null : addEditModal}
+                    onClose={() => setAddEditModal(null)}
+                    onSave={handleSaved}
+                />
+            )}
+            {deleteModal && (
+                <DeleteModal
+                    dept={deleteModal}
+                    onClose={() => setDeleteModal(null)}
+                    onDeleted={handleDeleted}
+                />
+            )}
+        </div>
     );
 }

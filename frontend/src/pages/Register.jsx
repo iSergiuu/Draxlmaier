@@ -136,8 +136,8 @@ export default function Register() {
                         maxHeight: afiseazaRegulile ? '200px' : '0',
                         opacity: afiseazaRegulile ? 1 : 0,
                         overflow: 'hidden',
-marginTop: afiseazaRegulile ? '0' : '0',
-marginBottom: afiseazaRegulile ? '0' : '-15px',
+                        marginTop: afiseazaRegulile ? '0' : '0',
+                        marginBottom: afiseazaRegulile ? '0' : '-15px',
                         transition: 'max-height 0.5s ease, opacity 0.35s ease, margin 0.5s ease'
                     }}>
                         <div className="bg-brand-bg border border-brand-border rounded-lg p-3 space-y-1">
