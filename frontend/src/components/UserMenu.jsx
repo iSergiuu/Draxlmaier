@@ -9,6 +9,7 @@ export default function UserMenu() {
     const [isHovered, setIsHovered] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
     const isOpen = isHovered || isPinned;
+    const hoverTimeout = useRef(null);
 
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
@@ -142,7 +143,10 @@ export default function UserMenu() {
     return (
         <div className="flex items-center gap-2">
             
-            <div className="relative" ref={notifRef}>
+            <div className="relative" ref={notifRef}
+                onMouseEnter={() => { clearTimeout(hoverTimeout.current); setIsNotifOpen(true); setIsPinned(false); setIsHovered(false); }}
+                onMouseLeave={() => { hoverTimeout.current = setTimeout(() => setIsNotifOpen(false), 200); }}
+            >
                 <button 
                     onClick={() => { setIsNotifOpen(!isNotifOpen); closeMenu(); }}
                     className={`p-2 rounded-lg transition-colors focus:outline-none text-brand-text relative ${isNotifOpen ? 'bg-black/10' : 'hover:bg-black/5'}`}
@@ -157,13 +161,13 @@ export default function UserMenu() {
 
                 <AnimatePresence>
                     {isNotifOpen && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: -15, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden"
-                        >
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden origin-top-right"
+                            >
                             <div className="p-3 border-b border-brand-border bg-brand-bg flex justify-between items-center">
                                 <span className="font-bold text-brand-text text-sm">Notificari</span>
                                 {unreadCount > 0 && <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">{unreadCount} noi</span>}
@@ -212,8 +216,8 @@ export default function UserMenu() {
             <div
                 className="relative"
                 ref={menuRef}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
+                onMouseEnter={() => { clearTimeout(hoverTimeout.current); setIsHovered(true); setIsNotifOpen(false); }}
+                onMouseLeave={() => { hoverTimeout.current = setTimeout(() => setIsHovered(false), 200); }}
             >
                 <button
                     onClick={() => { setIsPinned(!isPinned); setIsNotifOpen(false); }}
@@ -227,11 +231,11 @@ export default function UserMenu() {
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div 
-                            initial={{ opacity: 0, y: -15, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="absolute right-0 top-10 pt-2 z-50"
+                            className="absolute right-0 top-10 pt-2 z-50 origin-top-right"
                         >
                             <div className="w-64 bg-brand-card border border-brand-border rounded-xl shadow-lg overflow-hidden">
                                 <div className="py-2">

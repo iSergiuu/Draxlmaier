@@ -25,8 +25,6 @@ const themeColumns = [
 ];
 
 
-
-
 export default function ThemeSwitcher() {
     const [isHovered, setIsHovered] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
@@ -97,8 +95,8 @@ export default function ThemeSwitcher() {
                 />
             </div>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-2 p-3 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className={`absolute right-0 mt-2 p-3 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 transition-all duration-200 origin-top-right
+                 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
                     <div className="flex flex-col gap-3">
                         <div className="flex gap-3">
                             {themeColumns.map(col => (
@@ -120,7 +118,6 @@ export default function ThemeSwitcher() {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
     );
 }

@@ -60,9 +60,6 @@
         --color-primary-hover: #ff0000; --border-color: #404040;
     }
 
-
-
-
     /* Seteaza fundalul intregii pagini conform temei active */
     body, html {
         background-color: var(--brand-bg);
