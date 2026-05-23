@@ -1,5 +1,6 @@
 package com.draxlmaier.assethub.module.notification.service;
 
+import com.draxlmaier.assethub.module.notification.dto.NotificationDTO;
 import com.draxlmaier.assethub.module.notification.model.Notification;
 import com.draxlmaier.assethub.module.notification.repository.NotificationRepository;
 import com.draxlmaier.assethub.module.employee.model.Employee;
@@ -32,8 +33,17 @@ public class NotificationManagerService {
 
         notificationRepository.save(notification);
 
+        NotificationDTO dto = NotificationDTO.builder()
+                .id(notification.getId())
+                .title(notification.getTitle())
+                .message(notification.getMessage())
+                .read(notification.isRead())
+                .referenceId(notification.getReferenceId())
+                .createdAt(notification.getCreatedAt())
+                .build();
+
         String channel = "/topic/notifications/" + recipient.getId();
-        messagingTemplate.convertAndSend(channel, notification);
+        messagingTemplate.convertAndSend(channel, dto);
 
         if (recipient.getEmail() != null && !recipient.getEmail().isEmpty()) {
             try {
