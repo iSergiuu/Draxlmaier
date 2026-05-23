@@ -47,20 +47,10 @@ export default function AssetFilters({
                         {value: 'ALL', label: 'Toate Starile'},
                         {value: 'AVAILABLE', label: 'Disponibile'},
                         {value: 'ASSIGNED', label: 'Atribuite'},
-                        {value: 'DEFECTIVE', label: 'Defecte / Service'}
+                        {value: 'DEFECTIVE', label: 'Defecte'}
                     ]}
                     icon={Tag}
                     placeholder="Stare"
-                />
-            </div>
-
-            <div className="w-56 z-30 relative">
-                <CustomSelect
-                    value={categoryFilter}
-                    onChange={setCategoryFilter}
-                    options={[{value: 'ALL', label: 'Toate Categoriile'}, ...categoriesList.map(c => ({value: c, label: c}))]}
-                    icon={Layers}
-                    placeholder="Categorii"
                 />
             </div>
 

@@ -17,7 +17,8 @@ const CAT_COLORS = [
 
 export default function AssetSummaryCards({
                                               totalAssets, availableAssetsCount, assignedAssetsCount, defectiveAssetsCount,
-                                              assets, normalizeCategory
+                                              assets, normalizeCategory,
+                                              selectedCategories, setSelectedCategories
                                           }) {
     // === 1. LOGICA STATUSURI ===
     const statusCounts = [
@@ -45,7 +46,6 @@ export default function AssetSummaryCards({
     });
 
     let currentCatAngle = 0;
-    // Mapam direct din lista fixa ca sa pastram o ordine consecventa pe grafic
     const categoryGradient = ALL_CATEGORIES.map((catName, idx) => {
         const count = categoryStats[catName] || 0;
         if (count === 0 || totalAssets === 0) return '';
@@ -70,6 +70,17 @@ export default function AssetSummaryCards({
         return <Package size={14} className="text-zinc-500" />;
     };
 
+    // === 3. TOGGLE CATEGORIE ===
+    const toggleCategory = (catName) => {
+        setSelectedCategories(prev => {
+            if (prev.includes(catName)) {
+                return prev.filter(c => c !== catName);
+            } else {
+                return [...prev, catName];
+            }
+        });
+    };
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
 
@@ -81,7 +92,6 @@ export default function AssetSummaryCards({
                 </div>
 
                 <div className="flex items-center justify-between w-full flex-1 px-4">
-                    {/* Legenda Status - Aliniata strans, nu imprastiata */}
                     <div className="flex flex-col gap-3">
                         {statusCounts.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-4 text-sm">
@@ -106,29 +116,53 @@ export default function AssetSummaryCards({
                 </div>
             </div>
 
-            {/* CARD DREAPTA: CATEGORII (Acum pe 2 coloane, fara scroll) */}
+            {/* CARD DREAPTA: CATEGORII - butoane clickabile multiselect */}
             <div className="bg-brand-card border border-brand-border rounded-xl p-6 shadow-sm flex flex-col items-center justify-between col-span-1 md:col-span-2 relative">
                 <div className="w-full flex justify-between items-center mb-4">
-                    <h4 className="text-brand-text font-bold text-base">Distributie pe Categorii</h4>
+                    <div className="flex items-center gap-3">
+                        <h4 className="text-brand-text font-bold text-base">Distributie pe Categorii</h4>
+                        {selectedCategories.length > 0 && (
+                            <button
+                                onClick={() => setSelectedCategories([])}
+                                className="text-[10px] text-brand-muted hover:text-brand-text bg-brand-bg border border-brand-border rounded-full px-2 py-0.5 transition-colors cursor-pointer"
+                            >
+                                Reset
+                            </button>
+                        )}
+                    </div>
                     <Package size={18} className="text-brand-muted" />
                 </div>
 
                 <div className="flex items-center gap-6 w-full flex-1">
 
-                    {/* Lista Categorii pe 2 coloane */}
+                    {/* Butoane categorii pe 2 coloane - clickabile */}
                     <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
                         {ALL_CATEGORIES.map((catName, idx) => {
                             const count = categoryStats[catName] || 0;
+                            const isSelected = selectedCategories.includes(catName);
+                            const catColor = CAT_COLORS[idx % CAT_COLORS.length];
                             return (
-                                <div key={idx} className="bg-brand-bg px-2.5 py-1.5 rounded-lg border border-brand-border text-sm flex justify-between items-center">
+                                <button
+                                    key={idx}
+                                    onClick={() => toggleCategory(catName)}
+                                    className={`px-2.5 py-1.5 rounded-lg border text-sm flex justify-between items-center cursor-pointer transition-all duration-150 w-full text-left
+                                        ${isSelected
+                                        ? 'border-[2px] bg-brand-bg shadow-sm'
+                                        : 'bg-brand-bg border-brand-border hover:border-brand-muted opacity-70 hover:opacity-100'
+                                    }`}
+                                    style={isSelected ? { borderColor: catColor } : {}}
+                                >
                                     <div className="flex items-center gap-2 text-brand-text">
                                         {getCategoryIcon(catName)}
                                         <span className="font-medium text-brand-text text-xs">{catName}</span>
                                     </div>
-                                    <span className="bg-brand-card px-1.5 py-0.5 rounded-full text-[10px] font-bold text-brand-muted border border-brand-border" style={{ color: count > 0 ? CAT_COLORS[idx % CAT_COLORS.length] : 'inherit' }}>
+                                    <span
+                                        className="bg-brand-card px-1.5 py-0.5 rounded-full text-[10px] font-bold border border-brand-border"
+                                        style={{ color: count > 0 ? catColor : 'inherit' }}
+                                    >
                                         {count}
                                     </span>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
