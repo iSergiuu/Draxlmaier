@@ -9,6 +9,7 @@ import com.draxlmaier.assethub.module.asset.repository.AssetRepository;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,5 +104,14 @@ public class AssetServiceImpl implements AssetService {
         asset.setUpdatedAt(OffsetDateTime.now());
 
         return assetMapper.toResponseDTO(assetRepository.save(asset));
+    }
+
+    @Override
+    public List<AssetResponseDTO> getMyAssets(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        return assetRepository.findAllByAssignedToEmail(email).stream()
+                .map(assetMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 }
