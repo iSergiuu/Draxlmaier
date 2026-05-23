@@ -1,4 +1,4 @@
-package com.draxlmaier.assethub.module.employee.dto;
+package com.draxlmaier.assethub.module.auth.dto;
 
 import java.util.UUID;
 

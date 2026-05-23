@@ -1,10 +1,10 @@
-package com.draxlmaier.assethub.module.employee.service;
+package com.draxlmaier.assethub.module.auth.service;
 
 import com.draxlmaier.assethub.core.exceptions.BusinessException;
 import com.draxlmaier.assethub.core.security.JwtUtil;
 import com.draxlmaier.assethub.module.employee.dto.LoginRequestDTO;
 import com.draxlmaier.assethub.module.employee.dto.RegisterRequestDTO;
-import com.draxlmaier.assethub.module.employee.dto.AuthResponseDTO;
+import com.draxlmaier.assethub.module.auth.dto.AuthResponseDTO;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
 import com.draxlmaier.assethub.module.employee.repository.RoleRepository;
