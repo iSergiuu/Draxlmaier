@@ -20,6 +20,7 @@ public class NotificationManagerService {
     private final EmployeeRepository employeeRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final EmailService emailService;
+    private final UserSessionRegistry sessionRegistry;
 
     public void sendToUser(Employee recipient, String title, String messageText, UUID referenceId) {
         Notification notification = Notification.builder()
@@ -46,11 +47,15 @@ public class NotificationManagerService {
         messagingTemplate.convertAndSend(channel, dto);
 
         if (recipient.getEmail() != null && !recipient.getEmail().isEmpty()) {
-            try {
-                String emailBody = "Salut " + recipient.getFirstName() + ",\n\n" + messageText + "\n\nO zi buna,\nEchipa AssetHub";
-                emailService.sendEmail(recipient.getEmail(), "AssetHub: " + title, emailBody);
-            } catch (Exception e) {
-                System.out.println("Eroare la trimiterea emailului catre: " + recipient.getEmail());
+            if (!sessionRegistry.isOnline(recipient.getEmail())) {
+                try {
+                    String emailBody = "Salut " + recipient.getFirstName() + ",\n\n" + messageText + "\n\nO zi buna,\nEchipa AssetHub";
+                    emailService.sendEmail(recipient.getEmail(), "AssetHub: " + title, emailBody);
+                } catch (Exception e) {
+                    System.out.println("Eroare la trimiterea emailului catre: " + recipient.getEmail());
+                }
+            } else {
+                System.out.println("Email anulat pentru " + recipient.getEmail() + " deoarece este ONLINE.");
             }
         }
     }
