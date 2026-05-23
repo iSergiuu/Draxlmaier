@@ -6,19 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Client } from '@stomp/stompjs';
 
 export default function UserMenu() {
-    // State-uri Meniu Original
     const [isHovered, setIsHovered] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
     const isOpen = isHovered || isPinned;
 
-    // State-uri Notificari
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [userId, setUserId] = useState(null);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    // Referinte pentru click pe afara
     const menuRef = useRef(null);
     const notifRef = useRef(null);
     const navigate = useNavigate();
@@ -28,13 +25,11 @@ export default function UserMenu() {
     const userRole = localStorage.getItem('userRole');
     const isAdmin = userRole === 'ADMIN' || userRole === 'admin';
 
-    // 1. Incarcam datele userului, apoi notificarile si pornim WebSocket-ul
     useEffect(() => {
         if (!token) return;
 
         const initSystem = async () => {
             try {
-                // Luam ID-ul userului
                 const userRes = await fetch('http://localhost:8080/api/employees/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -43,7 +38,6 @@ export default function UserMenu() {
                     const userData = await userRes.json();
                     setUserId(userData.id);
                     
-                    // Luam notificarile vechi
                     const notifRes = await fetch('http://localhost:8080/api/notifications', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -52,11 +46,10 @@ export default function UserMenu() {
                         setNotifications(notifData);
                     }
 
-                    // Conectam WebSocket-ul
                     connectWebSocket(userData.id);
                 }
             } catch (err) {
-                console.error("Eroare la initializarea notificarilor:", err);
+                console.error(err);
             }
         };
 
@@ -68,6 +61,9 @@ export default function UserMenu() {
         const stompClient = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,
+            connectHeaders: {
+                'Authorization': `Bearer ${token}`
+            },
             onConnect: () => {
                 stompClient.subscribe(`/topic/notifications/${uid}`, (message) => {
                     if (message.body) {
@@ -80,7 +76,6 @@ export default function UserMenu() {
         stompClient.activate();
     };
 
-    // 2. Logica pentru inchidere la click pe afara (Meniu + Notificari)
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -214,7 +209,6 @@ export default function UserMenu() {
                 </AnimatePresence>
             </div>
 
-            {/* ================= MENIUL ORIGINAL (HOVER/PIN) ================= */}
             <div
                 className="relative"
                 ref={menuRef}
