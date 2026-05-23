@@ -1,10 +1,10 @@
 import React from 'react';
-import { User, Eye, EyeOff, Copy, Trash2 } from 'lucide-react';
+import { User, Eye, EyeOff, Copy } from 'lucide-react';
 
 export default function EmployeeList({
                                          processedEmployees, activeTab, departments, complaints,
                                          getDeptColorObj, visiblePasswords, setVisiblePasswords,
-                                         generatedPasswords, setSelectedEmployee, handleDeleteSingleAccount, copyToClipboard
+                                         generatedPasswords, setSelectedEmployee, copyToClipboard
                                      }) {
     return (
         <div className="bg-brand-card rounded-xl shadow-sm border border-brand-border overflow-hidden">
@@ -19,8 +19,6 @@ export default function EmployeeList({
                 </thead>
                 <tbody className="divide-y divide-brand-border text-sm">
                 {processedEmployees.map(emp => {
-                    const deptId = emp.department?.id || emp.departmentId || emp.department_id;
-                    const deptObj = departments.find(d => d.id === deptId);
                     const isEmpActive = emp.isActive === true || emp.is_active === true;
                     const securityCode = emp.securityCode || emp.security_code || emp.securitycode || emp.employeeNumber || emp.employee_number;
                     const colorObj = getDeptColorObj(emp.departmentName);
@@ -86,16 +84,6 @@ export default function EmployeeList({
                                             title="Copiază datele de conectare"
                                         >
                                             <Copy size={16} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteSingleAccount(emp.id, emp.email);
-                                            }}
-                                            className="inline-flex items-center p-2 text-red-500 hover:bg-red-500/10 rounded-md transition"
-                                            title="Șterge acest cont temporar"
-                                        >
-                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 )}
