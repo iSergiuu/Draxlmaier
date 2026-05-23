@@ -36,9 +36,10 @@ export default function AdminAssets() {
     const [filteredEmailsAdd, setFilteredEmailsAdd] = useState([]);
     const [showEmailSuggestionsAdd, setShowEmailSuggestionsAdd] = useState(false);
 
-    // NEW: State pentru Edit Mode Suggestions
     const [filteredEditEmails, setFilteredEditEmails] = useState([]);
     const [showEditEmailSuggestions, setShowEditEmailSuggestions] = useState(false);
+
+    const [selectedCategories, setSelectedCategories] = useState([]);
 
     const token = localStorage.getItem('token');
 
@@ -306,6 +307,11 @@ export default function AdminAssets() {
         if (statusFilter === 'ASSIGNED') matchesStatus = assigned && !defective;
         if (statusFilter === 'DEFECTIVE') matchesStatus = defective;
 
+        if (selectedCategories.length > 0) {
+            const cat = normalizeCategory(asset.category) || 'Altele';
+            if (!selectedCategories.includes(cat)) return false;
+        }
+
         return matchesSearch && matchesEmailSearch && matchesCategory && matchesStatus;
     }).sort((a, b) => {
         if (sortOrder === 'NEWEST') {
@@ -351,15 +357,19 @@ export default function AdminAssets() {
                 assets={assets}
                 normalizeCategory={normalizeCategory}
                 getCategoryIcon={getCategoryIcon}
+                selectedCategories={selectedCategories}
+                setSelectedCategories={setSelectedCategories}
             />
 
             <AssetFilters
                 searchQuery={searchQuery} setSearchQuery={setSearchQuery}
                 emailSearchQuery={emailSearchQuery} setEmailSearchQuery={setEmailSearchQuery}
                 statusFilter={statusFilter} setStatusFilter={setStatusFilter}
-                categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter}
                 sortOrder={sortOrder} setSortOrder={setSortOrder}
                 categoriesList={categoriesList}
+                searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                emailSearchQuery={emailSearchQuery} setEmailSearchQuery={setEmailSearchQuery}
+                sortOrder={sortOrder} setSortOrder={setSortOrder}
             />
 
             <AssetList
