@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
-import UserMenu from '../components/UserMenu'; // Am importat noua componentă a colegului tău
+import UserMenu from '../components/UserMenu';
 import { ArrowLeft, Ticket, Clock, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 export default function MyComplaints() {
@@ -16,8 +16,11 @@ export default function MyComplaints() {
 
     const fetchComplaints = async () => {
         try {
-            const token = localStorage.getItem('jwt_token');
-            if (!token) { navigate('/login'); return; }
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+            if (!token) { 
+                navigate('/login'); 
+                return; 
+            }
 
             const response = await fetch('http://localhost:8080/api/complaints', {
                 method: 'GET',
@@ -27,6 +30,10 @@ export default function MyComplaints() {
             if (response.ok) {
                 const data = await response.json();
                 setComplaints(data);
+            } else if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('jwt_token');
+                localStorage.removeItem('token');
+                navigate('/login');
             } else {
                 setError(`Eroare de la server: ${response.status}`);
             }
@@ -37,7 +44,6 @@ export default function MyComplaints() {
         }
     };
 
-    // Am păstrat culorile semantice (roșu, verde, etc.) pentru badge-uri, deoarece trebuie să iasă în evidență
     const getStatusStyle = (status) => {
         if (!status) return { color: 'text-gray-500', bg: 'bg-gray-100', icon: <Info className="w-4 h-4 mr-1"/>, text: 'NECUNOSCUT' };
         switch (status.toUpperCase()) {
@@ -70,7 +76,6 @@ export default function MyComplaints() {
                     <ArrowLeft className="w-5 h-5 mr-2" /> Înapoi la Dashboard
                 </button>
 
-                {/* --- ANTETUL ACTUALIZAT --- */}
                 <div className="bg-brand-card p-6 rounded-xl shadow-sm border border-brand-border flex justify-between items-center transition-colors duration-300">
                     <div>
                         <h1 className="text-2xl font-bold text-brand-text flex items-center">
@@ -78,7 +83,6 @@ export default function MyComplaints() {
                         </h1>
                         <p className="text-brand-muted mt-1">Gestionează și urmărește statusul sesizărilor tale.</p>
                     </div>
-                    {/* Aici am adăugat structura colegului tău pentru meniu */}
                     <div className="flex items-center gap-4">
                         <ThemeSwitcher />
                         <UserMenu />

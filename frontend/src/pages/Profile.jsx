@@ -8,17 +8,19 @@ import UserMenu from '../components/UserMenu';
 export default function Profile() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [error, setError]     = useState(null);
+    const [error, setError] = useState(null);
 
     const [user, setUser] = useState({
-        firstName:      '',
-        lastName:       '',
-        email:          '',
-        department:     '',
-        role:           '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        department: '',
+        role: '',
         employeeNumber: '',
-        joinedAt:       '',
-        totalTickets:   0,
+        joinedAt: '',
+        totalTickets: 0,
+        resolvedTickets: 0,
+        pendingTickets: 0,
     });
 
     useEffect(() => {
@@ -29,33 +31,47 @@ export default function Profile() {
 
                 const headers = {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type':  'application/json',
+                    'Content-Type': 'application/json',
                 };
 
                 const [employeeRes, complaintsRes] = await Promise.all([
-                    fetch('http://localhost:8080/api/employees/me',  { method: 'GET', headers }),
-                    fetch('http://localhost:8080/api/complaints',     { method: 'GET', headers }),
+                    fetch('http://localhost:8080/api/employees/me', { method: 'GET', headers }),
+                    fetch('http://localhost:8080/api/complaints', { method: 'GET', headers }),
                 ]);
 
                 if (employeeRes.ok && complaintsRes.ok) {
-                    const empData        = await employeeRes.json();
+                    const empData = await employeeRes.json();
                     const complaintsData = await complaintsRes.json();
 
                     const fullName = `${empData.firstName || ''} ${empData.lastName || ''}`.trim().toLowerCase();
+                    
+                    const userTickets = complaintsData.filter(ticket =>
+                        ticket.authorName && ticket.authorName.toLowerCase() === fullName
+                    );
+
+                    const resolved = userTickets.filter(t => {
+                        const s = (t.status || t.statusCode || '').toUpperCase();
+                        return s === 'RESOLVED' || s === 'CLOSED';
+                    }).length;
+
+                    const pending = userTickets.filter(t => {
+                        const s = (t.status || t.statusCode || '').toUpperCase();
+                        return s === 'NEW' || s === 'IN_REVIEW' || s === 'IN_PROGRESS';
+                    }).length;
 
                     setUser({
-                        firstName:      empData.firstName      || 'N/A',
-                        lastName:       empData.lastName       || 'N/A',
-                        email:          empData.email          || 'N/A',
-                        department:     empData.departmentName || 'N/A',
-                        role:           empData.roleCode       || 'USER',
+                        firstName: empData.firstName || 'N/A',
+                        lastName: empData.lastName || 'N/A',
+                        email: empData.email || 'N/A',
+                        department: empData.departmentName || 'N/A',
+                        role: empData.roleCode || 'USER',
                         employeeNumber: empData.employeeNumber || 'N/A',
-                        joinedAt:       empData.createdAt
+                        joinedAt: empData.createdAt
                             ? new Date(empData.createdAt).toLocaleDateString('ro-RO')
                             : 'Necunoscut',
-                        totalTickets: complaintsData.filter(ticket => 
-                            ticket.authorName && ticket.authorName.toLowerCase() === fullName
-                        ).length,
+                        totalTickets: userTickets.length,
+                        resolvedTickets: resolved,
+                        pendingTickets: pending,
                     });
                 } else if (employeeRes.status === 401 || employeeRes.status === 403) {
                     localStorage.removeItem('jwt_token');
@@ -115,7 +131,7 @@ export default function Profile() {
                                 className="flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors mb-0.5"
                             >
                                 <ArrowLeft className="w-3.5 h-3.5" />
-                                Înapoi la dashboard
+                                Înapoi la Asset-urile mele
                             </button>
                             <h1 className="text-lg font-bold text-brand-text leading-tight">Profilul meu</h1>
                         </div>
@@ -162,7 +178,7 @@ export default function Profile() {
                             <div className="space-y-3.5">
                                 {[
                                     { icon: Mail,      label: 'Email',          value: user.email },
-                                    { icon: Hash,      label: 'Marcă angajat',  value: user.employeeNumber },
+                                    { icon: Hash,      label: 'Cod de securitate',  value: user.employeeNumber },
                                     { icon: Calendar,  label: 'Membru din',     value: user.joinedAt },
                                 ].map(({ icon: Icon, label, value }) => (
                                     <div key={label} className="flex items-start gap-3">
@@ -189,8 +205,8 @@ export default function Profile() {
                         >
                             {[
                                 { icon: Ticket,        label: 'Sesizări trimise', value: user.totalTickets, color: 'text-brand-primary' },
-                                { icon: CheckCircle,   label: 'Rezolvate',        value: '—',               color: 'text-green-500' },
-                                { icon: Clock,         label: 'În curs',          value: '—',               color: 'text-amber-500' },
+                                { icon: CheckCircle,   label: 'Rezolvate',        value: user.resolvedTickets, color: 'text-green-500' },
+                                { icon: Clock,         label: 'În curs',          value: user.pendingTickets, color: 'text-amber-500' },
                             ].map(({ icon: Icon, label, value, color }) => (
                                 <div
                                     key={label}
@@ -221,7 +237,7 @@ export default function Profile() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-brand-border rounded-xl overflow-hidden border border-brand-border">
                                 {[
                                     { label: 'Email instituțional', value: user.email,          icon: Mail },
-                                    { label: 'Marcă angajat',       value: user.employeeNumber,  icon: Hash },
+                                    { label: 'Cod de securitate',       value: user.employeeNumber,  icon: Hash },
                                     { label: 'Departament',         value: user.department,      icon: Building2 },
                                     { label: 'Dată angajare',       value: user.joinedAt,        icon: Calendar },
                                 ].map(({ label, value, icon: Icon }) => (
@@ -268,10 +284,10 @@ export default function Profile() {
                                         <p className="text-sm font-semibold text-brand-text">
                                             {user.totalTickets} sesizăr{user.totalTickets === 1 ? 'e trimisă' : 'i trimise'}
                                         </p>
-                                        <p className="text-xs text-brand-muted mt-0.5">Vezi istoricul complet în dashboard</p>
+                                        <p className="text-xs text-brand-muted mt-0.5">Vezi istoricul complet în problemele mele</p>
                                     </div>
                                     <button
-                                        onClick={() => navigate('/dashboard')}
+                                        onClick={() => navigate('//complaints')}
                                         className="ml-auto text-xs font-semibold text-brand-primary hover:opacity-70 transition-opacity shrink-0"
                                     >
                                         Mergi →
