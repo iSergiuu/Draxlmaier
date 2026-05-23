@@ -22,9 +22,12 @@ export default function MyComplaints() {
                 return; 
             }
 
-            const response = await fetch('http://localhost:8080/api/complaints', {
+            const response = await fetch('http://localhost:8080/api/complaints/me', {
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
 
             if (response.ok) {
@@ -35,7 +38,7 @@ export default function MyComplaints() {
                 localStorage.removeItem('token');
                 navigate('/login');
             } else {
-                setError(`Eroare de la server: ${response.status}`);
+                setError(`Eroare de la server`);
             }
         } catch (err) {
             setError('Eroare de conexiune cu serverul.');
