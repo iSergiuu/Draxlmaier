@@ -22,12 +22,13 @@ export default function CustomSelect({ value, onChange, options, placeholder, ic
             {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>}
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl overflow-hidden py-1">
-                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="absolute z-50 w-full mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl overflow-hidden">
+                    {/* Am scos py-1 de aici care cauza acel scroll de 3 pixeli si am pus p-1 la containerul interior */}
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
                         {options.map(opt => (
                             <div
                                 key={opt.value}
-                                className={`px-3 py-2 text-sm cursor-pointer hover:bg-brand-primary/10 transition-colors select-none ${value === opt.value ? 'text-brand-primary font-medium bg-brand-primary/5' : 'text-brand-text'}`}
+                                className={`px-3 py-2 text-sm cursor-pointer rounded-md hover:bg-brand-primary/10 transition-colors select-none ${value === opt.value ? 'text-brand-primary font-medium bg-brand-primary/5' : 'text-brand-text'}`}
                                 onClick={() => { onChange(opt.value); setIsOpen(false); }}
                             >
                                 {opt.label}

@@ -36,6 +36,10 @@ export default function AdminAssets() {
     const [filteredEmailsAdd, setFilteredEmailsAdd] = useState([]);
     const [showEmailSuggestionsAdd, setShowEmailSuggestionsAdd] = useState(false);
 
+    // NEW: State pentru Edit Mode Suggestions
+    const [filteredEditEmails, setFilteredEditEmails] = useState([]);
+    const [showEditEmailSuggestions, setShowEditEmailSuggestions] = useState(false);
+
     const token = localStorage.getItem('token');
 
     const fetchData = async () => {
@@ -72,18 +76,14 @@ export default function AdminAssets() {
 
     const getAssignee = (asset) => {
         if (!asset) return null;
-
         const rawAssignee = asset.assignedEmail || asset.assigned_email || asset.assignedToEmail || asset.userEmail || asset.assignedToId || asset.assigned_to_id || asset.employeeId || null;
-
         if (rawAssignee && (typeof rawAssignee !== 'string' || !rawAssignee.includes('@'))) {
             const foundEmployee = employees.find(emp => emp.id === rawAssignee);
             if (foundEmployee) return foundEmployee.email;
         }
-
         if (!rawAssignee || (typeof rawAssignee === 'string' && (!rawAssignee.includes('@') || rawAssignee.trim() === '' || rawAssignee.includes('Neatribuit')))) {
             return null;
         }
-
         return rawAssignee;
     };
 
@@ -118,6 +118,7 @@ export default function AdminAssets() {
             });
             setIsEditing(false);
             setAssignEmail('');
+            setShowEditEmailSuggestions(false);
         }
     }, [selectedAsset]);
 
@@ -145,9 +146,18 @@ export default function AdminAssets() {
         } else setShowEmailSuggestionsAdd(false);
     };
 
+    // NEW: Handler pt recomandarile din Edit Mode
+    const handleEditEmailInput = (val) => {
+        if (val.length > 0) {
+            setFilteredEditEmails(employees.filter(emp => emp.email && emp.email.toLowerCase().includes(val.toLowerCase())));
+            setShowEditEmailSuggestions(true);
+        } else {
+            setShowEditEmailSuggestions(false);
+        }
+    };
+
     const handleAssignAsset = async () => {
         if (!assignEmail) return alert('Introdu un email valid!');
-
         const employee = employees.find(emp => emp.email.toLowerCase() === assignEmail.toLowerCase());
         if (!employee) return alert('Angajatul cu acest email nu a fost gasit in baza de date!');
 
@@ -193,8 +203,6 @@ export default function AdminAssets() {
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ employeeId: employee.id })
                     });
-                } else {
-                    alert("Echipamentul a fost creat, dar emailul angajatului nu a fost gasit in baza de date pentru asignare.");
                 }
             }
 
@@ -233,7 +241,8 @@ export default function AdminAssets() {
                 throw new Error(`Eroare la actualizare (${response.status}): ${errText}`);
             }
 
-            if (editData.status === 'ASSIGNED' && finalEmail) {
+            const currentAssignee = getAssignee(selectedAsset);
+            if (editData.status === 'ASSIGNED' && finalEmail && finalEmail !== currentAssignee) {
                 const employee = employees.find(emp => emp.email.toLowerCase() === finalEmail.toLowerCase());
                 if (employee) {
                     await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}/assign`, {
@@ -242,6 +251,11 @@ export default function AdminAssets() {
                         body: JSON.stringify({ employeeId: employee.id })
                     });
                 }
+            } else if (editData.status !== 'ASSIGNED' && currentAssignee) {
+                await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}/unassign`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
             }
 
             setIsEditing(false);
@@ -257,12 +271,7 @@ export default function AdminAssets() {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Eroare la stergere din baza de date (${response.status}): ${errText}`);
-            }
-
+            if (!response.ok) throw new Error(`Eroare la stergere`);
             setSelectedAsset(null);
             fetchData();
         } catch (err) { alert(err.message); }
@@ -272,10 +281,10 @@ export default function AdminAssets() {
         const cat = normalizeCategory(category).toLowerCase();
         if (cat.includes('laptop')) return <Laptop size={14} className="text-emerald-500" />;
         if (cat.includes('telefon') || cat.includes('phone')) return <Smartphone size={14} className="text-amber-500" />;
+        if (cat.includes('storage') || cat.includes('hdd') || cat.includes('ssd')) return <HardDrive size={14} className="text-slate-500" />;
         if (cat.includes('tastatura') || cat.includes('keyboard')) return <Keyboard size={14} className="text-teal-500" />;
         if (cat.includes('mouse')) return <Mouse size={14} className="text-orange-500" />;
         if (cat.includes('casti') || cat.includes('head')) return <Headphones size={14} className="text-cyan-500" />;
-        if (cat.includes('storage') || cat.includes('hdd') || cat.includes('ssd')) return <HardDrive size={14} className="text-slate-500" />;
         return <Package size={14} className="text-zinc-500" />;
     };
 
@@ -375,6 +384,11 @@ export default function AdminAssets() {
                 handleEmailInput={handleEmailInput} showEmailSuggestions={showEmailSuggestions}
                 setShowEmailSuggestions={setShowEmailSuggestions} filteredEmails={filteredEmails}
                 handleAssignAsset={handleAssignAsset} complaints={complaints}
+                // PASAM PROPS-URILE NOI PENTRU EDIT MODE
+                handleEditEmailInput={handleEditEmailInput}
+                showEditEmailSuggestions={showEditEmailSuggestions}
+                setShowEditEmailSuggestions={setShowEditEmailSuggestions}
+                filteredEditEmails={filteredEditEmails}
             />
 
             {isAddModalOpen && (
