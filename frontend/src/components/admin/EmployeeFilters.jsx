@@ -1,13 +1,15 @@
 import React from 'react';
 import CustomSelect from './CustomSelect';
-import { ArrowUpDown, Search, Mail, Tag } from 'lucide-react';
+import { ArrowUpDown, Search, Mail, Tag, Building } from 'lucide-react';
 
 export default function AssetFilters({
-                                         searchQuery, setSearchQuery,
-                                         emailSearchQuery, setEmailSearchQuery,
-                                         statusFilter, setStatusFilter,
-                                         sortOrder, setSortOrder,
-                                     }) {
+                                        searchQuery, setSearchQuery,
+                                        emailSearchQuery, setEmailSearchQuery,
+                                        statusFilter, setStatusFilter,
+                                        departmentFilter, setDepartmentFilter,
+                                        departmentsList,
+                                        sortOrder, setSortOrder,
+                                    }) {
     return (
         <div className="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-wrap items-center gap-4 relative z-10 shadow-sm transition-colors duration-300">
 
@@ -17,7 +19,7 @@ export default function AssetFilters({
                 </div>
                 <input
                     type="text"
-                    placeholder="Cauta dupa nume sau SN..."
+                    placeholder="Cauta dupa nume..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
@@ -30,25 +32,20 @@ export default function AssetFilters({
                 </div>
                 <input
                     type="text"
-                    placeholder="Cauta dupa email angajat..."
+                    placeholder="Cauta dupa email..."
                     value={emailSearchQuery}
                     onChange={(e) => setEmailSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
                 />
             </div>
 
-            <div className="w-48 z-40 relative">
+            <div className="w-48 z-30 relative">
                 <CustomSelect
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    options={[
-                        {value: 'ALL', label: 'Toate Starile'},
-                        {value: 'AVAILABLE', label: 'Disponibile'},
-                        {value: 'ASSIGNED', label: 'Atribuite'},
-                        {value: 'DEFECTIVE', label: 'Defecte / Service'}
-                    ]}
-                    icon={Tag}
-                    placeholder="Stare"
+                    value={departmentFilter}
+                    onChange={setDepartmentFilter}
+                    options={[{value: 'ALL', label: 'Toate Departamentele'}, ...departmentsList.map(d => ({value: d.id, label: d.name}))]}
+                    icon={Building}
+                    placeholder="Departament"
                 />
             </div>
 

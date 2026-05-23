@@ -27,7 +27,9 @@ export default function AdminEmployees() {
 
     const [activeTab, setActiveTab] = useState('ACTIVE');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedDeptFilter, setSelectedDeptFilter] = useState('ALL');
+    const [emailSearchQuery, setEmailSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [departmentFilter, setDepartmentFilter] = useState('ALL');
     const [sortOrder, setSortOrder] = useState('NEWEST');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -189,19 +191,20 @@ export default function AdminEmployees() {
         if (activeTab === 'ACTIVE' && !emp.isActive) return false;
         if (activeTab === 'GENERATED' && emp.isActive) return false;
 
-        const matchesSearch = `${emp.firstName || ''} ${emp.lastName || ''} ${emp.email || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesEmail = (emp.email || '').toLowerCase().includes(emailSearchQuery.toLowerCase());
         const empDeptObj = departments.find(d => d.name === emp.departmentName);
         const deptIdToMatch = empDeptObj ? empDeptObj.id : null;
-        const matchesDept = selectedDeptFilter === 'ALL' || deptIdToMatch === selectedDeptFilter;
+        const matchesDept = departmentFilter === 'ALL' || deptIdToMatch === departmentFilter;
 
-        return matchesSearch && matchesDept;
+    return matchesName && matchesEmail && matchesDept;
     }).sort((a, b) => {
         if (sortOrder === 'AZ') return (a.lastName || a.email || '').localeCompare(b.lastName || b.email || '');
         if (sortOrder === 'ZA') return (b.lastName || b.email || '').localeCompare(a.lastName || a.email || '');
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
-        if (sortOrder === 'NEWEST') return dateA !== dateB ? dateB - dateA : b._index - a._index;
-        if (sortOrder === 'OLDEST') return dateA !== dateB ? dateA - dateB : a._index - b._index;
+        if (sortOrder === 'NEWEST') return dateA !== dateB ? dateA - dateB : a._index - b._index;
+        if (sortOrder === 'OLDEST') return dateA !== dateB ? dateB - dateA : b._index - b._index;
         return 0;
     });
 
@@ -237,16 +240,19 @@ export default function AdminEmployees() {
                     onClick={() => setActiveTab('GENERATED')}
                     className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'GENERATED' ? 'border-orange-500 text-orange-500' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
                 >
-                    Conturi Generate (În Așteptare)
+                    Conturi Generate
                 </button>
             </div>
 
-            <EmployeeFilters
-                searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-                selectedDeptFilter={selectedDeptFilter} setSelectedDeptFilter={setSelectedDeptFilter}
-                sortOrder={sortOrder} setSortOrder={setSortOrder}
-                departments={departments}
-            />
+            {activeTab === 'ACTIVE' && (
+                <EmployeeFilters
+                    searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                    emailSearchQuery={emailSearchQuery} setEmailSearchQuery={setEmailSearchQuery}
+                    departmentFilter={departmentFilter} setDepartmentFilter={setDepartmentFilter}
+                    departmentsList={departments}
+                    sortOrder={sortOrder} setSortOrder={setSortOrder}
+                />
+            )}
 
             {isLoading ? (
                 <div className="text-center p-8 text-brand-muted">Se încarcă datele...</div>
