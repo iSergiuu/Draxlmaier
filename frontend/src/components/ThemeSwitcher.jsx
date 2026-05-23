@@ -3,30 +3,32 @@ import React, { useState, useEffect, useRef } from 'react';
 // Temele noastre pe coloane - Optimizate pentru contrast si aspect Premium SaaS
 const themeColumns = [
     {
-        // 1. Ocean Teal - Odihnitor, profesional, excelent pentru ecrane mari
-        dark:  { id: 'theme-dark', name: 'Ocean Teal (Dark)', primary: '#14b8a6', bgMain: '#0f172a' }, // Fundal Slate (gri-albastrui)
-        light: { id: 'light', name: 'Ocean Teal (Light)', primary: '#0d9488', bgMain: '#f8fafc' }
+        // 1. Ocean Teal
+        dark:  { id: 'root', name: 'Ocean Teal (Dark)', primary: '#14b8a6', bgMain: '#0d1117' }, 
+        light: { id: 'theme-light', name: 'Ocean Teal (Light)', primary: '#0d9488', bgMain: '#f9fafb' }
     },
     {
-        // 2. Royal Indigo - Culoarea clasica a aplicatiilor de top (ex: Stripe)
-        dark:  { id: 'theme-purple-dark', name: 'Royal Indigo (Dark)', primary: '#818cf8', bgMain: '#09090b' }, // Fundal Zinc (foarte inchis)
-        light: { id: 'theme-purple-light', name: 'Royal Indigo (Light)', primary: '#4f46e5', bgMain: '#ffffff' } // Fundal alb pur
+        // 2. Royal Indigo
+        dark:  { id: 'theme-purple-dark', name: 'Royal Indigo (Dark)', primary: '#8251f4', bgMain: '#1a191f' }, 
+        light: { id: 'theme-purple-light', name: 'Royal Indigo (Light)', primary: '#8251f4', bgMain: '#f8f7fa' }
     },
     {
-        // 3. Sunset Amber - O nuanta calda, prietenoasa, inlocuieste galbenul strident
-        dark:  { id: 'theme-yellow-dark', name: 'Sunset Amber (Dark)', primary: '#f97316', bgMain: '#1c1917' }, // Fundal Stone (gri cald)
-        light: { id: 'theme-yellow-light', name: 'Sunset Amber (Light)', primary: '#ea580c', bgMain: '#fffbeb' } // Fundal usor crem
+        // 3. Sunset Amber
+        dark:  { id: 'theme-yellow-dark', name: 'Sunset Amber (Dark)', primary: '#d1990a', bgMain: '#1c1b19' }, 
+        light: { id: 'theme-yellow-light', name: 'Sunset Amber (Light)', primary: '#cf9f30', bgMain: '#f1f3f5' }
     },
     {
-        // 4. Crimson Rose - O alternativa eleganta si moderna la rosul agresiv
-        dark:  { id: 'theme-drx', name: 'Crimson Rose (Dark)', primary: '#f43f5e', bgMain: '#171717' }, // Fundal Neutral
-        light: { id: 'theme-drx-light', name: 'Crimson Rose (Light)', primary: '#e11d48', bgMain: '#fff1f2' } // Fundal cu o tenta extrem de fina de roz
+        // 4. Crimson Rose
+        dark:  { id: 'theme-red', name: 'Crimson Rose (Dark)', primary: '#ff3333', bgMain: '#171717' }, 
+        light: { id: 'theme-red-light', name: 'Crimson Rose (Light)', primary: '#ff0000', bgMain: '#f5f5f5' }
     }
 ];
+
 
 export default function ThemeSwitcher() {
     const [isHovered, setIsHovered] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
+    const hoverTimeout = useRef(null);
     const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'light');
 
     // Referinta pentru a detecta click-ul in afara meniului
@@ -80,8 +82,8 @@ export default function ThemeSwitcher() {
         <div
             className="relative"
             ref={menuRef}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={() => { clearTimeout(hoverTimeout.current); setIsHovered(true); }}
+            onMouseLeave={() => { hoverTimeout.current = setTimeout(() => setIsHovered(false), 200); }}
         >
             <div
                 onClick={() => setIsPinned(!isPinned)}
@@ -93,8 +95,8 @@ export default function ThemeSwitcher() {
                 />
             </div>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-2 p-3 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className={`absolute right-0 mt-2 p-3 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 transition-all duration-200 origin-top-right
+                 ${isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
                     <div className="flex flex-col gap-3">
                         <div className="flex gap-3">
                             {themeColumns.map(col => (
@@ -116,7 +118,6 @@ export default function ThemeSwitcher() {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
     );
 }

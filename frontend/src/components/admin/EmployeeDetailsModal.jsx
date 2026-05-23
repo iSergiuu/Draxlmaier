@@ -35,8 +35,8 @@ export default function EmployeeDetailsModal({
     }, {});
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all p-4">
-            <div className="bg-brand-card w-full max-w-lg rounded-2xl shadow-xl border border-brand-border flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all p-4 overflow-y-auto">
+            <div className="bg-brand-card w-full max-w-lg rounded-2xl shadow-xl border border-brand-border flex flex-col max-h-[90vh] overflow-visible">
 
                 {/* Header-ul (Comun pentru ambele) */}
                 <div className="flex justify-between items-center p-6 border-b border-brand-border">
@@ -96,7 +96,7 @@ export default function EmployeeDetailsModal({
 
                 {/* === BODY PENTRU ANGAJAȚI ACTIVI (Cu Info, Assets, Complaints) === */}
                 {isEmpActive && (
-                    <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                    <div className="p-6 space-y-6 overflow-visible">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Nume Complet</label>
