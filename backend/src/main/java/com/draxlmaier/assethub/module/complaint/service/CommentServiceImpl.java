@@ -10,6 +10,7 @@ import com.draxlmaier.assethub.module.complaint.repository.ComplaintRepository;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintWorkflowRepository;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
+import com.draxlmaier.assethub.module.notification.service.NotificationManagerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,20 +29,18 @@ public class CommentServiceImpl implements CommentService {
     private final ComplaintRepository complaintRepository;
     private final EmployeeRepository employeeRepository;
     private final ComplaintWorkflowRepository workflowRepository;
+    private final NotificationManagerService notificationManager; // Injectăm serviciul de notificări
 
     @Override
     @Transactional
     public CommentResponseDTO addComment(UUID complaintId, CommentRequestDTO requestDTO) {
-        // 1. Găsim tichetul
         Complaint complaint = complaintRepository.findById(complaintId)
                 .orElseThrow(() -> new RuntimeException("Plângerea nu a fost găsită"));
 
-        // 2. Găsim autorul (cine e logat)
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Employee currentUser = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit"));
 
-        // 3. Salvăm comentariul în tabelul lui
         Comment comment = Comment.builder()
                 .complaint(complaint)
                 .author(currentUser)
@@ -52,7 +51,6 @@ public class CommentServiceImpl implements CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        // 4. SALVĂM ȘI ÎN WORKFLOW (ca să apară în timeline-ul general)
         ComplaintWorkflow workflowEntry = ComplaintWorkflow.builder()
                 .complaint(complaint)
                 .changedBy(currentUser)
@@ -65,6 +63,11 @@ public class CommentServiceImpl implements CommentService {
                 .build();
         workflowRepository.save(workflowEntry);
 
+        if (!requestDTO.isInternal() && !currentUser.getId().equals(complaint.getAuthor().getId())) {
+            String notificationMsg = currentUser.getFirstName() + " a lăsat un răspuns la problema ta: " + requestDTO.message();
+            notificationManager.sendToUser(complaint.getAuthor(), "Răspuns nou la tichet", notificationMsg, complaint.getId());
+        }
+
         return mapToResponseDTO(savedComment);
     }
 
@@ -75,7 +78,6 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toList());
     }
 
-    // Metodă de mapare manuală (pentru a evita un mapper separat momentan)
     private CommentResponseDTO mapToResponseDTO(Comment comment) {
         return CommentResponseDTO.builder()
                 .id(comment.getId())
