@@ -173,7 +173,7 @@ export default function UserMenu() {
                                 {unreadCount > 0 && <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">{unreadCount} noi</span>}
                             </div>
                             
-                            <div className="max-h-80 overflow-y-auto divide-y divide-brand-border">
+                            <div className="max-h-80 overflow-y-auto divide-y divide-brand-border pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-brand-primary/50">
                                 {notifications.length === 0 ? (
                                     <p className="text-sm text-brand-muted text-center py-6">Nu ai notificari momentan.</p>
                                 ) : (
@@ -183,14 +183,14 @@ export default function UserMenu() {
                                             onClick={() => handleNotifClick(notif)}
                                             className={`p-3 text-left transition-colors cursor-pointer flex gap-3 items-start ${notif.read ? 'hover:bg-black/5 opacity-70' : 'bg-brand-primary/5 hover:bg-brand-primary/10'}`}
                                         >
-                                            <div className="mt-1 text-brand-primary">
+                                            <div className="mt-1 text-brand-primary shrink-0">
                                                 {notif.title.toLowerCase().includes('comentariu') || notif.title.toLowerCase().includes('raspuns') 
                                                     ? <MessageSquare className="w-4 h-4" /> 
                                                     : <AlertTriangle className="w-4 h-4" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className={`text-xs font-bold text-brand-text truncate ${notif.read ? '' : 'text-brand-primary'}`}>{notif.title}</p>
-                                                <p className="text-xs text-brand-muted mt-0.5 line-clamp-2">{notif.message}</p>
+                                                <p className={`text-xs font-bold text-brand-text break-words ${notif.read ? '' : 'text-brand-primary'}`}>{notif.title}</p>
+                                                <p className="text-xs text-brand-muted mt-0.5 whitespace-pre-wrap break-words">{notif.message}</p>
                                                 <span className="text-[10px] text-brand-muted block mt-1">
                                                     {new Date(notif.createdAt).toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}
                                                 </span>
@@ -198,7 +198,7 @@ export default function UserMenu() {
                                             {!notif.read && (
                                                 <button 
                                                     onClick={(e) => handleMarkAsRead(notif.id, e)}
-                                                    className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors mt-1"
+                                                    className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors mt-1 shrink-0"
                                                     title="Marcheaza ca citit"
                                                 >
                                                     <Check className="w-3 h-3" />
