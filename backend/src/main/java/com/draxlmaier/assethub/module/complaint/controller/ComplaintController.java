@@ -24,9 +24,8 @@ import java.util.UUID;
 public class ComplaintController {
 
     private final ComplaintService complaintService;
-    private final CommentService commentService; // <-- Am adăugat serviciul de comentarii
+    private final CommentService commentService;
 
-    // --- RUTE PENTRU PLÂNGERI ---
 
     @PostMapping
     public ResponseEntity<ComplaintResponseDTO> createComplaint(@Valid @RequestBody ComplaintRequestDTO requestDTO) {
@@ -37,6 +36,11 @@ public class ComplaintController {
     @GetMapping
     public ResponseEntity<List<ComplaintResponseDTO>> getAllComplaints() {
         return ResponseEntity.ok(complaintService.getAllComplaints());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<ComplaintResponseDTO>> getMyComplaints() {
+        return ResponseEntity.ok(complaintService.getMyComplaints());
     }
 
     @GetMapping("/{id}")
@@ -52,9 +56,6 @@ public class ComplaintController {
         return ResponseEntity.ok(complaintService.updateStatus(id, statusDTO));
     }
 
-    // --- RUTE PENTRU COMENTARII ---
-
-    // Oricine este logat poate lăsa un comentariu
     @PostMapping("/{id}/comments")
     public ResponseEntity<CommentResponseDTO> addComment(
             @PathVariable UUID id,
@@ -63,7 +64,6 @@ public class ComplaintController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Aducerea tuturor comentariilor unui tichet
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<CommentResponseDTO>> getCommentsByComplaintId(@PathVariable UUID id) {
         return ResponseEntity.ok(commentService.getCommentsByComplaintId(id));

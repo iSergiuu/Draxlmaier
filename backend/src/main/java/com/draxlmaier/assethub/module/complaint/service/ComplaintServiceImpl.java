@@ -143,6 +143,15 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<ComplaintResponseDTO> getMyComplaints(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        return complaintRepository.findAllByAuthorEmail(email).stream()
+                .map(complaintMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     private void saveWorkflowStep(Complaint complaint, Employee user, ComplaintStatus oldStatus, ComplaintStatus newStatus, String comment) {
         ComplaintWorkflow workflow = ComplaintWorkflow.builder()
                 .complaint(complaint)

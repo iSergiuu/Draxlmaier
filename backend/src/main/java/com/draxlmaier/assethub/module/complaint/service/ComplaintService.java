@@ -15,4 +15,6 @@ public interface ComplaintService {
     ComplaintResponseDTO updateStatus(UUID id, StatusChangeRequestDTO statusDTO);
 
     List<WorkflowResponseDTO> getComplaintWorkflow(UUID complaintId);
+
+    List<ComplaintResponseDTO> getMyComplaints();
 }
