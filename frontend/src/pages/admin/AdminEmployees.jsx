@@ -166,7 +166,7 @@ export default function AdminEmployees() {
     };
 
     const copyToClipboard = (email, password, securityCode, deptName) => {
-        const text = `Date de acces platformă DRX (Departament: ${deptName || 'Nespecificat'})\n\nEmail: ${email}\nParolă: ${password}\nCod Securitate: ${securityCode || 'N/A'}\n\n*Introdu aceste date la prima logare pentru a-ți configura contul.`;
+        const text = `Date de acces platformă DRX (Departament: ${deptName || 'Nespecificat'})\n\nEmail: ${email}\nParolă: ${password}\nCod Securitate: ${securityCode || 'N/A'}\n\nIntrodu aceste date la prima logare pentru a-ți configura contul.`;
         navigator.clipboard.writeText(text);
         alert("Datele au fost copiate în clipboard!");
     };

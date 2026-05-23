@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import UserMenu from '../components/UserMenu';
 import { Laptop, Smartphone, Monitor, Printer, HardDrive, Cpu, Box, Mouse } from 'lucide-react';
 
-// Aceasta este configurarea centralizata. 
+// Aceasta este configurarea centralizata.
 const ASSET_ICONS_CONFIG = [
     { keywords: ['laptop', 'macbook', 'thinkpad'], icon: Laptop },
     { keywords: ['phone', 'telefon', 'iphone', 'samsung'], icon: Smartphone },
@@ -49,7 +49,10 @@ export default function Dashboard() {
         const fetchAssets = async () => {
             try {
                 const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-                if (!token) {
+                // Preluăm emailul utilizatorului logat
+                const currentUserEmail = localStorage.getItem('userEmail');
+
+                if (!token || !currentUserEmail) {
                     navigate('/login');
                     return;
                 }
@@ -64,7 +67,14 @@ export default function Dashboard() {
 
                 if (response.ok) {
                     const data = await response.json();
-                    setMyAssets(data);
+
+                    // FILTRARE: Păstrăm doar asset-urile unde emailul atribuit corespunde cu cel al userului curent
+                    const filteredAssets = data.filter(asset => {
+                        const assignedEmail = asset.assignedToEmail || asset.assigned_to_email || '';
+                        return assignedEmail.toLowerCase() === currentUserEmail.toLowerCase();
+                    });
+
+                    setMyAssets(filteredAssets);
                 } else if (response.status === 401 || response.status === 403) {
                     setError(`Eroare de Securitate (${response.status}): Backend-ul refuza cererea.`);
                 } else {
@@ -141,8 +151,8 @@ export default function Dashboard() {
 
     const getAssetIcon = (asset) => {
         const searchString = `${asset.name || ''} ${asset.category || ''}`.toLowerCase();
-        
-        const found = ASSET_ICONS_CONFIG.find(item => 
+
+        const found = ASSET_ICONS_CONFIG.find(item =>
             item.keywords.some(keyword => searchString.includes(keyword))
         );
 
@@ -150,7 +160,7 @@ export default function Dashboard() {
             const IconComponent = found.icon;
             return <IconComponent className="w-8 h-8" />;
         }
-        
+
         return <Box className="w-8 h-8" />;
     };
 
@@ -192,15 +202,15 @@ export default function Dashboard() {
                         <p className="text-brand-muted">Nu ai niciun asset asignat in acest moment.</p>
                     </div>
                 ) : (
-                    <motion.div 
+                    <motion.div
                         variants={containerVariants}
                         initial="hidden"
                         animate="show"
                         className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
                     >
                         {myAssets.map((asset) => (
-                            <motion.div 
-                                key={asset.id} 
+                            <motion.div
+                                key={asset.id}
                                 variants={itemVariants}
                                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
                                 className="bg-brand-card p-6 rounded-2xl shadow-sm border border-brand-border transition-colors duration-300 hover:shadow-md hover:border-brand-primary flex flex-col justify-between"

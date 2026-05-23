@@ -1,8 +1,6 @@
-// src/pages/admin/AdminAssets.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, Laptop, Smartphone, HardDrive } from 'lucide-react';
+import { Plus, AlertCircle, Laptop, Smartphone, HardDrive, Keyboard, Mouse, Headphones, Package } from 'lucide-react';
 
-// Importam componentele proaspat create
 import AssetSummaryCards from '../../components/admin/AssetSummaryCards';
 import AssetFilters from '../../components/admin/AssetFilters';
 import AssetList from '../../components/admin/AssetList';
@@ -19,8 +17,8 @@ export default function AdminAssets() {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    // Filters and sorting
     const [searchQuery, setSearchQuery] = useState('');
+    const [emailSearchQuery, setEmailSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [categoryFilter, setCategoryFilter] = useState('ALL');
     const [sortOrder, setSortOrder] = useState('NEWEST');
@@ -31,12 +29,10 @@ export default function AdminAssets() {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState(null);
 
-    // Autocomplete for quick assignment (view mode)
     const [assignEmail, setAssignEmail] = useState('');
     const [filteredEmails, setFilteredEmails] = useState([]);
     const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
 
-    // Autocomplete for adding new asset
     const [filteredEmailsAdd, setFilteredEmailsAdd] = useState([]);
     const [showEmailSuggestionsAdd, setShowEmailSuggestionsAdd] = useState(false);
 
@@ -59,7 +55,6 @@ export default function AdminAssets() {
             if (!resAssets.ok) throw new Error('Eroare la preluarea echipamentelor.');
 
             const rawAssets = await resAssets.json();
-            // Keep original index for sorting fallback
             const indexedAssets = rawAssets.map((a, idx) => ({ ...a, _index: idx }));
             setAssets(indexedAssets);
 
@@ -76,12 +71,17 @@ export default function AdminAssets() {
     useEffect(() => { fetchData(); }, []);
 
     const getAssignee = (asset) => {
-        const rawAssignee = asset?.assignedEmail || asset?.assigned_email || asset?.userEmail || asset?.assignedToId || asset?.assigned_to_id || asset?.employeeId || null;
+        if (!asset) return null;
 
-        // Daca informatia primita nu contine '@', inseamna ca este un ID si trebuie sa gasim emailul
-        if (rawAssignee && !rawAssignee.includes('@')) {
+        const rawAssignee = asset.assignedEmail || asset.assigned_email || asset.assignedToEmail || asset.userEmail || asset.assignedToId || asset.assigned_to_id || asset.employeeId || null;
+
+        if (rawAssignee && (typeof rawAssignee !== 'string' || !rawAssignee.includes('@'))) {
             const foundEmployee = employees.find(emp => emp.id === rawAssignee);
             if (foundEmployee) return foundEmployee.email;
+        }
+
+        if (!rawAssignee || (typeof rawAssignee === 'string' && (!rawAssignee.includes('@') || rawAssignee.trim() === '' || rawAssignee.includes('Neatribuit')))) {
+            return null;
         }
 
         return rawAssignee;
@@ -90,7 +90,7 @@ export default function AdminAssets() {
     const isDefective = (assetId) => {
         const currentAsset = assets.find(a => a.id === assetId);
         if (currentAsset && currentAsset.status === 'DEFECTIVE') return true;
-        return complaints.some(c => (c.assetId === assetId || c.asset_id === assetId) && (c.status === 'PENDING' || c.status === 'IN_PROGRESS'));
+        return complaints.some(c => (c.assetId === assetId || c.asset_id === assetId) && (c.statusCode === 'PENDING' || c.status === 'IN_PROGRESS'));
     };
 
     const normalizeCategory = (cat) => {
@@ -99,19 +99,21 @@ export default function AdminAssets() {
     };
 
     const dbCategories = assets.map(a => normalizeCategory(a.category)).filter(Boolean);
-    const categoriesList = [...new Set([...dbCategories, 'Laptop', 'Telefon', 'Monitor', 'Periferice', 'Altele'])];
+    const defaultCategories = ['Laptop', 'Telefon', 'Monitor', 'Tastatura', 'Mouse', 'Casti', 'Altele'];
+    const categoriesList = [...new Set([...dbCategories, ...defaultCategories])].filter(c => c !== 'Periferice');
 
     useEffect(() => {
         if (selectedAsset) {
+            const assignee = getAssignee(selectedAsset);
             let currentStatus = 'AVAILABLE';
             if (isDefective(selectedAsset.id)) currentStatus = 'DEFECTIVE';
-            else if (getAssignee(selectedAsset)) currentStatus = 'ASSIGNED';
+            else if (assignee) currentStatus = 'ASSIGNED';
 
             setEditData({
                 name: selectedAsset.name,
                 serialNumber: selectedAsset.serialNumber || selectedAsset.serial_number,
                 category: normalizeCategory(selectedAsset.category),
-                userEmail: getAssignee(selectedAsset) || '',
+                userEmail: assignee || '',
                 status: currentStatus
             });
             setIsEditing(false);
@@ -124,6 +126,47 @@ export default function AdminAssets() {
             setNewAssetData(prev => ({ ...prev, category: categoriesList[0] }));
         }
     }, [isAddModalOpen, categoriesList]);
+
+    const handleEmailInput = (e) => {
+        const val = e.target.value;
+        setAssignEmail(val);
+        if (val.length > 0) {
+            setFilteredEmails(employees.filter(emp => emp.email && emp.email.toLowerCase().includes(val.toLowerCase())));
+            setShowEmailSuggestions(true);
+        } else setShowEmailSuggestions(false);
+    };
+
+    const handleNewAssetEmailInput = (e) => {
+        const val = e.target.value;
+        setNewAssetData({...newAssetData, userEmail: val});
+        if (val.length > 0) {
+            setFilteredEmailsAdd(employees.filter(emp => emp.email && emp.email.toLowerCase().includes(val.toLowerCase())));
+            setShowEmailSuggestionsAdd(true);
+        } else setShowEmailSuggestionsAdd(false);
+    };
+
+    const handleAssignAsset = async () => {
+        if (!assignEmail) return alert('Introdu un email valid!');
+
+        const employee = employees.find(emp => emp.email.toLowerCase() === assignEmail.toLowerCase());
+        if (!employee) return alert('Angajatul cu acest email nu a fost gasit in baza de date!');
+
+        try {
+            const response = await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}/assign`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ employeeId: employee.id })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Eroare la alocare (${response.status}): ${errText}`);
+            }
+
+            fetchData();
+            setSelectedAsset(null);
+        } catch (err) { alert(err.message); }
+    };
 
     const handleAddAsset = async (e) => {
         e.preventDefault();
@@ -138,19 +181,21 @@ export default function AdminAssets() {
                     category: normalizeCategory(newAssetData.category)
                 })
             });
-            if (!response.ok) {
-                const errData = await response.text();
-                throw new Error(`Eroare la salvare: ${errData}`);
-            }
+            if (!response.ok) throw new Error(`Eroare la salvare`);
 
             const createdAsset = await response.json();
 
             if (newAssetData.userEmail.trim() !== '') {
-                await fetch(`http://localhost:8080/api/assets/${createdAsset.id}/assign`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ email: newAssetData.userEmail })
-                });
+                const employee = employees.find(emp => emp.email.toLowerCase() === newAssetData.userEmail.toLowerCase());
+                if (employee) {
+                    await fetch(`http://localhost:8080/api/assets/${createdAsset.id}/assign`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ employeeId: employee.id })
+                    });
+                } else {
+                    alert("Echipamentul a fost creat, dar emailul angajatului nu a fost gasit in baza de date pentru asignare.");
+                }
             }
 
             fetchData();
@@ -160,10 +205,9 @@ export default function AdminAssets() {
     };
 
     const handleUpdateAsset = async () => {
-       // Validare: Oprim salvarea daca a pus Atribuit dar a lasat emailul gol
-       if (editData.status === 'ASSIGNED' && (!editData.userEmail || editData.userEmail.trim() === '')) {
+        if (editData.status === 'ASSIGNED' && (!editData.userEmail || editData.userEmail.trim() === '')) {
             return alert('Te rog introdu un email pentru a putea atribui echipamentul!');
-       }
+        }
 
         try {
             let finalEmail = editData.userEmail;
@@ -189,7 +233,6 @@ export default function AdminAssets() {
                 throw new Error(`Eroare la actualizare (${response.status}): ${errText}`);
             }
 
-            // Daca statusul s-a schimbat in ASSIGNED, apelam explicit si ruta de alocare
             if (editData.status === 'ASSIGNED' && finalEmail) {
                 const employee = employees.find(emp => emp.email.toLowerCase() === finalEmail.toLowerCase());
                 if (employee) {
@@ -215,7 +258,6 @@ export default function AdminAssets() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            // Verificare adaugata pentru a nu inchide modalul daca stergerea esueaza in backend
             if (!response.ok) {
                 const errText = await response.text();
                 throw new Error(`Eroare la stergere din baza de date (${response.status}): ${errText}`);
@@ -226,80 +268,47 @@ export default function AdminAssets() {
         } catch (err) { alert(err.message); }
     };
 
-    const handleAssignAsset = async () => {
-        if (!assignEmail) return alert('Introdu un email valid!');
-
-        // Gasim angajatul in lista pentru a-i lua ID-ul
-        const employee = employees.find(emp => emp.email.toLowerCase() === assignEmail.toLowerCase());
-        if (!employee) return alert('Angajatul cu acest email nu a fost gasit in baza de date!');
-
-        try {
-            const response = await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}/assign`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                // Trimitem employeeId asa cum cere backend-ul!
-                body: JSON.stringify({ employeeId: employee.id })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Eroare la alocare (${response.status}): ${errText}`);
-            }
-
-            fetchData();
-            setSelectedAsset(null);
-        } catch (err) { alert(err.message); }
-    };
-
-    const handleEmailInput = (e) => {
-        const val = e.target.value;
-        setAssignEmail(val);
-        if (val.length > 0) {
-            setFilteredEmails(employees.filter(emp => emp.email && emp.email.toLowerCase().includes(val.toLowerCase())));
-            setShowEmailSuggestions(true);
-        } else setShowEmailSuggestions(false);
-    };
-
-    const handleNewAssetEmailInput = (e) => {
-        const val = e.target.value;
-        setNewAssetData({...newAssetData, userEmail: val});
-        if (val.length > 0) {
-            setFilteredEmailsAdd(employees.filter(emp => emp.email && emp.email.toLowerCase().includes(val.toLowerCase())));
-            setShowEmailSuggestionsAdd(true);
-        } else setShowEmailSuggestionsAdd(false);
-    };
-
     const getCategoryIcon = (category) => {
         const cat = normalizeCategory(category).toLowerCase();
-        if (cat.includes('laptop')) return <Laptop className="w-5 h-5 text-brand-primary" />;
-        if (cat.includes('telefon') || cat.includes('phone')) return <Smartphone className="w-5 h-5 text-blue-400" />;
-        return <HardDrive className="w-5 h-5 text-brand-muted" />;
+        if (cat.includes('laptop')) return <Laptop size={14} className="text-emerald-500" />;
+        if (cat.includes('telefon') || cat.includes('phone')) return <Smartphone size={14} className="text-amber-500" />;
+        if (cat.includes('tastatura') || cat.includes('keyboard')) return <Keyboard size={14} className="text-teal-500" />;
+        if (cat.includes('mouse')) return <Mouse size={14} className="text-orange-500" />;
+        if (cat.includes('casti') || cat.includes('head')) return <Headphones size={14} className="text-cyan-500" />;
+        if (cat.includes('storage') || cat.includes('hdd') || cat.includes('ssd')) return <HardDrive size={14} className="text-slate-500" />;
+        return <Package size={14} className="text-zinc-500" />;
     };
 
     const filteredAssets = assets.filter(asset => {
         const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (asset.serialNumber || asset.serial_number || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+        const assigneeEmail = getAssignee(asset) || '';
+        const matchesEmailSearch = assigneeEmail.toLowerCase().includes(emailSearchQuery.toLowerCase());
+
         const normalizedAssetCat = normalizeCategory(asset.category);
         const matchesCategory = categoryFilter === 'ALL' || normalizedAssetCat === categoryFilter;
 
         let matchesStatus = true;
         const defective = isDefective(asset.id);
-        const assigned = !!getAssignee(asset);
+        const assigned = !!assigneeEmail;
 
         if (statusFilter === 'AVAILABLE') matchesStatus = !assigned && !defective;
         if (statusFilter === 'ASSIGNED') matchesStatus = assigned && !defective;
         if (statusFilter === 'DEFECTIVE') matchesStatus = defective;
 
-        return matchesSearch && matchesCategory && matchesStatus;
+        return matchesSearch && matchesEmailSearch && matchesCategory && matchesStatus;
     }).sort((a, b) => {
         if (sortOrder === 'NEWEST') {
-            if (a.createdAt && b.createdAt) return new Date(b.createdAt) - new Date(a.createdAt);
-            if (!isNaN(a.id) && !isNaN(b.id)) return b.id - a.id;
+            const dateA = a.createdAt ? new Date(a.createdAt) : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt) : 0;
+            if (dateA && dateB) return dateB - dateA;
             return b._index - a._index;
         }
         if (sortOrder === 'OLDEST') {
-            if (a.createdAt && b.createdAt) return new Date(a.createdAt) - new Date(b.createdAt);
-            if (!isNaN(a.id) && !isNaN(b.id)) return a.id - b.id;
+            const dateA = a.createdAt ? new Date(a.createdAt) : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt) : 0;
+            if (dateA && dateB) return dateA - dateB;
             return a._index - b._index;
         }
         if (sortOrder === 'AZ') return a.name.localeCompare(b.name);
@@ -312,18 +321,10 @@ export default function AdminAssets() {
     const assignedAssetsCount = assets.filter(a => !isDefective(a.id) && !!getAssignee(a)).length;
     const availableAssetsCount = totalAssets - defectiveAssetsCount - assignedAssetsCount;
 
-    const availableDeg = totalAssets ? (availableAssetsCount / totalAssets) * 360 : 0;
-    const assignedDeg = totalAssets ? (assignedAssetsCount / totalAssets) * 360 : 0;
-
-    const totalComplaints = complaints.length;
-    const resolvedComplaints = complaints.filter(c => c.status === 'RESOLVED').length;
-    const rejectedComplaints = complaints.filter(c => c.status === 'REJECTED').length;
-    const pendingComplaints = complaints.filter(c => c.status === 'PENDING' || c.status === 'IN_PROGRESS').length;
-
     if (isLoading) return <div className="h-full flex items-center justify-center text-brand-text">Se incarca datele...</div>;
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-300">
+        <div className="space-y-6 animate-in fade-in duration-300 relative z-0">
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-brand-text">Gestiune Echipamente</h3>
                 <button onClick={() => setIsAddModalOpen(true)} className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-sm">
@@ -338,16 +339,14 @@ export default function AdminAssets() {
                 availableAssetsCount={availableAssetsCount}
                 assignedAssetsCount={assignedAssetsCount}
                 defectiveAssetsCount={defectiveAssetsCount}
-                availableDeg={availableDeg}
-                assignedDeg={assignedDeg}
-                totalComplaints={totalComplaints}
-                pendingComplaints={pendingComplaints}
-                resolvedComplaints={resolvedComplaints}
-                rejectedComplaints={rejectedComplaints}
+                assets={assets}
+                normalizeCategory={normalizeCategory}
+                getCategoryIcon={getCategoryIcon}
             />
 
             <AssetFilters
                 searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                emailSearchQuery={emailSearchQuery} setEmailSearchQuery={setEmailSearchQuery}
                 statusFilter={statusFilter} setStatusFilter={setStatusFilter}
                 categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter}
                 sortOrder={sortOrder} setSortOrder={setSortOrder}
@@ -360,44 +359,31 @@ export default function AdminAssets() {
                 isDefective={isDefective}
                 getAssignee={getAssignee}
                 getCategoryIcon={getCategoryIcon}
+                normalizeCategory={normalizeCategory}
+                complaints={complaints}
             />
 
             <AssetDetailsModal
-                selectedAsset={selectedAsset}
-                setSelectedAsset={setSelectedAsset}
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-                editData={editData}
-                setEditData={setEditData}
-                categoriesList={categoriesList}
-                normalizeCategory={normalizeCategory}
-                isDefective={isDefective}
-                getAssignee={getAssignee}
-                getCategoryIcon={getCategoryIcon}
-                handleUpdateAsset={handleUpdateAsset}
+                selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
+                isEditing={isEditing} setIsEditing={setIsEditing}
+                editData={editData} setEditData={setEditData}
+                categoriesList={categoriesList} normalizeCategory={normalizeCategory}
+                isDefective={isDefective} getAssignee={getAssignee}
+                getCategoryIcon={getCategoryIcon} handleUpdateAsset={handleUpdateAsset}
                 handleDeleteAsset={handleDeleteAsset}
-                assignEmail={assignEmail}
-                setAssignEmail={setAssignEmail}
-                handleEmailInput={handleEmailInput}
-                showEmailSuggestions={showEmailSuggestions}
-                setShowEmailSuggestions={setShowEmailSuggestions}
-                filteredEmails={filteredEmails}
-                handleAssignAsset={handleAssignAsset}
-                employees={employees}
-                complaints={complaints}
+                assignEmail={assignEmail} setAssignEmail={setAssignEmail}
+                handleEmailInput={handleEmailInput} showEmailSuggestions={showEmailSuggestions}
+                setShowEmailSuggestions={setShowEmailSuggestions} filteredEmails={filteredEmails}
+                handleAssignAsset={handleAssignAsset} complaints={complaints}
             />
 
             {isAddModalOpen && (
                 <AddAssetModal
                     setIsAddModalOpen={setIsAddModalOpen}
-                    newAssetData={newAssetData}
-                    setNewAssetData={setNewAssetData}
-                    categoriesList={categoriesList}
-                    handleNewAssetEmailInput={handleNewAssetEmailInput}
-                    showEmailSuggestionsAdd={showEmailSuggestionsAdd}
-                    setShowEmailSuggestionsAdd={setShowEmailSuggestionsAdd}
-                    filteredEmailsAdd={filteredEmailsAdd}
-                    handleAddAsset={handleAddAsset}
+                    newAssetData={newAssetData} setNewAssetData={setNewAssetData}
+                    categoriesList={categoriesList} handleNewAssetEmailInput={handleNewAssetEmailInput}
+                    showEmailSuggestionsAdd={showEmailSuggestionsAdd} setShowEmailSuggestionsAdd={setShowEmailSuggestionsAdd}
+                    filteredEmailsAdd={filteredEmailsAdd} handleAddAsset={handleAddAsset}
                     isSubmitting={isSubmitting}
                 />
             )}

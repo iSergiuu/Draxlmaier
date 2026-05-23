@@ -1,137 +1,191 @@
 import React from 'react';
-import { X, Building2, Mail, User, Info, Save, Edit2 } from 'lucide-react';
+import { X, User, Eye, EyeOff, Copy, Building2, Laptop, AlertCircle } from 'lucide-react';
+import CustomSelect from './CustomSelect';
 
 export default function EmployeeDetailsModal({
-                                                 selectedEmployee,
-                                                 setSelectedEmployee,
-                                                 departments,
-                                                 isEditing,
-                                                 setIsEditing,
-                                                 editData,
-                                                 setEditData,
-                                                 handleUpdateEmployee
+                                                 selectedEmployee, setSelectedEmployee,
+                                                 selectedDeptId, setSelectedDeptId,
+                                                 departments, getDeptColorObj,
+                                                 isDeptChanged, handleUpdateEmployee,
+                                                 visiblePasswords, setVisiblePasswords,
+                                                 generatedPasswords, copyToClipboard,
+                                                 assets, complaints
                                              }) {
     if (!selectedEmployee) return null;
 
-    const currentDept = departments.find(d => d.id === (selectedEmployee.departmentId || selectedEmployee.department_id));
+    const isEmpActive = selectedEmployee.isActive === true || selectedEmployee.is_active === true;
+    const securityCode = selectedEmployee.securityCode || selectedEmployee.security_code || selectedEmployee.employeeNumber || 'N/A';
+    const originalDeptId = departments.find(d => d.name === selectedEmployee.departmentName)?.id || '';
+
+    // Calculăm Asseturile
+    const userAssets = assets.filter(a => a.assignedToId === selectedEmployee.id || a.assignedToEmail === selectedEmployee.email);
+
+    // Calculăm Plângerile (doar pentru statusurile care au minim 1)
+    const userComplaints = complaints.filter(c => {
+        const author = (c.authorName || '').toLowerCase();
+        const empName1 = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`.toLowerCase();
+        const empName2 = `${selectedEmployee.lastName} ${selectedEmployee.firstName}`.toLowerCase();
+        return author === empName1 || author === empName2 || author === (selectedEmployee.email || '').toLowerCase();
+    });
+
+    const counts = userComplaints.reduce((acc, curr) => {
+        const status = curr.statusCode || 'UNKNOWN';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {});
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all p-4">
             <div className="bg-brand-card w-full max-w-lg rounded-2xl shadow-xl border border-brand-border flex flex-col max-h-[90vh]">
 
-                {/* Header */}
+                {/* Header-ul (Comun pentru ambele) */}
                 <div className="flex justify-between items-center p-6 border-b border-brand-border">
                     <h3 className="text-xl font-bold text-brand-text flex items-center gap-2">
                         <User className="text-brand-primary" />
-                        Detalii Angajat
+                        {isEmpActive ? 'Detalii Angajat' : 'Cont Generat (Inactiv)'}
                     </h3>
-                    <button onClick={() => { setSelectedEmployee(null); setIsEditing(false); }} className="text-brand-muted hover:text-brand-text transition-colors">
+                    <button onClick={() => setSelectedEmployee(null)} className="p-1.5 text-brand-muted hover:text-brand-text transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6 overflow-y-auto space-y-6">
+                {/* === BODY PENTRU CONTURI GENERATE (Doar Email, Parola si Cod) === */}
+                {!isEmpActive && (
+                    <div className="p-6 space-y-5 overflow-visible">
+                        <div>
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Email Atribuit</label>
+                            <p className="text-brand-text font-mono mt-1 text-sm bg-brand-bg/60 p-2.5 rounded border border-brand-border">
+                                {selectedEmployee.email}
+                            </p>
+                        </div>
 
-                    {/* Status Badge */}
-                    <div className="flex justify-between items-center bg-brand-bg p-4 rounded-lg border border-brand-border">
-                        <span className="text-sm font-medium text-brand-muted uppercase tracking-wider">Status Cont</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            selectedEmployee.isActive || selectedEmployee.is_active
-                                ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-                                : 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
-                        }`}>
-                            {selectedEmployee.isActive || selectedEmployee.is_active ? 'ACTIV' : 'ÎN AȘTEPTARE'}
-                        </span>
+                        <div>
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Parolă Temporară</label>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="font-mono text-brand-text bg-brand-bg px-3 py-2.5 rounded border border-brand-border text-sm flex-1">
+                                    {visiblePasswords[selectedEmployee.id]
+                                        ? (generatedPasswords[selectedEmployee.id] || selectedEmployee.tempPassword || 'VERIFICA_BACKEND')
+                                        : '••••••••'}
+                                </span>
+                                <button onClick={() => setVisiblePasswords(p => ({...p, [selectedEmployee.id]: !p[selectedEmployee.id]}))} className="p-2.5 border border-brand-border rounded bg-brand-bg text-brand-muted hover:text-brand-text">
+                                    {visiblePasswords[selectedEmployee.id] ? <EyeOff size={18}/> : <Eye size={18}/>}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Cod Securitate</label>
+                            <p className="text-brand-primary font-mono mt-1 bg-brand-primary/10 px-3 py-2.5 rounded border border-brand-primary/20 text-sm">
+                                {securityCode}
+                            </p>
+                        </div>
+
+                        <div className="pt-2">
+                            <button
+                                onClick={() => {
+                                    const pass = generatedPasswords[selectedEmployee.id] || selectedEmployee.tempPassword || 'VERIFICA_BACKEND';
+                                    copyToClipboard(selectedEmployee.email, pass, securityCode, selectedEmployee.departmentName);
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary hover:opacity-90 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                                <Copy size={16} /> Copiază Toate Datele
+                            </button>
+                        </div>
                     </div>
+                )}
 
-                    <div className="space-y-4">
-                        {/* Name & Email (View Mode) */}
-                        {!isEditing ? (
-                            <>
-                                <div>
-                                    <label className="text-xs font-semibold text-brand-muted uppercase">Nume Complet</label>
-                                    <p className="text-brand-text font-medium mt-1">
-                                        {(selectedEmployee.firstName || selectedEmployee.first_name) || '-'} {(selectedEmployee.lastName || selectedEmployee.last_name) || '-'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-brand-muted uppercase flex items-center gap-1"><Mail size={14} /> Email</label>
-                                    <p className="text-brand-text font-mono text-sm mt-1">{selectedEmployee.email}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-brand-muted uppercase flex items-center gap-1"><Building2 size={14} /> Departament</label>
-                                    <p className="text-brand-text font-medium mt-1">{currentDept ? currentDept.name : 'Nespecificat'}</p>
-                                </div>
-                            </>
-                        ) : (
-                            /* Edit Mode */
-                            <div className="space-y-4 animate-in fade-in">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-semibold text-brand-muted uppercase">Nume</label>
-                                        <input
-                                            type="text"
-                                            value={editData.lastName}
-                                            onChange={(e) => setEditData({...editData, lastName: e.target.value})}
-                                            className="w-full mt-1 border border-brand-border rounded-lg p-2.5 text-sm bg-brand-bg text-brand-text focus:outline-none focus:border-brand-primary"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-brand-muted uppercase">Prenume</label>
-                                        <input
-                                            type="text"
-                                            value={editData.firstName}
-                                            onChange={(e) => setEditData({...editData, firstName: e.target.value})}
-                                            className="w-full mt-1 border border-brand-border rounded-lg p-2.5 text-sm bg-brand-bg text-brand-text focus:outline-none focus:border-brand-primary"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-brand-muted uppercase">Departament</label>
-                                    <select
-                                        value={editData.departmentId}
-                                        onChange={(e) => setEditData({...editData, departmentId: e.target.value})}
-                                        className="w-full mt-1 border border-brand-border rounded-lg p-2.5 text-sm bg-brand-bg text-brand-text focus:outline-none focus:border-brand-primary"
-                                    >
-                                        <option value="">Alege un departament...</option>
-                                        {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                    </select>
-                                </div>
-                                {/* Informare Editare */}
-                                <div className="p-3 bg-brand-primary/10 border border-brand-primary/30 rounded flex gap-2 items-start mt-2">
-                                    <Info className="text-brand-primary shrink-0 w-4 h-4 mt-0.5" />
-                                    <p className="text-xs text-brand-primary">Email-ul nu poate fi modificat de aici. Pentru resetări, generează un cont nou.</p>
+                {/* === BODY PENTRU ANGAJAȚI ACTIVI (Cu Info, Assets, Complaints) === */}
+                {isEmpActive && (
+                    <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Nume Complet</label>
+                                <p className="text-brand-text font-medium mt-1 text-base">
+                                    {selectedEmployee.lastName} {selectedEmployee.firstName}
+                                </p>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Departament Curent</label>
+                                <div className="mt-1">
+                                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium border rounded-full ${getDeptColorObj(selectedEmployee.departmentName).class}`}>
+                                        {selectedEmployee.departmentName || 'Nespecificat'}
+                                    </span>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
 
-                {/* Footer / Acțiuni */}
-                <div className="p-6 border-t border-brand-border bg-brand-bg/50 rounded-b-2xl flex justify-end gap-3">
-                    {!isEditing ? (
+                        <div>
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider">Email Înregistrat</label>
+                            <p className="text-brand-text font-mono mt-1 text-sm">{selectedEmployee.email}</p>
+                        </div>
+
+                        <div className="border-t border-brand-border pt-5">
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-3">
+                                <Laptop size={14} className="text-brand-primary" /> Echipamente Alocate ({userAssets.length})
+                            </label>
+                            {userAssets.length > 0 ? (
+                                <div className="space-y-2">
+                                    {userAssets.map(asset => (
+                                        <div key={asset.id} className="bg-brand-bg px-3 py-2 rounded border border-brand-border text-sm flex justify-between">
+                                            <span className="font-medium text-brand-text">{asset.name}</span>
+                                            <span className="text-brand-muted font-mono">{asset.serialNumber}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-brand-muted bg-brand-bg/50 px-3 py-2 rounded italic">Acest angajat nu are echipamente alocate.</p>
+                            )}
+                        </div>
+
+                        <div className="border-t border-brand-border pt-5">
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-3">
+                                <AlertCircle size={14} className="text-orange-500" /> Plângeri Create ({userComplaints.length})
+                            </label>
+                            {Object.keys(counts).length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {Object.entries(counts).map(([status, count]) => (
+                                        <div key={status} className="bg-brand-bg px-2.5 py-1.5 rounded border border-brand-border text-xs flex items-center gap-2">
+                                            <span className="text-brand-muted capitalize">{status.replace('_', ' ')}</span>
+                                            <span className="font-bold text-brand-text">{count}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-brand-muted bg-brand-bg/50 px-3 py-2 rounded italic">Acest angajat nu a deschis nicio plângere.</p>
+                            )}
+                        </div>
+
+                        <div className="border-t border-brand-border pt-5 pb-2">
+                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
+                                <Building2 size={14} className="text-brand-primary" /> Mută în alt departament
+                            </label>
+                            <div className="relative z-50">
+                                <CustomSelect
+                                    value={selectedDeptId}
+                                    onChange={setSelectedDeptId}
+                                    options={departments.map(d => ({value: d.id, label: d.name}))}
+                                    placeholder="Alege noul departament..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Footer (Doar butonul de save pt active, daca e cazul, si close) */}
+                <div className="p-6 border-t border-brand-border bg-brand-bg/50 rounded-b-2xl flex justify-end gap-3 mt-auto">
+                    <button
+                        onClick={() => setSelectedEmployee(null)}
+                        className="px-4 py-2 border border-brand-border text-brand-text rounded-lg text-sm hover:bg-brand-bg transition"
+                    >
+                        Închide
+                    </button>
+                    {(isEmpActive && isDeptChanged) && (
                         <button
-                            onClick={() => setIsEditing(true)}
-                            className="px-4 py-2 bg-brand-primary text-white rounded-lg text-sm hover:opacity-90 transition flex items-center gap-2"
+                            onClick={handleUpdateEmployee}
+                            className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1"
                         >
-                            <Edit2 size={16} /> Editează Profilul
+                            Salvează Modificările
                         </button>
-                    ) : (
-                        <>
-                            <button
-                                onClick={() => setIsEditing(false)}
-                                className="px-4 py-2 border border-brand-border text-brand-text rounded-lg text-sm hover:bg-brand-bg transition"
-                            >
-                                Anulează
-                            </button>
-                            <button
-                                onClick={handleUpdateEmployee}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-2"
-                            >
-                                <Save size={16} /> Salvează Modificările
-                            </button>
-                        </>
                     )}
                 </div>
             </div>
