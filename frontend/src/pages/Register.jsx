@@ -38,8 +38,10 @@ export default function Register() {
     ];
 
     const reguliNeindeplinite = reguli.filter(r => !r.valida);
-    const afiseazaRegulile = isPasswordFocused || (p.length > 0 && reguliNeindeplinite.length > 0);
-    const paroleleCoincid = cp !== '' && p === cp;
+    const toateIndeplinite = reguliNeindeplinite.length === 0;
+    const afiseazaRegulile = p.length > 0 && (isPasswordFocused || !toateIndeplinite);
+    const reguliVizibile = isPasswordFocused ? reguli : reguliNeindeplinite;
+    const paroleleCoincid = cp !== '' && p === cp && toateIndeplinite;
     const paroleleDifera = cp !== '' && p !== cp;
 
     const handleSubmit = async (e) => {
@@ -95,7 +97,7 @@ export default function Register() {
                     </div>
                 )}
 
-                <form className="space-y-4" onSubmit={handleSubmit}>
+                <form className="space-y-0 flex flex-col gap-3" onSubmit={handleSubmit}>
                     <div className="flex gap-4">
                         <input name="firstName" type="text" required placeholder="Prenume" value={formData.firstName} onChange={handleChange} className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors" />
                         <input name="lastName" type="text" required placeholder="Nume" value={formData.lastName} onChange={handleChange} className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors" />
@@ -116,7 +118,7 @@ export default function Register() {
                             onFocus={() => setIsPasswordFocused(true)}
                             onBlur={() => setIsPasswordFocused(false)}
                             className={`w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text border rounded focus:outline-none transition-colors 
-                            ${paroleleCoincid ? 'border-green-500' : 'border-brand-border focus:border-brand-primary'}`}
+                            ${paroleleCoincid ? 'border-green-500 focus:border-green-500' : 'border-brand-border focus:border-brand-primary'}`}
                         />
                         <button
                             type="button"
@@ -130,18 +132,40 @@ export default function Register() {
                             )}
                         </button>
                     </div>
-
-                    {afiseazaRegulile && reguliNeindeplinite.length > 0 && (
-                        <div className="bg-brand-bg p-3 rounded border border-brand-border">
-                            <ul className="space-y-1">
-                                {reguliNeindeplinite.map(r => (
-                                    <li key={r.id} className="text-xs text-brand-muted flex items-center">
-                                        <span className="mr-2">•</span> {r.text}
-                                    </li>
-                                ))}
-                            </ul>
+                    <div style={{
+                        maxHeight: afiseazaRegulile ? '200px' : '0',
+                        opacity: afiseazaRegulile ? 1 : 0,
+                        overflow: 'hidden',
+marginTop: afiseazaRegulile ? '0' : '0',
+marginBottom: afiseazaRegulile ? '0' : '-15px',
+                        transition: 'max-height 0.5s ease, opacity 0.35s ease, margin 0.5s ease'
+                    }}>
+                        <div className="bg-brand-bg border border-brand-border rounded-lg p-3 space-y-1">
+                            {reguliVizibile.map(r => (
+                                <div key={r.id} className="flex items-center gap-2 text-xs transition-colors duration-200"
+                                    style={{ color: r.valida ? '#22c55e' : '#f87171' }}>
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                        width: '16px', height: '16px', borderRadius: '50%',
+                                        background: r.valida ? '#22c55e22' : '#f8717122',
+                                        flexShrink: 0,
+                                        transition: 'background 0.2s ease'
+                                    }}>
+                                        {r.valida ? (
+                                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                <path d="M2 5l2.5 2.5L8 3" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                        ) : (
+                                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                <path d="M3 3l4 4M7 3l-4 4" stroke="#f87171" strokeWidth="1.5" strokeLinecap="round"/>
+                                            </svg>
+                                        )}
+                                    </span>
+                                    {r.text}
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </div>
 
                     <div className="relative">
                         <input
