@@ -13,6 +13,7 @@ public record AssetResponseDTO(
         UUID assignedToId,
         String assignedToName,
         String assignedToEmail,
+        String status,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {}

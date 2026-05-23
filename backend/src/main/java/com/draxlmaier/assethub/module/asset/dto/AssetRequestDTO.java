@@ -16,5 +16,7 @@ public record AssetRequestDTO(
         @NotBlank(message = "Categoria este obligatorie")
         String category,
 
-        String assignedToEmail
+        String assignedToEmail,
+
+        String status
 ) {}

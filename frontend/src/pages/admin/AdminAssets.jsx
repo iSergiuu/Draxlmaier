@@ -189,7 +189,8 @@ export default function AdminAssets() {
                 body: JSON.stringify({
                     name: newAssetData.name,
                     serialNumber: newAssetData.serialNumber,
-                    category: normalizeCategory(newAssetData.category)
+                    category: normalizeCategory(newAssetData.category),
+                    status: newAssetData.userEmail.trim() !== '' ? 'ASSIGNED' : 'AVAILABLE'
                 })
             });
             if (!response.ok) throw new Error(`Eroare la salvare`);
@@ -228,7 +229,8 @@ export default function AdminAssets() {
                 name: editData.name,
                 serialNumber: editData.serialNumber,
                 category: editData.category,
-                assignedToEmail: finalEmail
+                assignedToEmail: finalEmail,
+                status: editData.status
             };
 
             const response = await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}`, {

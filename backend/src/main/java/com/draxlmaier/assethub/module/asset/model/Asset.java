@@ -39,4 +39,7 @@ public class Asset {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    @Column(name = "status")
+    private String status;
 }

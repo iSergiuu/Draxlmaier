@@ -51,12 +51,19 @@ public class AssetServiceImpl implements AssetService {
         asset.setCategory(requestDTO.category());
         asset.setUpdatedAt(OffsetDateTime.now());
 
+        if (requestDTO.status() != null && !requestDTO.status().isBlank()) {
+            asset.setStatus(requestDTO.status());
+        }
+
         if (requestDTO.assignedToEmail() != null && !requestDTO.assignedToEmail().isBlank()) {
             Employee employee = employeeRepository.findByEmail(requestDTO.assignedToEmail())
                     .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit"));
             asset.setAssignedTo(employee);
         } else {
             asset.setAssignedTo(null);
+            if (asset.getStatus() == null || asset.getStatus().equals("ASSIGNED")) {
+                asset.setStatus("AVAILABLE");
+            }
         }
 
         Asset savedAsset = assetRepository.save(asset);
@@ -81,11 +88,13 @@ public class AssetServiceImpl implements AssetService {
 
         Asset asset = assetMapper.toEntity(requestDTO);
         asset.setCreatedAt(OffsetDateTime.now());
+        asset.setStatus("AVAILABLE");
 
         if (requestDTO.assignedToEmail() != null && !requestDTO.assignedToEmail().isBlank()) {
             Employee employee = employeeRepository.findByEmail(requestDTO.assignedToEmail())
                     .orElseThrow(() -> new RuntimeException("Utilizatorul nu a fost găsit"));
             asset.setAssignedTo(employee);
+            asset.setStatus("ASSIGNED");
         }
 
         return assetMapper.toResponseDTO(assetRepository.save(asset));
@@ -101,6 +110,7 @@ public class AssetServiceImpl implements AssetService {
                 .orElseThrow(() -> new RuntimeException("Angajatul nu a fost găsit"));
 
         asset.setAssignedTo(employee);
+        asset.setStatus("ASSIGNED");
         asset.setUpdatedAt(OffsetDateTime.now());
 
         return assetMapper.toResponseDTO(assetRepository.save(asset));

@@ -71,7 +71,7 @@ export default function AssetList({
                             <td className="p-4 text-right">
                                 {defective ? (
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">
-                                            <AlertTriangle size={12} /> Service
+                                            <AlertTriangle size={12} /> Defect
                                         </span>
                                 ) : assigneeEmail ? (
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 border border-blue-500/20">
