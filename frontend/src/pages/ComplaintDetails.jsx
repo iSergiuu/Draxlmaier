@@ -46,20 +46,30 @@ export default function ComplaintDetails() {
     const navigate     = useNavigate();
     const statusMenuRef = useRef(null);
     const stompClientRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
-    const [ticket, setTicket]               = useState(null);
-    const [comments, setComments]           = useState([]);
-    const [loading, setLoading]             = useState(true);
-    const [error, setError]                 = useState(null);
-    const [newComment, setNewComment]       = useState('');
-    const [sendingComment, setSendingComment] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState('');
-    const [statusComment, setStatusComment] = useState('');
+    const [currentUser, setCurrentUser]           = useState(null);
+    const [ticket, setTicket]                     = useState(null);
+    const [comments, setComments]                 = useState([]);
+    const [loading, setLoading]                   = useState(true);
+    const [error, setError]                       = useState(null);
+    const [newComment, setNewComment]             = useState('');
+    const [sendingComment, setSendingComment]     = useState(false);
+    const [selectedStatus, setSelectedStatus]     = useState('');
+    const [statusComment, setStatusComment]       = useState('');
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
 
     const userRole     = localStorage.getItem('userRole')?.toUpperCase();
     const canChangeStatus = userRole === 'ADMIN' || userRole === 'DEPT_RESPONSIBLE';
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [comments]);
 
     useEffect(() => {
         const fetchTicketDetails = async () => {
@@ -67,10 +77,15 @@ export default function ComplaintDetails() {
                 const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
 
-                const [ticketRes, commentsRes] = await Promise.all([
+                const [ticketRes, commentsRes, userRes] = await Promise.all([
                     fetch(`http://localhost:8080/api/complaints/${id}`,          { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`http://localhost:8080/api/complaints/${id}/comments`, { headers: { Authorization: `Bearer ${token}` } }),
+                    fetch(`http://localhost:8080/api/employees/me`,              { headers: { Authorization: `Bearer ${token}` } })
                 ]);
+
+                if (userRes.ok) {
+                    setCurrentUser(await userRes.json());
+                }
 
                 if (ticketRes.ok) {
                     const data = await ticketRes.json();
@@ -188,6 +203,7 @@ export default function ComplaintDetails() {
     const priority      = getPriority(ticket.priority);
     const ticketNum     = ticket.ticketNumber || String(ticket.id).substring(0, 8).toUpperCase();
     const createdDate   = ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('ro-RO') : '—';
+    const currentUserFullName = currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim().toLowerCase() : '';
 
     return (
         <div className="min-h-screen bg-brand-bg transition-colors duration-300">
@@ -404,30 +420,35 @@ export default function ComplaintDetails() {
                                         <p className="text-xs text-brand-muted">Niciun mesaj încă. Fii primul!</p>
                                     </div>
                                 ) : comments.map((c, i) => {
-                                    const mine = c.isMine || c.authorName === 'Eu';
+                                    const cAuthorNameLower = (c.authorName || '').trim().toLowerCase();
+                                    const isMine = c.isMine || (currentUserFullName !== '' && cAuthorNameLower === currentUserFullName);
+
                                     return (
-                                        <div key={i} className={`flex gap-2.5 ${mine ? 'flex-row-reverse' : ''}`}>
-                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${mine ? 'bg-brand-primary text-white' : 'bg-brand-bg border border-brand-border text-brand-text'}`}>
-                                                {getInitials(c.authorName)}
+                                        <div key={i} className={`flex gap-2.5 ${isMine ? 'flex-row-reverse' : ''}`}>
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isMine ? 'bg-brand-primary text-white' : 'bg-brand-bg border border-brand-border text-brand-text'}`}>
+                                                {getInitials(isMine ? 'Eu' : c.authorName)}
                                             </div>
-                                            <div className={`flex flex-col gap-1 max-w-[75%] ${mine ? 'items-end' : 'items-start'}`}>
-                                                <div className={`flex items-center gap-1.5 ${mine ? 'flex-row-reverse' : ''}`}>
-                                                    <span className="text-[11px] font-semibold text-brand-text">{c.authorName}</span>
+                                            <div className={`flex flex-col gap-1 max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
+                                                <div className={`flex items-center gap-1.5 ${isMine ? 'flex-row-reverse' : ''}`}>
+                                                    <span className="text-[11px] font-semibold text-brand-text">
+                                                        {isMine ? 'Eu' : c.authorName}
+                                                    </span>
                                                     <span className="text-[10px] text-brand-muted">
                                                         {new Date(c.createdAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
                                                 <div className={`px-4 py-2.5 text-sm leading-relaxed rounded-2xl overflow-hidden ${
-                                                    mine
+                                                    isMine
                                                         ? 'bg-brand-primary text-white rounded-tr-sm'
                                                         : 'bg-brand-bg border border-brand-border text-brand-text rounded-tl-sm'
                                                 }`}>
-                                                    <p className="whitespace-pre-wrap break-all m-0">{c.message}</p>
+                                                    <p className="whitespace-pre-wrap break-words m-0">{c.message}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     );
                                 })}
+                                <div ref={messagesEndRef} />
                             </div>
 
                             <div className="px-4 pb-4 pt-2 shrink-0 border-t border-brand-border">
