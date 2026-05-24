@@ -3,10 +3,14 @@ package com.draxlmaier.assethub.module.dashboard.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 
+import java.util.List;
+
 @Builder
 public record DashboardStatsDTO(
         AssetStatsDTO assets,
-        TicketStatsDTO tickets
+        TicketStatsDTO tickets,
+        List<DepartmentStatDTO> employeesPerDepartment,
+        List<DepartmentStatDTO> assetsPerDepartment
 ) {
     @Builder
     public record AssetStatsDTO(
@@ -27,5 +31,11 @@ public record DashboardStatsDTO(
             long inProgress,
             long resolved,
             long deleted
+    ) {}
+
+    @Builder
+    public record DepartmentStatDTO(
+            String departmentName,
+            long count
     ) {}
 }
