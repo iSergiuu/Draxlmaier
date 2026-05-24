@@ -19,7 +19,7 @@ export default function CustomSelect({ value, onChange, options, placeholder, ic
                 </svg>
             </div>
 
-            {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>}
+            {isOpen && <div className="fixed inset-0 z-40" onMouseDown={(e) => { e.preventDefault(); setIsOpen(false); }}></div>}
 
             {isOpen && (
                 <div className="absolute z-50 w-full mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl overflow-hidden">

@@ -7,6 +7,7 @@ export default function EmployeeDetailsModal({
                                                  selectedDeptId, setSelectedDeptId,
                                                  departments, getDeptColorObj,
                                                  isDeptChanged, handleUpdateEmployee,
+                                                 selectedRole, setSelectedRole,
                                                  visiblePasswords, setVisiblePasswords,
                                                  generatedPasswords, copyToClipboard,
                                                  assets, complaints
@@ -155,17 +156,37 @@ export default function EmployeeDetailsModal({
                             )}
                         </div>
 
-                        <div className="border-t border-brand-border pt-5 pb-2">
-                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
-                                <Building2 size={14} className="text-brand-primary" /> Mută în alt departament
-                            </label>
-                            <div className="relative z-50">
-                                <CustomSelect
-                                    value={selectedDeptId}
-                                    onChange={setSelectedDeptId}
-                                    options={departments.map(d => ({value: d.id, label: d.name}))}
-                                    placeholder="Alege noul departament..."
-                                />
+                        <div className="border-t border-brand-border pt-5 pb-2 space-y-4">
+                            <div>
+                                <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
+                                    <Building2 size={14} className="text-brand-primary" /> Mută în alt departament
+                                </label>
+                                <div className="relative z-50">
+                                    <CustomSelect
+                                        value={selectedDeptId}
+                                        onChange={setSelectedDeptId}
+                                        options={departments.map(d => ({value: d.id, label: d.name}))}
+                                        placeholder="Alege noul departament..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
+                                    <User size={14} className="text-brand-primary" /> Schimbă rolul
+                                </label>
+                                <div className="relative z-40">
+                                    <CustomSelect
+                                        value={selectedRole}
+                                        onChange={setSelectedRole}
+                                        options={[
+                                            { value: 'USER', label: 'User' },
+                                            { value: 'ADMIN', label: 'Admin' },
+                                            { value: 'SUPER_ADMIN', label: 'Super Admin' },
+                                        ]}
+                                        placeholder="Alege rolul..."
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -179,7 +200,7 @@ export default function EmployeeDetailsModal({
                     >
                         Închide
                     </button>
-                    {(isEmpActive && isDeptChanged) && (
+                    {(isEmpActive && (isDeptChanged || selectedRole !== (selectedEmployee.roleCode || 'USER'))) && (
                         <button
                             onClick={handleUpdateEmployee}
                             className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1"

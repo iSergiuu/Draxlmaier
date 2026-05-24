@@ -40,6 +40,7 @@ export default function AdminEmployees() {
 
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [selectedDeptId, setSelectedDeptId] = useState('');
+    const [selectedRole, setSelectedRole] = useState('');
     const [visiblePasswords, setVisiblePasswords] = useState({});
     const [generatedPasswords, setGeneratedPasswords] = useState({});
 
@@ -85,6 +86,7 @@ export default function AdminEmployees() {
         if (selectedEmployee) {
             const foundDept = departments.find(d => d.name === selectedEmployee.departmentName);
             setSelectedDeptId(foundDept ? foundDept.id : '');
+            setSelectedRole(selectedEmployee.roleCode || 'USER');
         }
     }, [selectedEmployee, departments]);
 
@@ -120,21 +122,25 @@ export default function AdminEmployees() {
 
     const handleUpdateEmployee = async () => {
         try {
-            const response = await fetch(`http://localhost:8080/api/employees/${selectedEmployee.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    roleCode: selectedEmployee.roleCode || "USER",
-                    departmentId: selectedDeptId
+            const [deptRes, roleRes] = await Promise.all([
+                fetch(`http://localhost:8080/api/employees/${selectedEmployee.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ roleCode: selectedRole, departmentId: selectedDeptId })
+                }),
+                fetch(`http://localhost:8080/api/employees/${selectedEmployee.id}/role`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ roleCode: selectedRole })
                 })
-            });
+            ]);
 
-            if (response.ok) {
+            if (deptRes.ok || roleRes.ok) {
                 fetchData();
                 setSelectedEmployee(null);
+                showToast('Modificările au fost salvate.', 'success');
             } else {
-                const err = await response.text();
-                showToast(`Eroare la salvarea modificărilor: ${err}`, 'error');
+                showToast('Eroare la salvarea modificărilor.', 'error');
             }
         } catch (error) { showToast('Eroare de rețea la actualizare.', 'error'); }
     };
@@ -255,6 +261,7 @@ export default function AdminEmployees() {
                 <EmployeeDetailsModal
                     selectedEmployee={selectedEmployee} setSelectedEmployee={setSelectedEmployee}
                     selectedDeptId={selectedDeptId} setSelectedDeptId={setSelectedDeptId}
+                    selectedRole={selectedRole} setSelectedRole={setSelectedRole}
                     departments={departments} getDeptColorObj={getDeptColorObj}
                     isDeptChanged={selectedDeptId !== (departments.find(d => d.name === selectedEmployee.departmentName)?.id || '')}
                     handleUpdateEmployee={handleUpdateEmployee}
