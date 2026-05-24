@@ -23,7 +23,7 @@ export function TicketRow({ ticket, authorEmail, onClick }) {
         <div
             onClick={() => onClick(ticket)}
             className="grid items-center gap-6 px-5 py-3.5 border-b border-brand-border hover:bg-brand-primary/5 cursor-pointer transition-colors group"
-            style={{ gridTemplateColumns: 'auto 1fr 120px 100px 90px 110px' }}
+            style={{ gridTemplateColumns: '50px minmax(0, 2fr) 120px 100px 100px 110px' }}
         >
             {/* Nr */}
             <span className="text-xs font-mono text-brand-muted w-8 text-right">#{ticket.ticketNumber ?? '—'}</span>
@@ -47,7 +47,7 @@ export function TicketRow({ ticket, authorEmail, onClick }) {
             </div>
 
             {/* Categorie asset */}
-            <span className="text-xs text-brand-muted bg-brand-bg border border-brand-border rounded-lg px-2 py-1 text-center truncate">
+            <span className="text-xs text-brand-muted bg-brand-bg border border-brand-border rounded-full px-2.5 py-0.5 text-center truncate inline-flex items-center justify-center">
                 {category}
             </span>
 
@@ -71,7 +71,7 @@ export function TicketTableHeader() {
     return (
         <div
             className="grid items-center gap-6 px-5 py-2.5 bg-brand-bg border-b border-brand-border"
-            style={{ gridTemplateColumns: 'auto 1fr 120px 100px 90px 110px' }}
+            style={{ gridTemplateColumns: 'auto minmax(0, 1fr) 110px 100px 100px 110px' }}
         >
             <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider w-8 text-right">#</span>
             <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider">Titlu / Autor</span>

@@ -29,7 +29,7 @@ public class EmployeeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees() {
         return ResponseEntity.ok(employeeService.getAllEmployees());
     }
@@ -55,7 +55,7 @@ public class EmployeeController {
     }
 
     @PostMapping("/generate-temp-account")
-    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<List<EmployeeResponseDTO>> generateTempAccounts(
             @RequestParam UUID departmentId,
             @RequestParam int count) {
@@ -63,7 +63,7 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/temporary-accounts")
-    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<Void> deleteAllTemporaryAccounts() {
         employeeService.deleteAllTemporaryAccounts();
         return ResponseEntity.noContent().build();

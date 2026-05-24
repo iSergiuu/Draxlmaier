@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
+import { ToastContext } from '../App';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 
@@ -9,6 +10,7 @@ export default function Register() {
     // Verificăm dacă venim de la Login cu un cont temporar
     const tempEmail = location.state?.tempEmail;
 
+    const showToast = useContext(ToastContext);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',

@@ -25,10 +25,12 @@ function ProtectedAdminRoute({ children, superAdminOnly = false }) {
     const role = localStorage.getItem('userRole');
     const token = localStorage.getItem('token');
     const isSuperAdmin = role === 'SUPER_ADMIN';
-    const isAdmin = role === 'ADMIN' || isSuperAdmin || isDeptResponsible;
     const isDeptResponsible = role === 'DEPT_RESPONSIBLE';
+    const isAdmin = role === 'ADMIN' || isSuperAdmin || isDeptResponsible;
     if (!token || !isAdmin) return <Navigate to="/dashboard" replace />;
     if (superAdminOnly && !isSuperAdmin) return <Navigate to="/admin/tickets" replace />;
+    if (!superAdminOnly && isDeptResponsible && window.location.pathname.startsWith('/admin')) 
+        return <Navigate to="/dept/tickets" replace />;
     return children;
 }
 

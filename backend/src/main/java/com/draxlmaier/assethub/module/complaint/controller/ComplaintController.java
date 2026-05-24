@@ -33,7 +33,7 @@ public class ComplaintController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<List<ComplaintResponseDTO>> getAllComplaints() {
         return ResponseEntity.ok(complaintService.getAllComplaints());
     }
