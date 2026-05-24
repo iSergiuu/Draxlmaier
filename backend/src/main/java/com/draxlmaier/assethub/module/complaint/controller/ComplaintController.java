@@ -43,6 +43,18 @@ public class ComplaintController {
         return ResponseEntity.ok(complaintService.getMyComplaints());
     }
 
+    @GetMapping("/global")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    public ResponseEntity<List<ComplaintResponseDTO>> getGlobalTickets() {
+        return ResponseEntity.ok(complaintService.getGlobalTickets());
+    }
+
+    @GetMapping("/assigned")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    public ResponseEntity<List<ComplaintResponseDTO>> getMyAssignedTickets() {
+        return ResponseEntity.ok(complaintService.getMyAssignedTickets());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ComplaintResponseDTO> getComplaintById(@PathVariable UUID id) {
         return ResponseEntity.ok(complaintService.getComplaintById(id));

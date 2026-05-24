@@ -19,4 +19,8 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID> {
     long countByAuthorDepartmentIdAndEscalatedTrue(UUID departmentId);
 
     List<Complaint> findAllByAuthorEmail(String email);
+
+    List<Complaint> findByAuthorIdNotAndAssignedToIsNullAndStatus_CodeInAndDeletedAtIsNull(UUID adminId, List<String> statusCodes);
+
+    List<Complaint> findByAssignedToIdAndStatus_CodeInAndDeletedAtIsNull(UUID adminId, List<String> statusCodes);
 }

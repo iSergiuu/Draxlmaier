@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -74,7 +75,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         saveWorkflowStep(savedComplaint, author, null, initialStatus, "Tichet deschis automat.");
 
-        // MODIFICARE AICI: Trimitem mesajul de confirmare către autorul tichetului, nu către admini
         String userMsg = "Tichetul tău '" + savedComplaint.getTitle() + "' a fost înregistrat cu succes. Te vom notifica pe parcurs ce acesta va fi procesat.";
         notificationManager.sendToUser(author, "Confirmare Creare Tichet", userMsg, savedComplaint.getId());
 
@@ -115,6 +115,12 @@ public class ComplaintServiceImpl implements ComplaintService {
         complaint.setStatus(newStatus);
         complaint.setUpdatedAt(OffsetDateTime.now());
 
+        if ("IN_PROGRESS".equalsIgnoreCase(newStatus.getCode())) {
+            complaint.setAssignedTo(currentUser);
+        } else if ("IN_REVIEW".equalsIgnoreCase(newStatus.getCode()) || "NEW".equalsIgnoreCase(newStatus.getCode())) {
+            complaint.setAssignedTo(null);
+        }
+
         if (newStatus.isTerminal()) {
             complaint.setResolvedAt(OffsetDateTime.now());
         }
@@ -123,7 +129,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         saveWorkflowStep(savedComplaint, currentUser, oldStatus, newStatus, statusDTO.comment());
 
-        // Logica existentă: Dacă un admin/altcineva schimbă statusul, autorul primește email
         if (!savedComplaint.getAuthor().getId().equals(currentUser.getId())) {
             String userMsg = "Tichetul tău a fost trecut în statusul: " + newStatus.getCode() + ". Motiv: " + statusDTO.comment();
             notificationManager.sendToUser(savedComplaint.getAuthor(), "Status Tichet Actualizat", userMsg, savedComplaint.getId());
@@ -150,6 +155,36 @@ public class ComplaintServiceImpl implements ComplaintService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         return complaintRepository.findAllByAuthorEmail(email).stream()
+                .map(complaintMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ComplaintResponseDTO> getGlobalTickets() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Employee currentUser = employeeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilizatorul curent nu a fost găsit"));
+
+        List<String> validStatuses = Arrays.asList("NEW", "IN_REVIEW");
+
+        // Apelul actualizat
+        return complaintRepository.findByAuthorIdNotAndAssignedToIsNullAndStatus_CodeInAndDeletedAtIsNull(
+                        currentUser.getId(), validStatuses).stream()
+                .map(complaintMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ComplaintResponseDTO> getMyAssignedTickets() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Employee currentUser = employeeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilizatorul curent nu a fost găsit"));
+
+        List<String> validStatuses = Arrays.asList("IN_PROGRESS");
+
+        // Apelul actualizat
+        return complaintRepository.findByAssignedToIdAndStatus_CodeInAndDeletedAtIsNull(
+                        currentUser.getId(), validStatuses).stream()
                 .map(complaintMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }

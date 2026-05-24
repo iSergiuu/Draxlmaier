@@ -17,4 +17,7 @@ public interface ComplaintService {
     List<WorkflowResponseDTO> getComplaintWorkflow(UUID complaintId);
 
     List<ComplaintResponseDTO> getMyComplaints();
+
+    List<ComplaintResponseDTO> getGlobalTickets();
+    List<ComplaintResponseDTO> getMyAssignedTickets();
 }
