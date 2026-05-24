@@ -23,7 +23,7 @@ export function TicketRow({ ticket, authorEmail, onClick }) {
         <div
             onClick={() => onClick(ticket)}
             className="grid items-center gap-6 px-5 py-3.5 border-b border-brand-border hover:bg-brand-primary/5 cursor-pointer transition-colors group"
-            style={{ gridTemplateColumns: '50px minmax(0, 2fr) 120px 100px 100px 110px' }}
+            style={{ gridTemplateColumns: '50px minmax(0, 2fr) 1fr 1fr 1fr 1fr' }}
         >
             {/* Nr */}
             <span className="text-xs font-mono text-brand-muted w-8 text-right">#{ticket.ticketNumber ?? '—'}</span>
@@ -47,20 +47,24 @@ export function TicketRow({ ticket, authorEmail, onClick }) {
             </div>
 
             {/* Categorie asset */}
-            <span className="text-xs text-brand-muted bg-brand-bg border border-brand-border rounded-full px-2.5 py-0.5 text-center truncate inline-flex items-center justify-center">
-                {category}
-            </span>
+            <div className="flex justify-center">
+                <span className="text-xs text-brand-muted bg-brand-bg border border-brand-border rounded-full px-2.5 py-0.5 truncate inline-flex items-center justify-center">
+                    {category}
+                </span>
+            </div>
 
             {/* Prioritate */}
-            <Badge cfg={priority} />
+            <div className="flex justify-center"><Badge cfg={priority} /></div>
 
             {/* Status */}
-            <Badge cfg={status} />
+            <div className="flex justify-center"><Badge cfg={status} /></div>
 
             {/* Data */}
-            <span className="text-xs text-brand-muted flex items-center gap-1 whitespace-nowrap">
-                <Clock size={11} /> {formatDate(ticket.createdAt)}
-            </span>
+            <div className="flex justify-center">
+                <span className="text-xs text-brand-muted flex items-center gap-1 whitespace-nowrap">
+                    <Clock size={11} /> {formatDate(ticket.createdAt)}
+                </span>
+            </div>
         </div>
     );
 }
@@ -71,14 +75,14 @@ export function TicketTableHeader() {
     return (
         <div
             className="grid items-center gap-6 px-5 py-2.5 bg-brand-bg border-b border-brand-border"
-            style={{ gridTemplateColumns: 'auto minmax(0, 1fr) 110px 100px 100px 110px' }}
+            style={{ gridTemplateColumns: '50px minmax(0, 2fr) 1fr 1fr 1fr 1fr' }}
         >
             <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider w-8 text-right">#</span>
             <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider">Titlu / Autor</span>
-            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider">Categorie</span>
-            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider">Prioritate</span>
-            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider">Status</span>
-            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider">Data</span>
+            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider text-center">Categorie</span>
+            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider text-center">Prioritate</span>
+            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider text-center">Status</span>
+            <span className="text-[10px] font-semibold text-brand-muted uppercase tracking-wider text-center">Data</span>
         </div>
     );
 }

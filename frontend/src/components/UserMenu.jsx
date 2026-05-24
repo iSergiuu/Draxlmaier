@@ -362,16 +362,6 @@ export default function UserMenu() {
                                         </button>
                                     )}
 
-                                    {isDeptResponsible && (
-                                        <button
-                                            onClick={() => handleNavigate('/dept/tickets')}
-                                            className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
-                                        >
-                                            <ShieldAlert className="w-4 h-4 mr-3" />
-                                            Tichete Departament
-                                        </button>
-                                    )}
-
                                     <div className="border-t border-brand-border my-1"></div>
 
                                     <button

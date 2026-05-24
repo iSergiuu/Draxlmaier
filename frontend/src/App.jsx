@@ -22,16 +22,11 @@ import AdminReports from './pages/admin/AdminReports';
 
 export const ToastContext = React.createContext(null);
 
-function ProtectedAdminRoute({ children, superAdminOnly = false }) {
+function ProtectedRoute({ children, allowedRoles }) {
     const role = localStorage.getItem('userRole');
     const token = localStorage.getItem('token');
-    const isSuperAdmin = role === 'SUPER_ADMIN';
-    const isDeptResponsible = role === 'DEPT_RESPONSIBLE';
-    const isAdmin = role === 'ADMIN' || isSuperAdmin || isDeptResponsible;
-    if (!token || !isAdmin) return <Navigate to="/dashboard" replace />;
-    if (superAdminOnly && !isSuperAdmin) return <Navigate to="/admin/tickets" replace />;
-    if (!superAdminOnly && isDeptResponsible && window.location.pathname.startsWith('/admin')) 
-        return <Navigate to="/dept/tickets" replace />;
+    if (!token) return <Navigate to="/login" replace />;
+    if (!allowedRoles.includes(role)) return <Navigate to="/dashboard" replace />;
     return children;
 }
 
@@ -52,17 +47,17 @@ function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/profile" element={<Profile />} />
 
-                    <Route path="/admin" element={<ProtectedAdminRoute><AdminLayout /></ProtectedAdminRoute>}>
+                    <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminLayout /></ProtectedRoute>}>
                         <Route index element={<Navigate to="tickets" replace />} />
                         <Route path="tickets" element={<AdminTickets />} />
                         <Route path="tickets/:id" element={<ComplaintDetails />} />
-                        <Route path="employees" element={<ProtectedAdminRoute superAdminOnly><AdminEmployees /></ProtectedAdminRoute>} />
-                        <Route path="assets" element={<ProtectedAdminRoute superAdminOnly><AdminAssets /></ProtectedAdminRoute>} />
-                        <Route path="departments" element={<ProtectedAdminRoute superAdminOnly><AdminDepartments /></ProtectedAdminRoute>} />
-                        <Route path="reports" element={<ProtectedAdminRoute superAdminOnly><AdminReports /></ProtectedAdminRoute>} />
+                        <Route path="employees" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminEmployees /></ProtectedRoute>} />
+                        <Route path="assets" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminAssets /></ProtectedRoute>} />
+                        <Route path="departments" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminDepartments /></ProtectedRoute>} />
+                        <Route path="reports" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminReports /></ProtectedRoute>} />
                     </Route>
 
-                    <Route path="/dept" element={<ProtectedAdminRoute><DeptLayout /></ProtectedAdminRoute>}>
+                    <Route path="/dept" element={<ProtectedRoute allowedRoles={['DEPT_RESPONSIBLE']}><DeptLayout /></ProtectedRoute>}>
                         <Route index element={<Navigate to="tickets" replace />} />
                         <Route path="tickets" element={<DeptTickets />} />
                         <Route path="tickets/:id" element={<ComplaintDetails />} />

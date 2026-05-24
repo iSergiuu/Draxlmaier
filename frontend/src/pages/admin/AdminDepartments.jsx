@@ -1,310 +1,376 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { ToastContext } from '../../App';
-import { Plus, Trash2 } from 'lucide-react';
-import EmployeeSummaryCards from '../../components/admin/EmployeeSummaryCards';
-import EmployeeFilters from '../../components/admin/EmployeeFilters';
-import EmployeeList from '../../components/admin/EmployeeList';
-import GenerateAccountsModal from '../../components/admin/GenerateAccountsModal';
-import EmployeeDetailsModal from '../../components/admin/EmployeeDetailsModal';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Building, Users, AlertCircle, Plus, Pencil, Trash2, X, Check, Package, MessageSquare, Loader2, UserCog, Mail } from 'lucide-react';
 
-// Lista de culori HEX pentru Donut Chart și clase Tailwind pentru Badge-uri
-const DEPT_COLORS = [
-    { hex: '#3b82f6', class: 'bg-blue-500/10 text-blue-500 border-blue-500/20' }, // Blue
-    { hex: '#a855f7', class: 'bg-purple-500/10 text-purple-500 border-purple-500/20' }, // Purple
-    { hex: '#ec4899', class: 'bg-pink-500/10 text-pink-500 border-pink-500/20' }, // Pink
-    { hex: '#10b981', class: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' }, // Emerald
-    { hex: '#f59e0b', class: 'bg-amber-500/10 text-amber-500 border-amber-500/20' }, // Amber
-    { hex: '#06b6d4', class: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20' }, // Cyan
-    { hex: '#f43f5e', class: 'bg-rose-500/10 text-rose-500 border-rose-500/20' }, // Rose
-    { hex: '#6366f1', class: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' } // Indigo
-];
+const token = () => localStorage.getItem('token');
+const API = 'http://localhost:8080/api';
 
-export default function AdminEmployees() {
-    const [employees, setEmployees] = useState([]);
-    const [departments, setDepartments] = useState([]);
-    const [complaints, setComplaints] = useState([]);
-    const [assets, setAssets] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+function StatBadge({ icon: Icon, label, value, color }) {
+    return (
+        <div className="flex flex-col gap-1 bg-brand-bg rounded-lg p-3 border border-brand-border flex-1">
+            <div className="flex items-center gap-1.5 text-brand-muted text-xs">
+                <Icon size={12} />
+                <span>{label}</span>
+            </div>
+            <span className="text-brand-text font-bold text-lg leading-none" style={{ color }}>{value ?? '—'}</span>
+        </div>
+    );
+}
 
-    const [activeTab, setActiveTab] = useState('ACTIVE');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [emailSearchQuery, setEmailSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('ALL');
-    const [departmentFilter, setDepartmentFilter] = useState('ALL');
-    const [sortOrder, setSortOrder] = useState('NEWEST');
-
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-    const [modalDept, setModalDept] = useState('');
-    const [modalCount, setModalCount] = useState(1);
-
-    const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [selectedDeptId, setSelectedDeptId] = useState('');
-    const [selectedRole, setSelectedRole] = useState('');
-    const [visiblePasswords, setVisiblePasswords] = useState({});
-    const [generatedPasswords, setGeneratedPasswords] = useState({});
-
-    const token = localStorage.getItem('token');
-    const showToast = useContext(ToastContext);
-
-    const getDeptColorObj = (deptName) => {
-        const fallback = { hex: '#6b7280', class: 'bg-gray-500/10 text-gray-500 border-gray-500/20' };
-        if (!deptName) return fallback;
-        const index = departments.findIndex(d => d.name === deptName);
-        if (index === -1) return fallback;
-        return DEPT_COLORS[index % DEPT_COLORS.length];
-    };
-
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const [empRes, deptRes, compRes, assetRes] = await Promise.all([
-                fetch('http://localhost:8080/api/employees', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('http://localhost:8080/api/departments', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
-                fetch('http://localhost:8080/api/complaints', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
-                fetch('http://localhost:8080/api/assets', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
-            ]);
-
-            if (empRes.ok) {
-                const rawEmp = await empRes.json();
-                setEmployees(rawEmp.map((e, idx) => ({...e, _index: idx})));
-            }
-            if (deptRes && deptRes.ok) setDepartments(await deptRes.json());
-            if (compRes && compRes.ok) setComplaints(await compRes.json());
-            if (assetRes && assetRes.ok) setAssets(await assetRes.json());
-
-            setIsLoading(false);
-        } catch (error) {
-            console.error("Eroare la preluarea datelor:", error);
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchData(); }, []);
+function DeptCard({ dept, dashboardStats, onEdit, onDelete }) {
+    const [stats, setStats] = useState(null);
 
     useEffect(() => {
-        if (selectedEmployee) {
-            const foundDept = departments.find(d => d.name === selectedEmployee.departmentName);
-            setSelectedDeptId(foundDept ? foundDept.id : '');
-            setSelectedRole(selectedEmployee.roleCode || 'USER');
-        }
-    }, [selectedEmployee, departments]);
-
-    const handleGenerateAccounts = async (e) => {
-        e.preventDefault();
-        if (!modalDept) return showToast('Selectează un departament!', 'warning');
-
-        try {
-            const res = await fetch(`http://localhost:8080/api/employees/generate-temp-account?departmentId=${modalDept}&count=${modalCount}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                const newAccs = await res.json();
-                const updatedPasswords = { ...generatedPasswords };
-                newAccs.forEach(acc => {
-                    updatedPasswords[acc.id] = acc.password || acc.tempPassword || acc.plainPassword || 'VERIFICA_BACKEND';
+        const fetchStats = async () => {
+            try {
+                const res = await fetch(`${API}/departments/${dept.id}/stats`, {
+                    headers: { 'Authorization': `Bearer ${token()}` }
                 });
-                setGeneratedPasswords(updatedPasswords);
+                if (res.ok) setStats(await res.json());
+            } catch {}
+        };
+        fetchStats();
+    }, [dept.id]);
 
-                fetchData();
-                setIsModalOpen(false);
-                setModalCount(1);
-                setModalDept('');
-                setActiveTab('GENERATED');
-            } else {
-                const err = await res.text();
-                showToast(`Eroare la generare: ${err}`, 'error');
-            }
-        } catch (error) { showToast('Eroare de rețea.', 'error'); }
-    };
+    const employeeCount = dashboardStats?.employeesPerDepartment?.find(
+        d => d.departmentName === dept.name
+    )?.count ?? 0;
 
-    const handleUpdateEmployee = async () => {
+    const assetCount = dashboardStats?.assetsPerDepartment?.find(
+        d => d.departmentName === dept.name
+    )?.count ?? 0;
+
+    return (
+        <div className="bg-brand-card border border-brand-border rounded-xl shadow-sm hover:border-brand-primary/40 transition-all duration-200 flex flex-col">
+            <div className="flex items-center justify-between p-5 pb-3">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-brand-bg rounded-lg text-brand-primary border border-brand-border">
+                        <Building size={20} />
+                    </div>
+                    <h4 className="text-base font-bold text-brand-text">{dept.name}</h4>
+                </div>
+                <div className="flex items-center gap-1">
+                    <button onClick={() => onEdit(dept)}
+                        className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors">
+                        <Pencil size={14} />
+                    </button>
+                    <button onClick={() => onDelete(dept)}
+                        className="p-1.5 rounded-lg text-brand-muted hover:text-red-400 hover:bg-red-400/10 transition-colors">
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="px-5 pb-3 flex gap-2">
+                <StatBadge icon={Users}         label="Angajati" value={employeeCount}              color="#3b82f6" />
+                <StatBadge icon={Package}       label="Asseturi" value={assetCount}                 color="#10b981" />
+                <StatBadge icon={MessageSquare} label="Plangeri" value={stats?.totalComplaits ?? 0} color="#f59e0b" />
+            </div>
+
+            {/* Manager departament */}
+            <div className="px-5 pb-4 border-t border-brand-border pt-3">
+                <div className="flex items-center gap-2 text-xs text-brand-muted mb-1">
+                    <UserCog size={12} className="text-brand-primary" />
+                    <span className="uppercase tracking-wider font-semibold">Responsabil</span>
+                </div>
+                {dept.managerName ? (
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary text-[10px] font-bold shrink-0">
+                            {dept.managerName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold text-brand-text truncate">{dept.managerName}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-xs text-brand-muted italic">Niciun responsabil asignat</p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function AddEditModal({ dept, onClose, onSave }) {
+    const [name, setName]               = useState(dept?.name || '');
+    const [managerId, setManagerId]     = useState(dept?.managerId || '');
+    const [managerSearch, setManagerSearch] = useState(dept?.managerName || '');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [employees, setEmployees]     = useState([]);
+    const [saving, setSaving]           = useState(false);
+    const [error, setError]             = useState('');
+
+    useEffect(() => {
+        fetch(`${API}/employees`, { headers: { 'Authorization': `Bearer ${token()}` } })
+            .then(r => r.ok ? r.json() : [])
+            .then(data => setEmployees(data.filter(e => e.isActive)))
+            .catch(() => {});
+    }, []);
+    
+    const filteredEmployees = managerSearch.length > 1
+        ? employees.filter(e =>
+            e.email.toLowerCase().includes(managerSearch.toLowerCase()) ||
+            `${e.firstName} ${e.lastName}`.toLowerCase().includes(managerSearch.toLowerCase())
+          )
+        : [];
+
+    const handleSave = async () => {
+        if (!name.trim()) return setError('Numele este obligatoriu.');
+        setSaving(true);
+        setError('');
         try {
-            const [deptRes, roleRes] = await Promise.all([
-                fetch(`http://localhost:8080/api/employees/${selectedEmployee.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ roleCode: selectedRole, departmentId: selectedDeptId })
-                }),
-                fetch(`http://localhost:8080/api/employees/${selectedEmployee.id}/role`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ roleCode: selectedRole })
-                })
-            ]);
-
-            if (deptRes.ok || roleRes.ok) {
-                fetchData();
-                setSelectedEmployee(null);
-                showToast('Modificările au fost salvate.', 'success');
-            } else {
-                showToast('Eroare la salvarea modificărilor.', 'error');
+            const method = dept ? 'PUT' : 'POST';
+            const url    = dept ? `${API}/departments/${dept.id}` : `${API}/departments`;
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+                body: JSON.stringify({ 
+                name: name.trim(),
+                ...(managerId ? { managerId } : {})
+                 })
+            });
+            if (!res.ok) {
+                const txt = await res.text();
+                let message = 'Eroare la salvare.';
+                try {
+                    const json = JSON.parse(txt);
+                    message = json.message || message;
+                } catch {}
+                throw new Error(message);
             }
-        } catch (error) { showToast('Eroare de rețea la actualizare.', 'error'); }
+            onSave();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const copyToClipboard = (email, password, securityCode, deptName) => {
-        const text = `Date de acces platformă DRX (Departament: ${deptName || 'Nespecificat'})\n\nEmail: ${email}\nParolă: ${password}\nCod Securitate: ${securityCode || 'N/A'}\n\nIntrodu aceste date la prima logare pentru a-ți configura contul.`;
-        navigator.clipboard.writeText(text);
-        showToast('Datele au fost copiate în clipboard!', 'success');
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-brand-text">
+                        {dept ? 'Editeaza departament' : 'Departament nou'}
+                    </h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <input
+                    type="text"
+                    placeholder="Nume departament"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                    autoFocus
+                    className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
+                />
+
+                <div className="relative">
+                    <label className="text-xs text-brand-muted mb-1 block">Responsabil departament (optional)</label>
+                        <input
+                            type="text"
+                            placeholder="Cauta dupa email sau nume..."
+                            value={managerSearch}
+                            onChange={(e) => { setManagerSearch(e.target.value); setManagerId(''); setShowSuggestions(true); }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
+                        />
+                        {managerId && (
+                            <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                                <Check size={11} /> {managerSearch}
+                            </p>
+                        )}
+                        {showSuggestions && filteredEmployees.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                                {filteredEmployees.map(e => (
+                                    <button
+                                        key={e.id}
+                                        type="button"
+                                        onMouseDown={() => {
+                                            setManagerId(e.id);
+                                            setManagerSearch(`${e.firstName} ${e.lastName} — ${e.email}`);
+                                            setShowSuggestions(false);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-xs hover:bg-brand-primary/10 transition-colors border-b border-brand-border last:border-0"
+                                    >
+                                        <span className="text-brand-text font-medium">{e.firstName} {e.lastName}</span>
+                                        <span className="text-brand-muted ml-2">{e.email}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                {error && (
+                    <p className="text-red-400 text-xs flex items-center gap-1.5">
+                        <AlertCircle size={12} /> {error}
+                    </p>
+                )}
+
+                <div className="flex gap-2">
+                    <button onClick={onClose}
+                        className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                        Anuleaza
+                    </button>
+                    <button onClick={handleSave} disabled={saving}
+                        className="flex-1 py-2 px-4 bg-brand-primary hover:opacity-90 text-white rounded-lg font-medium text-sm transition-opacity flex items-center justify-center gap-2 disabled:opacity-60">
+                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        {dept ? 'Salveaza' : 'Adauga'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DeleteModal({ dept, onClose, onDeleted }) {
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError]       = useState('');
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        try {
+            const res = await fetch(`${API}/departments/${dept.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token()}` }
+            });
+            if (!res.ok) throw new Error('Eroare la stergere.');
+            onDeleted();
+        } catch (err) {
+            setError(err.message);
+            setDeleting(false);
+        }
     };
 
-    // Calcul date
-    const activeEmployeesList = employees.filter(e => e.isActive === true);
-    const generatedEmployeesList = employees.filter(e => e.isActive === false);
-    const totalEmployees = employees.length;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-brand-text">Sterge departament</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-bg transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
 
-    const getDeptStats = () => {
-        const stats = {};
-        departments.forEach(d => { stats[d.name] = { name: d.name, count: 0, class: getDeptColorObj(d.name).class, hex: getDeptColorObj(d.name).hex } });
-        employees.forEach(emp => {
-            if (emp.departmentName && stats[emp.departmentName]) stats[emp.departmentName].count += 1;
-        });
-        return Object.values(stats).sort((a, b) => b.count - a.count);
-    };
+                <p className="text-sm text-brand-muted">
+                    Esti sigur ca vrei sa stergi departamentul <span className="text-brand-text font-semibold">"{dept.name}"</span>? Actiunea nu poate fi anulata.
+                </p>
 
-    const processedEmployees = employees.filter(emp => {
-        if (activeTab === 'ACTIVE' && !emp.isActive) return false;
-        if (activeTab === 'GENERATED' && emp.isActive) return false;
+                {error && (
+                    <p className="text-red-400 text-xs flex items-center gap-1.5">
+                        <AlertCircle size={12} /> {error}
+                    </p>
+                )}
 
-        const matchesName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesEmail = (emp.email || '').toLowerCase().includes(emailSearchQuery.toLowerCase());
-        const empDeptObj = departments.find(d => d.name === emp.departmentName);
-        const deptIdToMatch = empDeptObj ? empDeptObj.id : null;
-        const matchesDept = departmentFilter === 'ALL' || deptIdToMatch === departmentFilter;
+                <div className="flex gap-2">
+                    <button onClick={onClose}
+                        className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                        Anuleaza
+                    </button>
+                    <button onClick={handleDelete} disabled={deleting}
+                        className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                        {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        Sterge
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
-    return matchesName && matchesEmail && matchesDept;
-    }).sort((a, b) => {
-        if (sortOrder === 'AZ') return (a.lastName || a.email || '').localeCompare(b.lastName || b.email || '');
-        if (sortOrder === 'ZA') return (b.lastName || b.email || '').localeCompare(a.lastName || a.email || '');
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        if (sortOrder === 'NEWEST') return dateA !== dateB ? dateA - dateB : a._index - b._index;
-        if (sortOrder === 'OLDEST') return dateA !== dateB ? dateB - dateA : b._index - b._index;
-        return 0;
-    });
+export default function AdminDepartments() {
+    const [departments, setDepartments] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [isLoading, setIsLoading]     = useState(true);
+    const [error, setError]             = useState(null);
+
+    const [addEditModal, setAddEditModal] = useState(null); // null | 'new' | dept object
+    const [deleteModal, setDeleteModal]   = useState(null); // null | dept object
+
+    const fetchDepartments = useCallback(async () => {
+        const tok = token();
+        if (!tok) { setError("Nu esti autentificat."); setIsLoading(false); return; }
+        try {
+            const [deptRes, dashRes] = await Promise.all([
+                fetch(`${API}/departments`, { headers: { 'Authorization': `Bearer ${tok}` } }),
+                fetch(`${API}/dashboard/stats`, { headers: { 'Authorization': `Bearer ${tok}` } }),
+            ]);
+            if (!deptRes.ok) throw new Error('Eroare la preluarea departamentelor.');
+            if (!dashRes.ok) throw new Error('Eroare la preluarea statisticilor.');
+            setDepartments(await deptRes.json());
+            setDashboardStats(await dashRes.json());
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
+
+    const handleSaved = () => { setAddEditModal(null); fetchDepartments(); };
+    const handleDeleted = () => { setDeleteModal(null); fetchDepartments(); };
+    const handleSelect = (dept) => { /* poti extinde aici cu o pagina de detalii */ };
+
+    if (isLoading) return (
+        <div className="h-full flex items-center justify-center text-brand-muted gap-2">
+            <Loader2 size={18} className="animate-spin" /> Se incarca departamentele...
+        </div>
+    );
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center max-sm:flex-col max-sm:items-start max-sm:gap-4">
-                <h3 className="text-xl font-bold text-brand-text">Management Angajați</h3>
-                <div className="flex gap-3 max-sm:flex-col max-sm:w-full">
-                    <button onClick={() => setConfirmDeleteAll(true)} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2 rounded-lg font-medium flex items-center transition-colors max-sm:w-full max-sm:justify-center">
-                        <Trash2 className="w-5 h-5 mr-1" /> Curăță Inactive
-                    </button>
-                    <button onClick={() => setIsModalOpen(true)} className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-sm max-sm:w-full max-sm:justify-center">
-                        <Plus className="w-5 h-5 mr-1" /> Generează Conturi
-                    </button>
+            {/* Header */}
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-brand-text">Departamente</h3>
+                <button onClick={() => setAddEditModal('new')}
+                    className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-1.5 transition-opacity shadow-sm text-sm">
+                    <Plus size={18} /> Adauga Departament
+                </button>
+            </div>
+
+            {error && (
+                <div className="p-4 bg-red-900/50 border border-red-500 text-red-200 rounded-lg flex items-center gap-3">
+                    <AlertCircle size={18} className="flex-shrink-0" />
+                    <p className="text-sm">{error}</p>
                 </div>
-            </div>
-
-            <EmployeeSummaryCards
-                totalEmployees={totalEmployees}
-                activeCount={activeEmployeesList.length}
-                generatedCount={generatedEmployeesList.length}
-                deptStats={getDeptStats()}
-            />
-
-            <div className="flex space-x-2 border-b border-brand-border mb-4 max-sm:overflow-x-auto max-sm:pb-1">
-                <button
-                    onClick={() => setActiveTab('ACTIVE')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'ACTIVE' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
-                >
-                    Angajați Activi
-                </button>
-                <button
-                    onClick={() => setActiveTab('GENERATED')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'GENERATED' ? 'border-orange-500 text-orange-500' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
-                >
-                    Conturi Generate
-                </button>
-            </div>
-
-            {activeTab === 'ACTIVE' && (
-                <EmployeeFilters
-                    searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-                    emailSearchQuery={emailSearchQuery} setEmailSearchQuery={setEmailSearchQuery}
-                    departmentFilter={departmentFilter} setDepartmentFilter={setDepartmentFilter}
-                    departmentsList={departments}
-                    sortOrder={sortOrder} setSortOrder={setSortOrder}
-                />
             )}
 
-            {isLoading ? (
-                <div className="text-center p-8 text-brand-muted">Se încarcă datele...</div>
-            ) : (
-                <EmployeeList
-                    processedEmployees={processedEmployees}
-                    activeTab={activeTab}
-                    departments={departments}
-                    complaints={complaints}
-                    getDeptColorObj={getDeptColorObj}
-                    visiblePasswords={visiblePasswords}
-                    setVisiblePasswords={setVisiblePasswords}
-                    generatedPasswords={generatedPasswords}
-                    setSelectedEmployee={setSelectedEmployee}
-                    copyToClipboard={copyToClipboard}
-                />
-            )}
-
-            <GenerateAccountsModal
-                isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen}
-                modalDept={modalDept} setModalDept={setModalDept}
-                modalCount={modalCount} setModalCount={setModalCount}
-                handleGenerateAccounts={handleGenerateAccounts}
-                departments={departments}
-            />
-
-            {selectedEmployee && (
-                <EmployeeDetailsModal
-                    selectedEmployee={selectedEmployee} setSelectedEmployee={setSelectedEmployee}
-                    selectedDeptId={selectedDeptId} setSelectedDeptId={setSelectedDeptId}
-                    selectedRole={selectedRole} setSelectedRole={setSelectedRole}
-                    departments={departments} getDeptColorObj={getDeptColorObj}
-                    isDeptChanged={selectedDeptId !== (departments.find(d => d.name === selectedEmployee.departmentName)?.id || '')}
-                    handleUpdateEmployee={handleUpdateEmployee}
-                    visiblePasswords={visiblePasswords} setVisiblePasswords={setVisiblePasswords}
-                    generatedPasswords={generatedPasswords} copyToClipboard={copyToClipboard}
-                    assets={assets} complaints={complaints}
-                />
-            )}
-
-            {confirmDeleteAll && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-500/10 rounded-lg">
-                                <Trash2 size={20} className="text-red-400" />
-                            </div>
-                            <h3 className="text-base font-bold text-brand-text">Sterge conturi inactive</h3>
-                        </div>
-                        <p className="text-sm text-brand-muted">
-                            Esti sigur ca vrei sa stergi <span className="text-brand-text font-semibold">toate</span> conturile generate neatribuite? Actiunea nu poate fi anulata.
-                        </p>
-                        <div className="flex gap-2 max-sm:flex-col">
-                            <button onClick={() => setConfirmDeleteAll(false)}
-                                className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm max-sm:w-full">
-                                Anuleaza
-                            </button>
-                            <button onClick={async () => {
-                                setConfirmDeleteAll(false);
-                                try {
-                                    const res = await fetch('http://localhost:8080/api/employees/temporary-accounts', {
-                                        method: 'DELETE',
-                                        headers: { 'Authorization': `Bearer ${token}` }
-                                    });
-                                    if (res.ok) { fetchData(); showToast('Conturile inactive au fost sterse.', 'success'); }
-                                    else showToast('A aparut o eroare la stergere.', 'error');
-                                } catch { showToast('Nu s-au putut sterge conturile.', 'error'); }
-                            }}
-                                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 max-sm:w-full">
-                                <Trash2 size={14} /> Sterge tot
-                            </button>
-                        </div>
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {departments.length === 0 && !error ? (
+                    <div className="col-span-full p-10 text-center bg-brand-card border border-brand-border rounded-xl text-brand-muted text-sm">
+                        Niciun departament configurat. Adauga primul departament.
                     </div>
-                </div>
+                ) : (
+                    departments.map(dept => (
+                        <DeptCard
+                            key={dept.id}
+                            dept={dept}
+                            dashboardStats={dashboardStats}
+                            onEdit={(d) => setAddEditModal(d)}
+                            onDelete={(d) => setDeleteModal(d)}
+                        />
+                    ))
+                )}
+            </div>
+
+            {/* Modals */}
+            {addEditModal && (
+                <AddEditModal
+                    dept={addEditModal === 'new' ? null : addEditModal}
+                    onClose={() => setAddEditModal(null)}
+                    onSave={handleSaved}
+                />
+            )}
+            {deleteModal && (
+                <DeleteModal
+                    dept={deleteModal}
+                    onClose={() => setDeleteModal(null)}
+                    onDeleted={handleDeleted}
+                />
             )}
         </div>
     );

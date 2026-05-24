@@ -9,6 +9,8 @@ const API = 'http://localhost:8080/api';
 const token = () => localStorage.getItem('token') || localStorage.getItem('jwt_token');
 
 const MINE_STATUSES = ['IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED', 'REJECTED'];
+const ACTIVE_STATUSES = ['NEW', 'IN_REVIEW'];
+const CLOSED_STATUSES = ['RESOLVED', 'CLOSED', 'REJECTED'];
 
 export default function AdminTickets() {
     const showToast  = useContext(ToastContext);
@@ -18,7 +20,7 @@ export default function AdminTickets() {
     const [employees, setEmployees] = useState([]);
     const [assets,    setAssets]    = useState([]);
     const [loading,   setLoading]   = useState(true);
-    const [activeTab, setActiveTab] = useState('ALL');
+    const [activeTab, setActiveTab] = useState('ACTIVE');
 
     const [search,          setSearch]          = useState('');
     const [statusFilter,    setStatusFilter]    = useState('ALL');
@@ -68,9 +70,9 @@ export default function AdminTickets() {
         const tPriority = (t.priority || '').toUpperCase();
         const tCat      = t._category || 'Altele';
 
-        if (activeTab === 'MINE') {
-            if (!MINE_STATUSES.includes(tStatus)) return false;
-        }
+        if (activeTab === 'ACTIVE' && !ACTIVE_STATUSES.includes(tStatus)) return false;
+        if (activeTab === 'CLOSED' && !CLOSED_STATUSES.includes(tStatus)) return false;
+        if (activeTab === 'MINE'   && !MINE_STATUSES.includes(tStatus))   return false;
 
         if (statusFilter   !== 'ALL' && tStatus   !== statusFilter)   return false;
         if (priorityFilter !== 'ALL' && tPriority !== priorityFilter) return false;
@@ -120,8 +122,10 @@ export default function AdminTickets() {
 
             <div className="flex gap-1 border-b border-brand-border overflow-x-auto no-scrollbar">
                 {[
-                    { key: 'ALL',  label: 'Toate tichetele', icon: Inbox },
-                    { key: 'MINE', label: 'Tichetele mele',  icon: UserCheck },
+                    { key: 'ACTIVE', label: 'Tichete active',  icon: AlertCircle },
+                    { key: 'CLOSED', label: 'Tichete închise', icon: CheckCircle2 },
+                    { key: 'MINE',   label: 'Tichetele mele',  icon: UserCheck },
+                    { key: 'ALL',    label: 'Toate',           icon: Inbox },
                 ].map(tab => (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                         className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-brand-primary text-brand-primary' : 'border-transparent text-brand-muted hover:text-brand-text'}`}>
