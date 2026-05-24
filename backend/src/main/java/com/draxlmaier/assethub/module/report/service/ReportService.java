@@ -31,7 +31,19 @@ public class ReportService {
         Map<String, String> filters = request.getFilters();
         if (filters != null && !filters.isEmpty()) {
             for (String key : filters.keySet()) {
-                jpql.append(" AND e.").append(key).append(" = :").append(key.replace(".", ""));
+                if (key.equals("createdAfter")) {
+                    jpql.append(" AND e.createdAt >= :createdAfter");
+                } else if (key.equals("createdBefore")) {
+                    jpql.append(" AND e.createdAt <= :createdBefore");
+                } else if (key.equals("departmentName")) {
+                            if ("ASSET".equalsIgnoreCase(request.getEntityType())) {
+                                jpql.append(" AND e.assignedTo.department.name = :departmentName");
+                            } else {
+                                jpql.append(" AND e.department.name = :departmentName");
+                            }
+                        } else {
+                    jpql.append(" AND e.").append(key).append(" = :").append(key.replace(".", ""));
+                }
             }
         }
 
@@ -43,7 +55,13 @@ public class ReportService {
         TypedQuery<Object> query = entityManager.createQuery(jpql.toString(), Object.class);
         if (filters != null && !filters.isEmpty()) {
             for (Map.Entry<String, String> entry : filters.entrySet()) {
-                query.setParameter(entry.getKey().replace(".", ""), entry.getValue());
+                if (entry.getKey().equals("createdAfter") || entry.getKey().equals("createdBefore")) {
+                    query.setParameter(entry.getKey(), java.time.OffsetDateTime.parse(entry.getValue() + "T00:00:00+00:00"));
+                } else if (entry.getKey().equals("isActive")) {
+                    query.setParameter(entry.getKey(), Boolean.parseBoolean(entry.getValue()));
+                } else {
+                    query.setParameter(entry.getKey().replace(".", ""), entry.getValue());
+                }
             }
         }
 
@@ -71,6 +89,26 @@ public class ReportService {
 
     private Object extractValue(Object obj, String fieldName) {
         try {
+            // Mapări speciale pentru câmpuri virtuale
+            if (obj instanceof com.draxlmaier.assethub.module.asset.model.Asset asset) {
+                if (fieldName.equals("assignedToName")) {
+                    return asset.getAssignedTo() != null
+                        ? asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName()
+                        : null;
+                }
+                if (fieldName.equals("assignedToEmail")) {
+                    return asset.getAssignedTo() != null ? asset.getAssignedTo().getEmail() : null;
+                }
+            }
+            if (obj instanceof com.draxlmaier.assethub.module.employee.model.Employee emp) {
+                if (fieldName.equals("departmentName")) {
+                    return emp.getDepartment() != null ? emp.getDepartment().getName() : null;
+                }
+                if (fieldName.equals("roleCode")) {
+                    return emp.getRole() != null ? emp.getRole().getCode() : null;
+                }
+            }
+
             if (fieldName.contains(".")) {
                 String[] parts = fieldName.split("\\.");
                 Object current = obj;

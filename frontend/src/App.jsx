@@ -18,6 +18,7 @@ import AdminDepartments from './pages/admin/AdminDepartments';
 import DeptLayout from './pages/dept/DeptLayout';
 import DeptTickets from './pages/dept/DeptTickets';
 import DeptEmployees from './pages/dept/DeptEmployees';
+import AdminReports from './pages/admin/AdminReports';
 
 export const ToastContext = React.createContext(null);
 
@@ -58,6 +59,7 @@ function App() {
                         <Route path="employees" element={<ProtectedAdminRoute superAdminOnly><AdminEmployees /></ProtectedAdminRoute>} />
                         <Route path="assets" element={<ProtectedAdminRoute superAdminOnly><AdminAssets /></ProtectedAdminRoute>} />
                         <Route path="departments" element={<ProtectedAdminRoute superAdminOnly><AdminDepartments /></ProtectedAdminRoute>} />
+                        <Route path="reports" element={<ProtectedAdminRoute superAdminOnly><AdminReports /></ProtectedAdminRoute>} />
                     </Route>
 
                     <Route path="/dept" element={<ProtectedAdminRoute><DeptLayout /></ProtectedAdminRoute>}>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Hash, Building2, Calendar, Ticket, CheckCircle, Clock, ArrowLeft, Package, Eye, EyeOff } from 'lucide-react';
+import { Mail, Hash, Building2, Calendar, Ticket, ArrowLeft, Package, Eye, EyeOff } from 'lucide-react';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import UserMenu from '../components/UserMenu';
 
@@ -19,9 +19,6 @@ export default function Profile() {
         role: '',
         employeeNumber: '',
         joinedAt: '',
-        totalTickets: 0,
-        resolvedTickets: 0,
-        pendingTickets: 0,
     });
 
     useEffect(() => {
@@ -35,30 +32,14 @@ export default function Profile() {
                     'Content-Type': 'application/json',
                 };
 
-                const [employeeRes, complaintsRes] = await Promise.all([
-                    fetch('http://localhost:8080/api/employees/me', { method: 'GET', headers }),
-                    fetch('http://localhost:8080/api/complaints', { method: 'GET', headers }),
-                ]);
+                // Facem request DOAR pentru datele utilizatorului (scapam de 500-ul de la complaints)
+                const employeeRes = await fetch('http://localhost:8080/api/employees/me', { 
+                    method: 'GET', 
+                    headers 
+                });
 
-                if (employeeRes.ok && complaintsRes.ok) {
+                if (employeeRes.ok) {
                     const empData = await employeeRes.json();
-                    const complaintsData = await complaintsRes.json();
-
-                    const fullName = `${empData.firstName || ''} ${empData.lastName || ''}`.trim().toLowerCase();
-                    
-                    const userTickets = complaintsData.filter(ticket =>
-                        ticket.authorName && ticket.authorName.toLowerCase() === fullName
-                    );
-
-                    const resolved = userTickets.filter(t => {
-                        const s = (t.status || t.statusCode || '').toUpperCase();
-                        return s === 'RESOLVED' || s === 'CLOSED';
-                    }).length;
-
-                    const pending = userTickets.filter(t => {
-                        const s = (t.status || t.statusCode || '').toUpperCase();
-                        return s === 'NEW' || s === 'IN_REVIEW' || s === 'IN_PROGRESS';
-                    }).length;
 
                     setUser({
                         firstName: empData.firstName || 'N/A',
@@ -70,9 +51,6 @@ export default function Profile() {
                         joinedAt: empData.createdAt
                             ? new Date(empData.createdAt).toLocaleDateString('ro-RO')
                             : 'Necunoscut',
-                        totalTickets: userTickets.length,
-                        resolvedTickets: resolved,
-                        pendingTickets: pending,
                     });
                 } else if (employeeRes.status === 401 || employeeRes.status === 403) {
                     localStorage.removeItem('jwt_token');
@@ -91,8 +69,6 @@ export default function Profile() {
 
         fetchProfileData();
     }, [navigate]);
-
-    const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-brand-bg transition-colors duration-300">
@@ -132,7 +108,7 @@ export default function Profile() {
                                 className="flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors mb-0.5"
                             >
                                 <ArrowLeft className="w-3.5 h-3.5" />
-                                Înapoi la Asset-urile mele
+                                Înapoi
                             </button>
                             <h1 className="text-lg font-bold text-brand-text leading-tight">Profilul meu</h1>
                         </div>
@@ -211,38 +187,12 @@ export default function Profile() {
                         </div>
                     </motion.div>
 
-                    <div className="lg:col-span-2 space-y-5">
+                    <div className="lg:col-span-2 space-y-6">
 
                         <motion.div
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ type: 'spring', stiffness: 280, damping: 24, delay: 0.07 }}
-                            className="grid grid-cols-3 gap-4"
-                        >
-                            {[
-                                { icon: Ticket,        label: 'Sesizări trimise', value: user.totalTickets, color: 'text-brand-primary' },
-                                { icon: CheckCircle,   label: 'Rezolvate',        value: user.resolvedTickets, color: 'text-green-500' },
-                                { icon: Clock,         label: 'În curs',          value: user.pendingTickets, color: 'text-amber-500' },
-                            ].map(({ icon: Icon, label, value, color }) => (
-                                <div
-                                    key={label}
-                                    className="bg-brand-card border border-brand-border rounded-2xl p-5 flex flex-col gap-3 shadow-sm transition-colors duration-300"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center">
-                                        <Icon className={`w-5 h-5 ${color}`} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold">{label}</p>
-                                        <p className="text-3xl font-bold text-brand-text mt-1">{value}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ type: 'spring', stiffness: 280, damping: 24, delay: 0.14 }}
                             className="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-sm transition-colors duration-300"
                         >
                             <h3 className="text-sm font-bold text-brand-text mb-5 flex items-center gap-2">
@@ -291,40 +241,31 @@ export default function Profile() {
                         <motion.div
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ type: 'spring', stiffness: 280, damping: 24, delay: 0.21 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24, delay: 0.14 }}
                             className="bg-brand-card border border-brand-border rounded-2xl p-6 shadow-sm transition-colors duration-300"
                         >
                             <h3 className="text-sm font-bold text-brand-text mb-5 flex items-center gap-2">
                                 <span className="w-1 h-4 rounded-full bg-brand-primary inline-block" />
-                                Activitate recentă
+                                Tichete și Sesizări
                             </h3>
 
-                            {user.totalTickets === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-8 gap-2">
-                                    <div className="w-12 h-12 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center mb-1">
-                                        <Ticket className="w-5 h-5 text-brand-muted opacity-40" />
-                                    </div>
-                                    <p className="text-sm text-brand-muted">Nu ai trimis nicio sesizare încă.</p>
+                            <div className="flex items-center gap-4 p-4 bg-brand-bg rounded-xl border border-brand-border">
+                                <div className="w-9 h-9 rounded-xl bg-brand-card border border-brand-border flex items-center justify-center shrink-0">
+                                    <Ticket className="w-4 h-4 text-brand-primary" />
                                 </div>
-                            ) : (
-                                <div className="flex items-center gap-4 p-4 bg-brand-bg rounded-xl border border-brand-border">
-                                    <div className="w-9 h-9 rounded-xl bg-brand-card border border-brand-border flex items-center justify-center shrink-0">
-                                        <Ticket className="w-4 h-4 text-brand-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-brand-text">
-                                            {user.totalTickets} sesizăr{user.totalTickets === 1 ? 'e trimisă' : 'i trimise'}
-                                        </p>
-                                        <p className="text-xs text-brand-muted mt-0.5">Vezi istoricul complet în problemele mele</p>
-                                    </div>
-                                    <button
-                                        onClick={() => navigate('/complaints')}
-                                        className="ml-auto text-xs font-semibold text-brand-primary hover:opacity-70 transition-opacity shrink-0"
-                                    >
-                                        Mergi →
-                                    </button>
+                                <div>
+                                    <p className="text-sm font-semibold text-brand-text">
+                                        Istoric sesizări
+                                    </p>
+                                    <p className="text-xs text-brand-muted mt-0.5">Vezi și gestionează problemele raportate de tine</p>
                                 </div>
-                            )}
+                                <button
+                                    onClick={() => navigate('/my-complaints')} // Asigură-te că ruta este corectă
+                                    className="ml-auto px-4 py-2 text-xs font-semibold bg-brand-primary/10 text-brand-primary rounded-lg hover:bg-brand-primary/20 transition-colors shrink-0"
+                                >
+                                    Deschide
+                                </button>
+                            </div>
                         </motion.div>
 
                     </div>
