@@ -73,19 +73,18 @@ export default function ResetPassword() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-brand-bg py-12 px-4 transition-colors duration-300 relative">
-            <div className="absolute top-6 right-6">
+        <div className="min-h-screen flex items-center justify-center bg-brand-bg py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 relative">
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
                 <ThemeSwitcher />
             </div>
 
-            <div className="max-w-md w-full space-y-6 bg-brand-card p-8 rounded-xl shadow-md border border-brand-border transition-colors duration-300">
+            <div className="max-w-md w-full space-y-6 bg-brand-card p-6 sm:p-8 rounded-xl shadow-md border border-brand-border transition-colors duration-300">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold text-brand-text">Parola noua</h2>
-                    <p className="mt-2 text-sm text-brand-muted">Asset Complaint Hub</p>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-brand-text">Parola noua</h2>
+                    <p className="mt-2 text-xs sm:text-sm text-brand-muted">Asset Complaint Hub</p>
                 </div>
 
-                <div className="space-y-0 flex flex-col gap-3">
-                    {/* Camp parola noua */}
+                <div className="space-y-0 flex flex-col gap-3 sm:gap-4">
                     <div className="relative">
                         <input
                             type={showPass ? "text" : "password"}
@@ -95,10 +94,11 @@ export default function ResetPassword() {
                             onFocus={() => setPasswordFocused(true)}
                             onBlur={() => setPasswordFocused(false)}
                             disabled={!token || success}
-                            className={`w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text rounded focus:outline-none transition-colors border disabled:opacity-50 ${
+                            className={`w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text rounded-lg focus:outline-none transition-colors border disabled:opacity-50 text-sm sm:text-base ${
                                 confirmMatch && allRulesPassed ? 'border-green-500 focus:border-green-500' :
                                     'border-brand-border focus:border-brand-primary'
-                            }`}                        />
+                            }`}
+                        />
                         <button type="button" onClick={() => setShowPass(!showPass)}
                                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-muted hover:text-brand-text focus:outline-none transition-colors">
                             {showPass ? <EyeOffIcon /> : <EyeIcon />}
@@ -141,7 +141,6 @@ export default function ResetPassword() {
                         </div>
                     </div>
 
-                    {/* Camp confirmare parola */}
                     <div className="relative">
                         <input
                             type={showConf ? "text" : "password"}
@@ -149,7 +148,7 @@ export default function ResetPassword() {
                             value={confirm}
                             onChange={(e) => setConfirm(e.target.value)}
                             disabled={!token || success}
-                            className={`w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text rounded focus:outline-none transition-colors border disabled:opacity-50 ${
+                            className={`w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text rounded-lg focus:outline-none transition-colors border disabled:opacity-50 text-sm sm:text-base ${
                                 confirmMatch && allRulesPassed ? 'border-green-500 focus:border-green-500' :
                                     confirmMismatch               ? 'border-red-500 focus:border-red-500' :
                                         'border-brand-border focus:border-brand-primary'
@@ -161,24 +160,22 @@ export default function ResetPassword() {
                         </button>
                     </div>
 
-                    {/* Mesaj eroare / succes */}
                     {message && (
                         <p className={`text-sm text-center ${success ? 'text-green-400' : 'text-red-400'}`}>
                             {message}
                         </p>
                     )}
 
-                    {/* Butoane */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <button type="button"
                                 onClick={() => navigate('/login')}
-                                className="flex-1 py-2 px-4 border border-brand-border rounded text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm font-medium">
                             Inapoi la login
                         </button>
                         <button type="button"
                                 onClick={handleReset}
                                 disabled={!token || success}
-                                className="flex-1 py-2 px-4 border border-transparent rounded text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm disabled:opacity-50">
+                                className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-transparent rounded-lg text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm disabled:opacity-50">
                             Salveaza parola
                         </button>
                     </div>

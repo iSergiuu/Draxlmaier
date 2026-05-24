@@ -7,16 +7,15 @@ import EmployeeList from '../../components/admin/EmployeeList';
 import GenerateAccountsModal from '../../components/admin/GenerateAccountsModal';
 import EmployeeDetailsModal from '../../components/admin/EmployeeDetailsModal';
 
-// Lista de culori HEX pentru Donut Chart și clase Tailwind pentru Badge-uri
 const DEPT_COLORS = [
-    { hex: '#3b82f6', class: 'bg-blue-500/10 text-blue-500 border-blue-500/20' }, // Blue
-    { hex: '#a855f7', class: 'bg-purple-500/10 text-purple-500 border-purple-500/20' }, // Purple
-    { hex: '#ec4899', class: 'bg-pink-500/10 text-pink-500 border-pink-500/20' }, // Pink
-    { hex: '#10b981', class: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' }, // Emerald
-    { hex: '#f59e0b', class: 'bg-amber-500/10 text-amber-500 border-amber-500/20' }, // Amber
-    { hex: '#06b6d4', class: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20' }, // Cyan
-    { hex: '#f43f5e', class: 'bg-rose-500/10 text-rose-500 border-rose-500/20' }, // Rose
-    { hex: '#6366f1', class: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' } // Indigo
+    { hex: '#3b82f6', class: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+    { hex: '#a855f7', class: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
+    { hex: '#ec4899', class: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
+    { hex: '#10b981', class: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
+    { hex: '#f59e0b', class: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+    { hex: '#06b6d4', class: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20' },
+    { hex: '#f43f5e', class: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
+    { hex: '#6366f1', class: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' }
 ];
 
 export default function AdminEmployees() {
@@ -151,7 +150,6 @@ export default function AdminEmployees() {
         showToast('Datele au fost copiate în clipboard!', 'success');
     };
 
-    // Calcul date
     const activeEmployeesList = employees.filter(e => e.isActive === true);
     const generatedEmployeesList = employees.filter(e => e.isActive === false);
     const totalEmployees = employees.length;
@@ -187,14 +185,14 @@ export default function AdminEmployees() {
     });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-brand-text">Management Angajați</h3>
-                <div className="flex gap-3">
-                    <button onClick={() => setConfirmDeleteAll(true)} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2 rounded-lg font-medium flex items-center transition-colors">
+        <div className="space-y-6 animate-in fade-in duration-300 relative z-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-brand-text">Management Angajați</h3>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                    <button onClick={() => setConfirmDeleteAll(true)} className="w-full sm:w-auto justify-center bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2.5 sm:py-2 rounded-lg font-medium flex items-center transition-colors text-sm sm:text-base">
                         <Trash2 className="w-5 h-5 mr-1" /> Curăță Inactive
                     </button>
-                    <button onClick={() => setIsModalOpen(true)} className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-sm">
+                    <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto justify-center bg-brand-primary hover:opacity-90 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium flex items-center shadow-sm text-sm sm:text-base transition-opacity">
                         <Plus className="w-5 h-5 mr-1" /> Generează Conturi
                     </button>
                 </div>
@@ -207,16 +205,16 @@ export default function AdminEmployees() {
                 deptStats={getDeptStats()}
             />
 
-            <div className="flex space-x-2 border-b border-brand-border mb-4">
+            <div className="flex overflow-x-auto no-scrollbar space-x-2 border-b border-brand-border mb-4">
                 <button
                     onClick={() => setActiveTab('ACTIVE')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'ACTIVE' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'ACTIVE' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
                 >
                     Angajați Activi
                 </button>
                 <button
                     onClick={() => setActiveTab('GENERATED')}
-                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === 'GENERATED' ? 'border-orange-500 text-orange-500' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
+                    className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'GENERATED' ? 'border-orange-500 text-orange-500' : 'border-transparent text-brand-muted hover:text-brand-text'}`}
                 >
                     Conturi Generate
                 </button>
@@ -233,7 +231,7 @@ export default function AdminEmployees() {
             )}
 
             {isLoading ? (
-                <div className="text-center p-8 text-brand-muted">Se încarcă datele...</div>
+                <div className="text-center p-8 text-brand-muted text-sm sm:text-base">Se încarcă datele...</div>
             ) : (
                 <EmployeeList
                     processedEmployees={processedEmployees}
@@ -272,20 +270,20 @@ export default function AdminEmployees() {
             )}
 
             {confirmDeleteAll && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm p-5 sm:p-6 space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-500/10 rounded-lg">
+                            <div className="p-2 bg-red-500/10 rounded-lg shrink-0">
                                 <Trash2 size={20} className="text-red-400" />
                             </div>
-                            <h3 className="text-base font-bold text-brand-text">Sterge conturi inactive</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-brand-text">Sterge conturi inactive</h3>
                         </div>
                         <p className="text-sm text-brand-muted">
                             Esti sigur ca vrei sa stergi <span className="text-brand-text font-semibold">toate</span> conturile generate neatribuite? Actiunea nu poate fi anulata.
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2">
                             <button onClick={() => setConfirmDeleteAll(false)}
-                                className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm font-medium">
                                 Anuleaza
                             </button>
                             <button onClick={async () => {
@@ -299,8 +297,8 @@ export default function AdminEmployees() {
                                     else showToast('A aparut o eroare la stergere.', 'error');
                                 } catch { showToast('Nu s-au putut sterge conturile.', 'error'); }
                             }}
-                                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
-                                <Trash2 size={14} /> Sterge tot
+                                className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
+                                <Trash2 size={16} /> Sterge tot
                             </button>
                         </div>
                     </div>

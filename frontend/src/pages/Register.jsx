@@ -7,7 +7,6 @@ export default function Register() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Verificăm dacă venim de la Login cu un cont temporar
     const tempEmail = location.state?.tempEmail;
 
     const showToast = useContext(ToastContext);
@@ -50,7 +49,6 @@ export default function Register() {
         e.preventDefault();
 
         try {
-            // Construim payload-ul exact cum îl vrea Swagger-ul
             const payload = {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
@@ -59,25 +57,24 @@ export default function Register() {
                 employeeNumber: formData.employeeNumber
             };
 
-            // Totul merge către auth/register, indiferent că e cont nou sau activare
             const response = await fetch('http://localhost:8080/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-        if (response.ok) {
-            showToast(tempEmail ? "Cont configurat cu succes! Te poti loga acum." : "Cont creat cu succes!", 'success');
-            navigate('/login');
-        } else {
-            const errText = await response.text();
-            try {
-                const json = JSON.parse(errText);
-                showToast(json.message || 'Eroare la inregistrare.', 'error');
-            } catch {
-                showToast(errText || 'Eroare la inregistrare.', 'error');
+            if (response.ok) {
+                showToast(tempEmail ? "Cont configurat cu succes! Te poti loga acum." : "Cont creat cu succes!", 'success');
+                navigate('/login');
+            } else {
+                const errText = await response.text();
+                try {
+                    const json = JSON.parse(errText);
+                    showToast(json.message || 'Eroare la inregistrare.', 'error');
+                } catch {
+                    showToast(errText || 'Eroare la inregistrare.', 'error');
+                }
             }
-        }
         } catch (error) {
             console.error("Register error:", error);
             showToast("Nu am putut comunica cu serverul.", 'error');
@@ -85,34 +82,34 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-brand-bg py-12 px-4 transition-colors duration-300 relative">
-            <div className="absolute top-6 right-6">
+        <div className="min-h-screen flex items-center justify-center bg-brand-bg py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 relative">
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
                 <ThemeSwitcher />
             </div>
 
-            <div className="max-w-md w-full space-y-6 bg-brand-card p-8 rounded-xl shadow-md border border-brand-border transition-colors duration-300">
+            <div className="max-w-md w-full space-y-6 bg-brand-card p-6 sm:p-8 rounded-xl shadow-md border border-brand-border transition-colors duration-300">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold text-brand-text">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-brand-text">
                         {tempEmail ? 'Configurare Cont' : 'Creează un cont'}
                     </h2>
-                    <p className="mt-2 text-sm text-brand-muted">Asset Complaint Hub</p>
+                    <p className="mt-2 text-xs sm:text-sm text-brand-muted">Asset Complaint Hub</p>
                 </div>
 
                 {tempEmail && (
-                    <div className="p-3 bg-brand-primary/10 border border-brand-primary/30 text-brand-primary rounded text-sm text-center">
+                    <div className="p-3 bg-brand-primary/10 border border-brand-primary/30 text-brand-primary rounded-lg text-sm text-center">
                         Configurezi contul pentru: <strong className="break-all">{tempEmail}</strong>
                     </div>
                 )}
 
-                <form className="space-y-0 flex flex-col gap-3" onSubmit={handleSubmit}>
-                    <div className="flex gap-4">
-                        <input name="firstName" type="text" required placeholder="Prenume" value={formData.firstName} onChange={handleChange} className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors" />
-                        <input name="lastName" type="text" required placeholder="Nume" value={formData.lastName} onChange={handleChange} className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors" />
+                <form className="space-y-0 flex flex-col gap-3 sm:gap-4" onSubmit={handleSubmit}>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                        <input name="firstName" type="text" required placeholder="Prenume" value={formData.firstName} onChange={handleChange} className="w-full px-4 py-2.5 sm:py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base" />
+                        <input name="lastName" type="text" required placeholder="Nume" value={formData.lastName} onChange={handleChange} className="w-full px-4 py-2.5 sm:py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base" />
                     </div>
 
-                    <input name="email" type="email" required placeholder="Email personal / institutional" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors" />
+                    <input name="email" type="email" required placeholder="Email personal / institutional" value={formData.email} onChange={handleChange} className="w-full px-4 py-2.5 sm:py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base" />
 
-                    <input name="employeeNumber" type="text" required placeholder="Cod Securitate (DRX-...)" value={formData.employeeNumber} onChange={handleChange} className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors" />
+                    <input name="employeeNumber" type="text" required placeholder="Cod Securitate (DRX-...)" value={formData.employeeNumber} onChange={handleChange} className="w-full px-4 py-2.5 sm:py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base" />
 
                     <div className="relative">
                         <input
@@ -124,7 +121,7 @@ export default function Register() {
                             onChange={handleChange}
                             onFocus={() => setIsPasswordFocused(true)}
                             onBlur={() => setIsPasswordFocused(false)}
-                            className={`w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text border rounded focus:outline-none transition-colors 
+                            className={`w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text border rounded-lg focus:outline-none transition-colors text-sm sm:text-base
                             ${paroleleCoincid ? 'border-green-500 focus:border-green-500' : 'border-brand-border focus:border-brand-primary'}`}
                         />
                         <button
@@ -144,7 +141,7 @@ export default function Register() {
                         opacity: afiseazaRegulile ? 1 : 0,
                         overflow: 'hidden',
                         marginTop: afiseazaRegulile ? '0' : '0',
-                        marginBottom: afiseazaRegulile ? '0' : '-15px',
+                        marginBottom: afiseazaRegulile ? '0' : '-12px',
                         transition: 'max-height 0.5s ease, opacity 0.35s ease, margin 0.5s ease'
                     }}>
                         <div className="bg-brand-bg border border-brand-border rounded-lg p-3 space-y-1">
@@ -174,7 +171,7 @@ export default function Register() {
                         </div>
                     </div>
 
-                    <div className="relative">
+                    <div className="relative pt-1 sm:pt-0">
                         <input
                             name="confirmPassword"
                             type={showConfirmPassword ? "text" : "password"}
@@ -182,7 +179,7 @@ export default function Register() {
                             placeholder="Confirmă parola"
                             value={formData.confirmPassword}
                             onChange={handleChange}
-                            className={`w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text border rounded focus:outline-none transition-colors 
+                            className={`w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text border rounded-lg focus:outline-none transition-colors text-sm sm:text-base
                             ${paroleleCoincid ? 'border-green-500' : paroleleDifera ? 'border-red-500' : 'border-brand-border focus:border-brand-primary'}`}
                         />
                         <button
@@ -201,7 +198,7 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={reguliNeindeplinite.length > 0 || !paroleleCoincid}
-                        className={`w-full py-2 px-4 rounded text-white font-medium transition-colors 
+                        className={`w-full py-2.5 sm:py-2 px-4 rounded-lg text-white font-medium transition-colors text-sm sm:text-base mt-2
               ${(reguliNeindeplinite.length === 0 && paroleleCoincid) ? 'bg-brand-primary hover:opacity-90' : 'bg-brand-muted cursor-not-allowed'}`}
                     >
                         {tempEmail ? 'Salvează Contul' : 'Creează un cont'}

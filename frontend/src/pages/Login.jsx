@@ -31,12 +31,10 @@ export default function Login() {
     const navigate = useNavigate();
     const showToast = useContext(ToastContext);
 
-    // Forgot password state
-    const [mode, setMode] = useState('login'); // 'login' | 'forgot' | 'reset'
+    const [mode, setMode] = useState('login');
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotMessage, setForgotMessage] = useState('');
 
-    // Reset password state
     const [resetPassword, setResetPassword]     = useState('');
     const [resetConfirm, setResetConfirm]       = useState('');
     const [showResetPass, setShowResetPass]     = useState(false);
@@ -124,22 +122,20 @@ export default function Login() {
     const showRules = passwordFocused || (resetPassword.length > 0 && !ruleResults.every(r => r.passed));
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-brand-bg py-12 px-4 transition-colors duration-300 relative">
-            <div className="absolute top-6 right-6">
+        <div className="min-h-screen flex items-center justify-center bg-brand-bg py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 relative">
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
                 <ThemeSwitcher />
             </div>
 
-            <div className="max-w-md w-full space-y-6 bg-brand-card p-8 rounded-xl shadow-md border border-brand-border transition-colors duration-300">
-
-                {/* TITLU */}
+            <div className="max-w-md w-full space-y-6 bg-brand-card p-6 sm:p-8 rounded-xl shadow-md border border-brand-border transition-colors duration-300">
+                
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold text-brand-text">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-brand-text">
                         {mode === 'login' ? 'Autentificare' : mode === 'forgot' ? 'Resetare parola' : 'Parola noua'}
                     </h2>
-                    <p className="mt-2 text-sm text-brand-muted">Asset Complaint Hub</p>
+                    <p className="mt-2 text-xs sm:text-sm text-brand-muted">Asset Complaint Hub</p>
                 </div>
 
-                {/* ===== MODE: LOGIN ===== */}
                 {mode === 'login' && (
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <input
@@ -149,7 +145,7 @@ export default function Login() {
                             placeholder="Email (ex: temp_8b7def@draxlmaier.com)"
                             value={credentials.email}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors"
+                            className="w-full px-4 py-2.5 sm:py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base"
                         />
                         <div className="relative">
                             <input
@@ -159,24 +155,23 @@ export default function Login() {
                                 placeholder="Parola"
                                 value={credentials.password}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors"
+                                className="w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base"
                             />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
                                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-muted hover:text-brand-text focus:outline-none transition-colors">
                                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                             </button>
                         </div>
-                        <button type="submit" className="w-full py-2 px-4 border border-transparent rounded text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity">
+                        <button type="submit" className="w-full py-2.5 sm:py-2 px-4 border border-transparent rounded-lg text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm sm:text-base mt-2">
                             Intra in cont
                         </button>
                         <button type="button" onClick={() => { setMode('forgot'); setForgotMessage(''); setForgotEmail(credentials.email); }}
-                                className="w-full text-sm text-brand-muted hover:text-brand-text transition-colors text-center">
+                                className="w-full text-sm text-brand-muted hover:text-brand-text transition-colors text-center pt-2">
                             Am uitat parola
                         </button>
                     </form>
                 )}
 
-                {/* ===== MODE: FORGOT ===== */}
                 {mode === 'forgot' && (
                     <div className="space-y-4">
                         <p className="text-sm text-brand-muted text-center">
@@ -184,35 +179,32 @@ export default function Login() {
                         </p>
                         <input
                             type="email"
-                            placeholder="Email"
-                            value={forgotEmail}
                             placeholder={credentials.email || "Email"}
+                            value={forgotEmail}
                             onChange={(e) => setForgotEmail(e.target.value)}
-                            className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors"
+                            className="w-full px-4 py-2.5 sm:py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base"
                         />
                         {forgotMessage && (
                             <p className={`text-sm text-center ${forgotMessage.includes('eroare') ? 'text-red-400' : 'text-green-400'}`}>
                                 {forgotMessage}
                             </p>
                         )}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
                             <button type="button"
                                     onClick={() => { setMode('login'); setForgotMessage(''); setForgotEmail(''); }}
-                                    className="flex-1 py-2 px-4 border border-brand-border rounded text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                    className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm font-medium">
                                 Inapoi
                             </button>
                             <button type="button" onClick={handleForgotPassword}
-                                    className="flex-1 py-2 px-4 border border-transparent rounded text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm">
+                                    className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-transparent rounded-lg text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm">
                                 Trimite email
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* ===== MODE: RESET ===== */}
                 {mode === 'reset' && (
                     <div className="space-y-4">
-                        {/* Parola noua */}
                         <div className="relative">
                             <input
                                 type={showResetPass ? "text" : "password"}
@@ -221,7 +213,7 @@ export default function Login() {
                                 onChange={(e) => setResetPassword(e.target.value)}
                                 onFocus={() => setPasswordFocused(true)}
                                 onBlur={() => setPasswordFocused(false)}
-                                className="w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors"
+                                className="w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm sm:text-base"
                             />
                             <button type="button" onClick={() => setShowResetPass(!showResetPass)}
                                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-brand-muted hover:text-brand-text focus:outline-none transition-colors">
@@ -229,7 +221,6 @@ export default function Login() {
                             </button>
                         </div>
 
-                        {/* Cerinte parola cu animatie */}
                         <div style={{
                             maxHeight: showRules ? '200px' : '0',
                             opacity: showRules ? 1 : 0,
@@ -262,14 +253,13 @@ export default function Login() {
                             </div>
                         </div>
 
-                        {/* Confirma parola */}
                         <div className="relative">
                             <input
                                 type={showResetConf ? "text" : "password"}
                                 placeholder="Confirma parola noua"
                                 value={resetConfirm}
                                 onChange={(e) => setResetConfirm(e.target.value)}
-                                className={`w-full px-3 py-2 pr-10 bg-brand-bg text-brand-text rounded focus:outline-none transition-colors border ${
+                                className={`w-full px-4 py-2.5 sm:py-2 pr-10 bg-brand-bg text-brand-text rounded-lg focus:outline-none transition-colors border text-sm sm:text-base ${
                                     confirmMatch ? 'border-green-500 focus:border-green-500' :
                                         confirmMismatch ? 'border-red-500 focus:border-red-500' :
                                             'border-brand-border focus:border-brand-primary'
@@ -287,14 +277,14 @@ export default function Login() {
                             </p>
                         )}
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
                             <button type="button"
                                     onClick={() => { setMode('login'); setResetPassword(''); setResetConfirm(''); setResetMessage(''); }}
-                                    className="flex-1 py-2 px-4 border border-brand-border rounded text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                    className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm font-medium">
                                 Inapoi
                             </button>
                             <button type="button" onClick={handleResetPassword}
-                                    className="flex-1 py-2 px-4 border border-transparent rounded text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm">
+                                    className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-transparent rounded-lg text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity text-sm">
                                 Salveaza parola
                             </button>
                         </div>

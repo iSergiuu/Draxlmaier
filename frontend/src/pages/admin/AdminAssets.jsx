@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle, Laptop, Smartphone, HardDrive, Keyboard, Mouse, Headphones, Package } from 'lucide-react';
-
 import { useContext } from 'react';
 import { ToastContext } from '../../App';
 import AssetSummaryCards from '../../components/admin/AssetSummaryCards';
@@ -151,7 +150,6 @@ export default function AdminAssets() {
         } else setShowEmailSuggestionsAdd(false);
     };
 
-    // NEW: Handler pt recomandarile din Edit Mode
     const handleEditEmailInput = (val) => {
         if (val.length > 0) {
             setFilteredEditEmails(employees.filter(emp => emp.email && emp.email.toLowerCase().includes(val.toLowerCase())));
@@ -347,14 +345,19 @@ export default function AdminAssets() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300 relative z-0">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-brand-text">Gestiune Echipamente</h3>
-                <button onClick={() => setIsAddModalOpen(true)} className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-brand-text">Gestiune Echipamente</h3>
+                <button onClick={() => setIsAddModalOpen(true)} className="w-full sm:w-auto justify-center bg-brand-primary hover:opacity-90 text-white px-4 py-2.5 sm:py-2 rounded-lg font-medium flex items-center shadow-sm text-sm sm:text-base transition-opacity">
                     <Plus className="w-5 h-5 mr-1" /> Adauga Echipament
                 </button>
             </div>
 
-            {error && <div className="p-4 bg-red-900/50 border border-red-500 text-red-200 rounded-lg flex items-center"><AlertCircle className="w-5 h-5 mr-3" /><p>{error}</p></div>}
+            {error && (
+                <div className="p-4 bg-red-900/50 border border-red-500 text-red-200 rounded-lg flex items-center text-sm sm:text-base">
+                    <AlertCircle className="w-5 h-5 mr-3 shrink-0" />
+                    <p>{error}</p>
+                </div>
+            )}
 
             <AssetSummaryCards
                 totalAssets={totalAssets}
@@ -374,9 +377,6 @@ export default function AdminAssets() {
                 statusFilter={statusFilter} setStatusFilter={setStatusFilter}
                 sortOrder={sortOrder} setSortOrder={setSortOrder}
                 categoriesList={categoriesList}
-                searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-                emailSearchQuery={emailSearchQuery} setEmailSearchQuery={setEmailSearchQuery}
-                sortOrder={sortOrder} setSortOrder={setSortOrder}
             />
 
             <AssetList
@@ -402,7 +402,6 @@ export default function AdminAssets() {
                 handleEmailInput={handleEmailInput} showEmailSuggestions={showEmailSuggestions}
                 setShowEmailSuggestions={setShowEmailSuggestions} filteredEmails={filteredEmails}
                 handleAssignAsset={handleAssignAsset} complaints={complaints}
-                // PASAM PROPS-URILE NOI PENTRU EDIT MODE
                 handleEditEmailInput={handleEditEmailInput}
                 showEditEmailSuggestions={showEditEmailSuggestions}
                 setShowEditEmailSuggestions={setShowEditEmailSuggestions}
@@ -410,25 +409,25 @@ export default function AdminAssets() {
             />
 
             {confirmDelete && selectedAsset && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-500/10 rounded-lg">
+                            <div className="p-2 bg-red-500/10 rounded-lg shrink-0">
                                 <AlertCircle size={20} className="text-red-400" />
                             </div>
-                            <h3 className="text-base font-bold text-brand-text">Sterge echipament</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-brand-text">Sterge echipament</h3>
                         </div>
                         <p className="text-sm text-brand-muted">
                             Esti sigur ca vrei sa stergi <span className="text-brand-text font-semibold">"{selectedAsset.name}"</span>? Actiunea nu poate fi anulata.
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2">
                             <button onClick={() => setConfirmDelete(false)}
-                                className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm font-medium">
                                 Anuleaza
                             </button>
                             <button onClick={handleDeleteAsset}
-                                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
-                                <AlertCircle size={14} /> Sterge
+                                className="w-full sm:flex-1 py-2.5 sm:py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
+                                <AlertCircle size={16} /> Sterge
                             </button>
                         </div>
                     </div>
