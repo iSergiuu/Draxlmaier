@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Ticket, Clock, CheckCircle,
     AlertTriangle, AlertCircle, Info,
-    Package, Search
+    Package, Search, ChevronDown, ArrowUpDown
 } from 'lucide-react';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import UserMenu from '../components/UserMenu';
 
-// ── Animații ──────────────────────────────────────────────────────────────────
 const containerVariants = {
     hidden: { opacity: 0 },
     show:   { opacity: 1, transition: { staggerChildren: 0.07 } },
@@ -19,9 +18,8 @@ const itemVariants = {
     show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
 };
 
-// ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-    NEW:         { label: 'Nou',        icon: AlertCircle,   dot: 'bg-blue-400',   pill: 'bg-blue-500/10 text-blue-400 border-blue-400/30' },
+    NEW:         { label: 'Nou',        icon: AlertCircle,   dot: 'bg-blue-400',  pill: 'bg-blue-500/10 text-blue-400 border-blue-400/30' },
     IN_REVIEW:   { label: 'În analiză', icon: Clock,         dot: 'bg-purple-400', pill: 'bg-purple-500/10 text-purple-400 border-purple-400/30' },
     IN_PROGRESS: { label: 'În lucru',   icon: Clock,         dot: 'bg-amber-400',  pill: 'bg-amber-500/10 text-amber-400 border-amber-400/30' },
     RESOLVED:    { label: 'Rezolvat',   icon: CheckCircle,   dot: 'bg-green-400',  pill: 'bg-green-500/10 text-green-400 border-green-400/30' },
@@ -34,7 +32,6 @@ const getStatus = (status) => {
     return STATUS_CONFIG[key] ?? { label: status || 'Necunoscut', icon: Info, dot: 'bg-brand-muted', pill: 'bg-brand-bg text-brand-muted border-brand-border' };
 };
 
-// ── Priority config ───────────────────────────────────────────────────────────
 const PRIORITY_CONFIG = {
     CRITICAL: { label: 'Critică',  class: 'bg-red-500/10 text-red-400 border-red-400/30' },
     HIGH:     { label: 'Ridicată', class: 'bg-orange-500/10 text-orange-400 border-orange-400/30' },
@@ -47,16 +44,29 @@ const getPriority = (priority) => {
     return PRIORITY_CONFIG[key] ?? { label: priority || '—', class: 'bg-brand-bg text-brand-muted border-brand-border' };
 };
 
-// ── Componenta principală ─────────────────────────────────────────────────────
 export default function MyComplaints() {
     const [complaints, setComplaints] = useState([]);
     const [loading, setLoading]       = useState(true);
     const [error, setError]           = useState(null);
     const [search, setSearch]         = useState('');
     const [filterStatus, setFilterStatus] = useState('Toate');
+    const [sortOrder, setSortOrder]   = useState('desc');
+    const [isSortOpen, setIsSortOpen] = useState(false);
+    
+    const sortRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => { fetchComplaints(); }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (sortRef.current && !sortRef.current.contains(event.target)) {
+                setIsSortOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const fetchComplaints = async () => {
         try {
@@ -83,20 +93,24 @@ export default function MyComplaints() {
         }
     };
 
-    // ── Filtrare ──────────────────────────────────────────────────────────────
     const STATUS_FILTERS = ['Toate', 'Nou', 'În analiză', 'În lucru', 'Rezolvat', 'Respins'];
     const STATUS_FILTER_MAP = { 'Nou': 'NEW', 'În analiză': 'IN_REVIEW', 'În lucru': 'IN_PROGRESS', 'Rezolvat': 'RESOLVED', 'Respins': 'REJECTED' };
 
-    const visible = complaints.filter(t => {
-        const matchSearch = search === '' ||
-            (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
-            (t.description || '').toLowerCase().includes(search.toLowerCase());
-        const matchStatus = filterStatus === 'Toate' ||
-            (t.status || t.statusCode || '').toUpperCase() === STATUS_FILTER_MAP[filterStatus];
-        return matchSearch && matchStatus;
-    });
+    const visible = complaints
+        .filter(t => {
+            const matchSearch = search === '' ||
+                (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
+                (t.description || '').toLowerCase().includes(search.toLowerCase());
+            const matchStatus = filterStatus === 'Toate' ||
+                (t.status || t.statusCode || '').toUpperCase() === STATUS_FILTER_MAP[filterStatus];
+            return matchSearch && matchStatus;
+        })
+        .sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
 
-    // ── Loading ───────────────────────────────────────────────────────────────
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-brand-bg transition-colors duration-300">
             <div className="flex flex-col items-center gap-4">
@@ -106,12 +120,10 @@ export default function MyComplaints() {
         </div>
     );
 
-    // ── UI ────────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-brand-bg transition-colors duration-300">
             <div className="w-full px-6 lg:px-10 py-8 space-y-6">
 
-                {/* ══ Topbar ══════════════════════════════════════════════════ */}
                 <div className="bg-brand-card border border-brand-border rounded-2xl px-6 py-4 flex justify-between items-center shadow-sm transition-colors duration-300">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center shrink-0">
@@ -134,21 +146,58 @@ export default function MyComplaints() {
                     </div>
                 </div>
 
-                {/* ══ Bara de căutare + filtre ════════════════════════════════ */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    {/* Search */}
-                    <div className="relative w-full sm:w-72">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Caută sesizare..."
-                            className="w-full bg-brand-card border border-brand-border text-brand-text text-sm rounded-xl pl-9 pr-4 py-2 focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all placeholder:text-brand-muted"
-                        />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-72">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Caută sesizare..."
+                                className="w-full bg-brand-card border border-brand-border text-brand-text text-sm rounded-xl pl-9 pr-4 py-2.5 focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all placeholder:text-brand-muted"
+                            />
+                        </div>
+
+                        <div className="relative z-20" ref={sortRef}>
+                            <button
+                                onClick={() => setIsSortOpen(!isSortOpen)}
+                                className="flex items-center gap-2 bg-brand-card border border-brand-border text-brand-text px-4 py-2.5 rounded-xl text-sm hover:border-brand-primary transition-all focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                            >
+                                <ArrowUpDown className="w-4 h-4 text-brand-muted" />
+                                <span className="hidden sm:inline font-medium">
+                                    {sortOrder === 'desc' ? 'Cele mai noi' : 'Cele mai vechi'}
+                                </span>
+                                <ChevronDown className={`w-4 h-4 text-brand-muted transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                                {isSortOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 8 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="absolute right-0 top-full mt-2 w-40 bg-brand-card border border-brand-border rounded-xl shadow-lg py-1.5 overflow-hidden"
+                                    >
+                                        <button
+                                            onClick={() => { setSortOrder('desc'); setIsSortOpen(false); }}
+                                            className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-brand-primary/10 ${sortOrder === 'desc' ? 'text-brand-primary' : 'text-brand-text'}`}
+                                        >
+                                            Cele mai noi
+                                        </button>
+                                        <button
+                                            onClick={() => { setSortOrder('asc'); setIsSortOpen(false); }}
+                                            className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-brand-primary/10 ${sortOrder === 'asc' ? 'text-brand-primary' : 'text-brand-text'}`}
+                                        >
+                                            Cele mai vechi
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
-                    {/* Filtre status */}
                     <div className="flex gap-1.5 flex-wrap">
                         {STATUS_FILTERS.map(f => (
                             <button
@@ -166,14 +215,12 @@ export default function MyComplaints() {
                     </div>
                 </div>
 
-                {/* ══ Eroare ══════════════════════════════════════════════════ */}
                 {error && (
                     <div className="bg-red-500/10 border border-red-400/30 text-red-400 px-5 py-4 rounded-2xl text-sm">
                         {error}
                     </div>
                 )}
 
-                {/* ══ Stare goală ═════════════════════════════════════════════ */}
                 {!error && visible.length === 0 && (
                     <div className="bg-brand-card border border-brand-border rounded-2xl p-14 flex flex-col items-center justify-center gap-3 transition-colors duration-300">
                         <div className="w-14 h-14 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center mb-1">
@@ -190,7 +237,6 @@ export default function MyComplaints() {
                     </div>
                 )}
 
-                {/* ══ Grid sesizări ════════════════════════════════════════════ */}
                 {!error && visible.length > 0 && (
                     <>
                         <p className="text-xs text-brand-muted">
@@ -207,7 +253,6 @@ export default function MyComplaints() {
                                 const statusKey = (ticket.status || ticket.statusCode || '').toUpperCase();
                                 const status    = getStatus(statusKey);
                                 const priority  = getPriority(ticket.priority);
-                                const StatusIcon = status.icon;
                                 const ticketNum  = ticket.ticketNumber || String(ticket.id).substring(0, 6).toUpperCase();
                                 const date       = ticket.createdAt
                                     ? new Date(ticket.createdAt).toLocaleDateString('ro-RO')
@@ -220,11 +265,9 @@ export default function MyComplaints() {
                                         whileHover={{ y: -4, transition: { duration: 0.15 } }}
                                         className="bg-brand-card border border-brand-border rounded-2xl flex flex-col hover:border-brand-primary hover:shadow-md transition-all duration-200"
                                     >
-                                        {/* Stripe colorat top */}
                                         <div className={`h-1 w-full rounded-t-2xl ${status.dot}`} />
 
                                         <div className="p-5 flex flex-col gap-3 flex-1">
-                                            {/* Header: nr tichet + prioritate */}
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[11px] font-mono font-bold text-brand-muted bg-brand-bg border border-brand-border px-2 py-0.5 rounded-md">
                                                     #{ticketNum}
@@ -234,7 +277,6 @@ export default function MyComplaints() {
                                                 </span>
                                             </div>
 
-                                            {/* Titlu + descriere */}
                                             <div className="flex-1">
                                                 <h2 className="text-sm font-bold text-brand-text line-clamp-1 leading-snug">
                                                     {ticket.title}
@@ -244,15 +286,12 @@ export default function MyComplaints() {
                                                 </p>
                                             </div>
 
-                                            {/* Footer: status + data + buton */}
                                             <div className="border-t border-brand-border pt-3 flex flex-col gap-2.5 mt-auto">
                                                 <div className="flex items-center justify-between">
-                                                    {/* Status pill */}
                                                     <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${status.pill}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                                                         {status.label}
                                                     </span>
-                                                    {/* Data */}
                                                     {date && (
                                                         <span className="text-[11px] text-brand-muted">{date}</span>
                                                     )}
