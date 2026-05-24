@@ -13,6 +13,10 @@ public interface DepartmentService {
     DepartmentStatsDTO getDepartmentStats(UUID departmentId);
 
     DepartmentResponseDTO createDepartment(DepartmentRequestDTO request);
+
     DepartmentResponseDTO updateDepartment(UUID id, DepartmentRequestDTO request);
+
+    DepartmentResponseDTO changeDepartmentManager(UUID departmentId, UUID newManagerId);
+
     void deleteDepartment(UUID id);
 }

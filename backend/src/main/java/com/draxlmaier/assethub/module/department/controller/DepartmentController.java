@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +46,20 @@ public class DepartmentController {
             @PathVariable UUID id,
             @Valid @RequestBody DepartmentRequestDTO request) {
         return ResponseEntity.ok(departmentService.updateDepartment(id, request));
+    }
+
+    @PatchMapping("/{id}/manager")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<DepartmentResponseDTO> changeDepartmentManager(
+            @PathVariable UUID id,
+            @RequestBody Map<String, UUID> requestBody) {
+
+        UUID newManagerId = requestBody.get("managerId");
+        if (newManagerId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(departmentService.changeDepartmentManager(id, newManagerId));
     }
 
     @DeleteMapping("/{id}")

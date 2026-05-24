@@ -81,13 +81,42 @@ public class DepartmentServiceImpl implements DepartmentService {
             throw new BusinessException("Un departament cu numele '" + request.name() + "' există deja!");
         }
 
-        Employee manager = employeeRepository.findById(request.managerId())
+        Employee oldManager = department.getManager();
+        Employee newManager = employeeRepository.findById(request.managerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Managerul specificat nu a fost găsit!"));
 
-        promoteToDeptResponsibleIfNeeded(manager);
+        // Retrogradăm vechiul manager doar dacă e diferit de cel nou
+        if (oldManager != null && !oldManager.getId().equals(newManager.getId())) {
+            demoteManagerIfNeeded(oldManager);
+        }
+
+        promoteToDeptResponsibleIfNeeded(newManager);
 
         department.setName(request.name());
-        department.setManager(manager);
+        department.setManager(newManager);
+
+        return mapToDTO(departmentRepository.save(department));
+    }
+
+    @Override
+    @Transactional
+    public DepartmentResponseDTO changeDepartmentManager(UUID departmentId, UUID newManagerId) {
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Departamentul nu a fost găsit!"));
+
+        Employee oldManager = department.getManager();
+        Employee newManager = employeeRepository.findById(newManagerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Noul manager nu a fost găsit!"));
+
+        // Retrogradăm vechiul manager
+        if (oldManager != null && !oldManager.getId().equals(newManager.getId())) {
+            demoteManagerIfNeeded(oldManager);
+        }
+
+        // Promovăm noul manager
+        promoteToDeptResponsibleIfNeeded(newManager);
+
+        department.setManager(newManager);
 
         return mapToDTO(departmentRepository.save(department));
     }
@@ -107,6 +136,18 @@ public class DepartmentServiceImpl implements DepartmentService {
                     .orElseThrow(() -> new RuntimeException("Rolul DEPT_RESPONSIBLE nu a fost găsit în sistem!"));
 
             employee.setRole(deptRole);
+            employeeRepository.save(employee);
+        }
+    }
+
+    private void demoteManagerIfNeeded(Employee employee) {
+        // Îl trecem la USER doar dacă rolul lui actual era de responsabil.
+        // Dacă e SUPER_ADMIN, își păstrează rolul.
+        if ("DEPT_RESPONSIBLE".equalsIgnoreCase(employee.getRole().getCode())) {
+            Role userRole = roleRepository.findByCode("USER")
+                    .orElseThrow(() -> new RuntimeException("Rolul USER nu a fost găsit în sistem!"));
+
+            employee.setRole(userRole);
             employeeRepository.save(employee);
         }
     }
