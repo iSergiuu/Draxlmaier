@@ -21,6 +21,7 @@ public class ComplaintMapper {
     public ComplaintResponseDTO toResponseDTO(Complaint entity) {
         if (entity == null) return null;
 
+        // Adăugăm verificări de null pentru fiecare relație ca să prevenim erorile 500
         return ComplaintResponseDTO.builder()
                 .id(entity.getId())
                 .ticketNumber(entity.getTicketNumber())
@@ -29,11 +30,15 @@ public class ComplaintMapper {
                 .priority(entity.getPriority())
                 .createdAt(entity.getCreatedAt())
                 .resolvedAt(entity.getResolvedAt())
-                .assetId(entity.getAsset().getId())
-                .assetName(entity.getAsset().getName())
-                .authorName(entity.getAuthor().getFirstName() + " " + entity.getAuthor().getLastName())
-                .statusId(entity.getStatus().getId().toString())
-                .statusCode(entity.getStatus().getCode())
+
+                .assetId(entity.getAsset() != null ? entity.getAsset().getId() : null)
+                .assetName(entity.getAsset() != null ? entity.getAsset().getName() : "Fără echipament")
+
+                .authorName(entity.getAuthor() != null ? entity.getAuthor().getFirstName() + " " + entity.getAuthor().getLastName() : "Sistem")
+
+                .statusId(entity.getStatus() != null ? entity.getStatus().getId().toString() : null)
+                .statusCode(entity.getStatus() != null ? entity.getStatus().getCode() : "N/A")
+
                 .build();
     }
 }
