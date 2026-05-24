@@ -16,6 +16,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -31,7 +33,6 @@ public class CommentServiceImpl implements CommentService {
     private final EmployeeRepository employeeRepository;
     private final ComplaintWorkflowRepository workflowRepository;
     private final NotificationManagerService notificationManager;
-
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
@@ -73,7 +74,15 @@ public class CommentServiceImpl implements CommentService {
 
         CommentResponseDTO responseDTO = mapToResponseDTO(savedComment);
 
-        messagingTemplate.convertAndSend("/topic/complaints/" + complaintId, responseDTO);
+        // Trimitem pe WebSocket DUPĂ ce tranzacția e commitată în DB.
+        // Fără asta, Userul B primea notificarea înainte ca mesajul să existe
+        // în baza de date, deci fetch-ul lui returna date vechi.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messagingTemplate.convertAndSend("/topic/complaints/" + complaintId, responseDTO);
+            }
+        });
 
         return responseDTO;
     }
