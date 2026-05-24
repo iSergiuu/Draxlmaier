@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, CheckCircle2, Send, Clock, User, Shield,
-    Info, MessageSquare, MonitorSmartphone, ChevronDown, Package
+    Info, MessageSquare, MonitorSmartphone, ChevronDown, Package, AlertTriangle
 } from 'lucide-react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -34,6 +34,7 @@ const PRIORITY_CONFIG = {
     MEDIUM:   { label: 'Medie',    cls: 'bg-amber-500/10 text-amber-400 border-amber-400/30' },
     LOW:      { label: 'Scăzută',  cls: 'bg-brand-bg text-brand-muted border-brand-border' },
 };
+
 const getPriority = (p) => PRIORITY_CONFIG[(p || '').toUpperCase()] ?? { label: p || '—', cls: 'bg-brand-bg text-brand-muted border-brand-border' };
 const getInitials = (name) => (!name || name === 'Eu') ? 'EU' : name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
@@ -42,9 +43,6 @@ export default function ComplaintDetails() {
     const navigate      = useNavigate();
     const statusMenuRef = useRef(null);
     const messagesEndRef = useRef(null);
-    // Retine id-urile mesajelor trimise de noi via POST,
-    // ca sa ignoram echo-ul care vine inapoi prin WebSocket
-    const processedIdsRef = useRef(new Set());
 
     const [currentUser, setCurrentUser]           = useState(null);
     const [ticket, setTicket]                     = useState(null);
@@ -61,12 +59,10 @@ export default function ComplaintDetails() {
     const userRole        = localStorage.getItem('userRole')?.toUpperCase();
     const canChangeStatus = userRole === 'ADMIN' || userRole === 'DEPT_RESPONSIBLE';
 
-    // ── Scroll la ultimul mesaj ───────────────────────────────────────────────
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [comments]);
 
-    // ── Fetch date initiale ───────────────────────────────────────────────────
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -79,7 +75,7 @@ export default function ComplaintDetails() {
                     fetch(`http://localhost:8080/api/employees/me`,              { headers: { Authorization: `Bearer ${token}` } }),
                 ]);
 
-                if (userRes.ok)    setCurrentUser(await userRes.json());
+                if (userRes.ok) setCurrentUser(await userRes.json());
                 if (commentsRes.ok) setComments(await commentsRes.json());
 
                 if (ticketRes.ok) {
@@ -93,103 +89,38 @@ export default function ComplaintDetails() {
         fetchData();
     }, [id, navigate]);
 
-    // ── WebSocket cu polling fallback ────────────────────────────────────────
     useEffect(() => {
         const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
         if (!token || !id) return;
 
-        let stompClient = null;
-        let wsConnected = false;
-        let pollInterval = null;
-        let lastCommentCount = 0;
-
-        // Polling fallback — se activeaza daca WS nu se conecteaza in 4s
-        const startPolling = () => {
-            if (pollInterval) return;
-            console.log('[POLL] WebSocket indisponibil, activam polling la 3s');
-            pollInterval = setInterval(async () => {
-                try {
-                    const res = await fetch(`http://localhost:8080/api/complaints/${id}/comments`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    if (data.length !== lastCommentCount) {
-                        lastCommentCount = data.length;
-                        setComments(data);
-                    }
-                } catch { /* ignoram erorile de retea in poll */ }
-            }, 3000);
-        };
-
-        const wsTimeout = setTimeout(() => {
-            if (!wsConnected) startPolling();
-        }, 4000);
-
-        try {
-            stompClient = new Client({
-                webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
-                reconnectDelay: 5000,
-                connectHeaders: { Authorization: `Bearer ${token}` },
-                onConnect: () => {
-                    wsConnected = true;
-                    clearTimeout(wsTimeout);
-                    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-                    console.log('[WS] Conectat la /topic/complaints/' + id);
-
-                    stompClient.subscribe(`/topic/complaints/${id}`, (frame) => {
-                        if (!frame.body) return;
+        const stompClient = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+            reconnectDelay: 5000,
+            connectHeaders: { Authorization: `Bearer ${token}` },
+            onConnect: () => {
+                stompClient.subscribe(`/topic/complaints/${id}`, (frame) => {
+                    if (frame.body) {
                         try {
                             const incoming = JSON.parse(frame.body);
-                            if (!incoming?.id) return;
-
-                            // Ignoram echo-ul propriului mesaj trimis via POST
-                            if (processedIdsRef.current.has(incoming.id)) {
-                                processedIdsRef.current.delete(incoming.id);
-                                return;
+                            if (incoming?.id) {
+                                setComments(prev => {
+                                    if (prev.some(c => c.id === incoming.id)) return prev;
+                                    return [...prev, incoming];
+                                });
                             }
-
-                            // Mesaj de la alt user — adaugam direct
-                            setComments(prev => {
-                                if (prev.some(c => c.id === incoming.id)) return prev;
-                                return [...prev, incoming];
-                            });
                         } catch (err) {
-                            console.error('[WS] Eroare parsare mesaj:', err);
+                            console.error('Eroare parsare mesaj WS:', err);
                         }
-                    });
-                },
-                onDisconnect: () => {
-                    wsConnected = false;
-                    console.log('[WS] Deconectat, activam polling');
-                    startPolling();
-                },
-                onStompError: (frame) => {
-                    wsConnected = false;
-                    console.error('[WS] STOMP error:', frame);
-                    startPolling();
-                },
-                onWebSocketError: (err) => {
-                    wsConnected = false;
-                    console.error('[WS] WebSocket error:', err);
-                    startPolling();
-                },
-            });
+                    }
+                });
+            }
+        });
 
-            stompClient.activate();
-        } catch (err) {
-            console.error('[WS] Nu am putut initializa clientul:', err);
-            startPolling();
-        }
+        stompClient.activate();
 
-        return () => {
-            clearTimeout(wsTimeout);
-            if (pollInterval) clearInterval(pollInterval);
-            if (stompClient) stompClient.deactivate();
-        };
+        return () => stompClient.deactivate();
     }, [id]);
 
-    // ── Click outside status menu ─────────────────────────────────────────────
     useEffect(() => {
         const handler = (e) => {
             if (statusMenuRef.current && !statusMenuRef.current.contains(e.target))
@@ -199,13 +130,12 @@ export default function ComplaintDetails() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // ── Trimite comentariu ────────────────────────────────────────────────────
     const handleSendComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;
 
         const messageText = newComment;
-        setNewComment(''); // clear imediat pentru UX rapid
+        setNewComment('');
         setSendingComment(true);
 
         try {
@@ -219,15 +149,12 @@ export default function ComplaintDetails() {
             if (res.ok) {
                 const added = await res.json().catch(() => null);
                 if (added?.id) {
-                    // Marcam id-ul ca procesat — WebSocket-ul va ignora echo-ul
-                    processedIdsRef.current.add(added.id);
                     setComments(prev => {
                         if (prev.some(c => c.id === added.id)) return prev;
                         return [...prev, added];
                     });
                 }
             } else {
-                // Daca a esuat, restoram mesajul in input
                 setNewComment(messageText);
             }
         } finally {
@@ -235,7 +162,6 @@ export default function ComplaintDetails() {
         }
     };
 
-    // ── Schimba status ────────────────────────────────────────────────────────
     const handleStatusChange = async () => {
         setIsUpdatingStatus(true);
         try {
@@ -250,7 +176,6 @@ export default function ComplaintDetails() {
         } finally { setIsUpdatingStatus(false); }
     };
 
-    // ── Loading / Error ───────────────────────────────────────────────────────
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-brand-bg transition-colors duration-300">
             <div className="flex flex-col items-center gap-4">
@@ -277,17 +202,14 @@ export default function ComplaintDetails() {
     const ticketNum     = ticket.ticketNumber || String(ticket.id).substring(0, 8).toUpperCase();
     const createdDate   = ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('ro-RO') : '—';
 
-    // Numele complet al userului curent (lowercase) pentru comparatie cu authorName din mesaje
     const currentUserFullName = currentUser
         ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim().toLowerCase()
         : '';
 
-    // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-brand-bg transition-colors duration-300">
             <div className="w-full px-6 lg:px-10 py-8 space-y-6">
 
-                {/* ══ Topbar ══════════════════════════════════════════════════ */}
                 <div className="bg-brand-card border border-brand-border rounded-2xl px-6 py-4 flex justify-between items-center shadow-sm transition-colors duration-300">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-brand-primary flex items-center justify-center shrink-0">
@@ -315,7 +237,6 @@ export default function ComplaintDetails() {
 
                 <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
 
-                    {/* ══ Hero card cu progress ═══════════════════════════════ */}
                     <motion.div
                         variants={itemVariants}
                         className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden shadow-sm transition-colors duration-300"
@@ -323,7 +244,6 @@ export default function ComplaintDetails() {
                         <div className="h-1.5 w-full bg-brand-primary" />
                         <div className="p-6 lg:p-8 space-y-6">
 
-                            {/* Titlu + meta */}
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${priority.cls}`}>
@@ -339,15 +259,12 @@ export default function ComplaintDetails() {
                                 </h2>
                             </div>
 
-                            {/* Progress workflow */}
                             <div className="pt-4 border-t border-brand-border">
                                 <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold mb-5">
                                     Progres tichet
                                 </p>
                                 <div className="relative flex items-start justify-between">
-                                    {/* Linie fundal */}
                                     <div className="absolute top-4 left-0 w-full h-0.5 bg-brand-border rounded-full" />
-                                    {/* Linie progres */}
                                     <div
                                         className="absolute top-4 left-0 h-0.5 bg-brand-primary rounded-full transition-all duration-700"
                                         style={{ width: `${(currentIndex / (WORKFLOW_STEPS.length - 1)) * 100}%` }}
@@ -381,10 +298,8 @@ export default function ComplaintDetails() {
                         </div>
                     </motion.div>
 
-                    {/* ══ Info cards ══════════════════════════════════════════ */}
                     <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                        {/* Echipament */}
                         <div className="bg-brand-card border border-brand-border rounded-2xl p-5 flex items-center gap-4 hover:border-brand-primary transition-colors duration-200">
                             <div className="w-11 h-11 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center shrink-0">
                                 <MonitorSmartphone className="w-5 h-5 text-brand-primary" />
@@ -395,7 +310,6 @@ export default function ComplaintDetails() {
                             </div>
                         </div>
 
-                        {/* Initiator */}
                         <div className="bg-brand-card border border-brand-border rounded-2xl p-5 flex items-center gap-4 hover:border-brand-primary transition-colors duration-200">
                             <div className="w-11 h-11 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center shrink-0">
                                 <User className="w-5 h-5 text-brand-primary" />
@@ -408,7 +322,6 @@ export default function ComplaintDetails() {
                             </div>
                         </div>
 
-                        {/* Status / Acces restrictionat */}
                         {canChangeStatus ? (
                             <div className="bg-brand-card border border-brand-primary/20 rounded-2xl p-5 flex flex-col gap-3">
                                 <p className="text-[10px] uppercase tracking-widest text-brand-muted font-semibold">Actualizează status</p>
@@ -465,10 +378,8 @@ export default function ComplaintDetails() {
                         )}
                     </motion.div>
 
-                    {/* ══ Descriere + Chat ════════════════════════════════════ */}
                     <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                        {/* Descriere */}
                         <div className="bg-brand-card border border-brand-border rounded-2xl flex flex-col shadow-sm transition-colors duration-300 h-[480px]">
                             <div className="px-6 py-5 border-b border-brand-border flex items-center gap-3 shrink-0">
                                 <div className="w-8 h-8 rounded-lg bg-brand-bg border border-brand-border flex items-center justify-center">
@@ -477,16 +388,13 @@ export default function ComplaintDetails() {
                                 <h3 className="text-sm font-bold text-brand-text">Detalii problemă</h3>
                             </div>
                             <div className="p-6 flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full">
-                                <p className="text-sm text-brand-text leading-relaxed whitespace-pre-wrap opacity-90"
-                                   style={{ overflowWrap: 'anywhere' }}>
+                                <p className="text-sm text-brand-text leading-relaxed whitespace-pre-wrap opacity-90 break-words" style={{ overflowWrap: 'anywhere' }}>
                                     {ticket.description}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Chat */}
                         <div className="bg-brand-card border border-brand-border rounded-2xl flex flex-col shadow-sm transition-colors duration-300 h-[480px]">
-                            {/* Header chat */}
                             <div className="px-6 py-5 border-b border-brand-border flex items-center gap-3 shrink-0">
                                 <div className="w-8 h-8 rounded-lg bg-brand-bg border border-brand-border flex items-center justify-center">
                                     <MessageSquare className="w-4 h-4 text-brand-primary" />
@@ -499,33 +407,25 @@ export default function ComplaintDetails() {
                                 )}
                             </div>
 
-                            {/* Lista mesaje */}
-                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full">
+                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-brand-primary/50">
                                 {comments.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center gap-2 opacity-40">
                                         <MessageSquare className="w-8 h-8 text-brand-muted" />
                                         <p className="text-xs text-brand-muted">Niciun mesaj încă. Fii primul!</p>
                                     </div>
                                 ) : comments.map((c, i) => {
-                                    // Determinam daca mesajul apartine userului curent
                                     const authorLower = (c.authorName || '').trim().toLowerCase();
-                                    const isMine = c.isMine ||
-                                        (currentUserFullName !== '' && authorLower === currentUserFullName);
+                                    const isMine = c.isMine || (currentUserFullName !== '' && authorLower === currentUserFullName);
 
                                     return (
                                         <div key={c.id || i} className={`flex gap-2.5 ${isMine ? 'flex-row-reverse' : ''}`}>
-                                            {/* Avatar */}
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 self-end ${
-                                                isMine
-                                                    ? 'bg-brand-primary text-white'
-                                                    : 'bg-brand-bg border border-brand-border text-brand-text'
+                                                isMine ? 'bg-brand-primary text-white' : 'bg-brand-bg border border-brand-border text-brand-text'
                                             }`}>
                                                 {getInitials(isMine ? 'Eu' : c.authorName)}
                                             </div>
 
-                                            {/* Bula mesaj */}
-                                            <div className={`flex flex-col gap-1 ${isMine ? 'items-end' : 'items-start'}`}
-                                                 style={{ maxWidth: '75%' }}>
+                                            <div className={`flex flex-col gap-1 w-full max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
                                                 <div className={`flex items-center gap-1.5 ${isMine ? 'flex-row-reverse' : ''}`}>
                                                     <span className="text-[11px] font-semibold text-brand-text">
                                                         {isMine ? 'Eu' : c.authorName}
@@ -535,13 +435,9 @@ export default function ComplaintDetails() {
                                                     </span>
                                                 </div>
                                                 <div className={`px-4 py-2.5 text-sm leading-relaxed rounded-2xl ${
-                                                    isMine
-                                                        ? 'bg-brand-primary text-white rounded-tr-sm'
-                                                        : 'bg-brand-bg border border-brand-border text-brand-text rounded-tl-sm'
+                                                    isMine ? 'bg-brand-primary text-white rounded-tr-sm' : 'bg-brand-bg border border-brand-border text-brand-text rounded-tl-sm'
                                                 }`}>
-                                                    {/* overflowWrap:anywhere sparge si siruri fara spatii */}
-                                                    <p className="whitespace-pre-wrap m-0"
-                                                       style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                                                    <p className="whitespace-pre-wrap m-0 break-words" style={{ overflowWrap: 'anywhere' }}>
                                                         {c.message}
                                                     </p>
                                                 </div>
@@ -552,7 +448,6 @@ export default function ComplaintDetails() {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Input */}
                             <div className="px-4 pb-4 pt-2 shrink-0 border-t border-brand-border">
                                 <form
                                     onSubmit={handleSendComment}
@@ -569,10 +464,11 @@ export default function ComplaintDetails() {
                                         disabled={sendingComment || !newComment.trim()}
                                         className="bg-brand-primary text-white p-2.5 rounded-xl disabled:opacity-40 hover:opacity-90 transition-all flex items-center justify-center shrink-0"
                                     >
-                                        {sendingComment
-                                            ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            : <Send className="w-4 h-4" />
-                                        }
+                                        {sendingComment ? (
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <Send className="w-4 h-4" />
+                                        )}
                                     </button>
                                 </form>
                             </div>

@@ -98,11 +98,18 @@ export default function MyComplaints() {
 
     const visible = complaints
         .filter(t => {
+            const statusKey = (t.status || t.statusCode || '').toUpperCase();
+            
+            // FILTRUL STRICT: Dacă e închis, îl ascundem definitiv din UI
+            if (statusKey === 'CLOSED') {
+                return false;
+            }
+
             const matchSearch = search === '' ||
                 (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
                 (t.description || '').toLowerCase().includes(search.toLowerCase());
-            const matchStatus = filterStatus === 'Toate' ||
-                (t.status || t.statusCode || '').toUpperCase() === STATUS_FILTER_MAP[filterStatus];
+            const matchStatus = filterStatus === 'Toate' || statusKey === STATUS_FILTER_MAP[filterStatus];
+            
             return matchSearch && matchStatus;
         })
         .sort((a, b) => {
