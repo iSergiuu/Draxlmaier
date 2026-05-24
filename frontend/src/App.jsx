@@ -18,6 +18,14 @@ import AdminDepartments from './pages/admin/AdminDepartments';
 
 export const ToastContext = React.createContext(null);
 
+function ProtectedAdminRoute({ children }) {
+    const role = localStorage.getItem('userRole');
+    const token = localStorage.getItem('token');
+    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!token || !isAdmin) return <Navigate to="/dashboard" replace />;
+    return children;
+}
+
 function App() {
     const { toasts, showToast } = useToast();
     const removeToast = (id) => {};
@@ -36,7 +44,7 @@ function App() {
                     <Route path="/profile" element={<Profile />} />
 
                     {/* Aici se incarca AdminTickets in interiorul Layout-ului */}
-                    <Route path="/admin" element={<AdminLayout />}>
+                    <Route path="/admin" element={<ProtectedAdminRoute><AdminLayout /></ProtectedAdminRoute>}>
                         {/* Cand accesezi /admin, te redirectioneaza automat la /admin/tickets */}
                         <Route index element={<Navigate to="tickets" replace />} />
 

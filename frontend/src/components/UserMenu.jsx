@@ -24,7 +24,7 @@ export default function UserMenu() {
     const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
     const adminEmail = localStorage.getItem('userEmail') || 'Utilizator';
     const userRole = localStorage.getItem('userRole');
-    const isAdmin = userRole === 'ADMIN' || userRole === 'admin';
+    const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || userRole === 'SUPER_ADMIN';
 
     useEffect(() => {
         if (!token) return;
