@@ -93,46 +93,100 @@ export default function ComplaintDetails() {
         fetchData();
     }, [id, navigate]);
 
-    // ── WebSocket ─────────────────────────────────────────────────────────────
+    // ── WebSocket cu polling fallback ────────────────────────────────────────
     useEffect(() => {
         const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
         if (!token || !id) return;
 
-        const stompClient = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
-            reconnectDelay: 5000,
-            connectHeaders: { Authorization: `Bearer ${token}` },
-            onConnect: () => {
-                stompClient.subscribe(`/topic/complaints/${id}`, (frame) => {
-                    if (!frame.body) return;
-                    try {
-                        const incoming = JSON.parse(frame.body);
-                        if (!incoming?.id) return;
+        let stompClient = null;
+        let wsConnected = false;
+        let pollInterval = null;
+        let lastCommentCount = 0;
 
-                        // Daca noi am trimis mesajul si l-am adaugat deja din raspunsul POST,
-                        // ignoram echo-ul WebSocket pentru a evita duplicatele
-                        if (processedIdsRef.current.has(incoming.id)) {
-                            processedIdsRef.current.delete(incoming.id);
-                            return;
-                        }
-
-                        // Mesaj nou de la altcineva — adaugam in lista
-                        setComments(prev => {
-                            if (prev.some(c => c.id === incoming.id)) return prev;
-                            return [...prev, incoming];
-                        });
-                    } catch (err) {
-                        console.error('[WS] Eroare parsare mesaj:', err);
+        // Polling fallback — se activeaza daca WS nu se conecteaza in 4s
+        const startPolling = () => {
+            if (pollInterval) return;
+            console.log('[POLL] WebSocket indisponibil, activam polling la 3s');
+            pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`http://localhost:8080/api/complaints/${id}/comments`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data.length !== lastCommentCount) {
+                        lastCommentCount = data.length;
+                        setComments(data);
                     }
-                });
-            },
-            onStompError: (frame) => {
-                console.error('[WS] STOMP error:', frame);
-            },
-        });
+                } catch { /* ignoram erorile de retea in poll */ }
+            }, 3000);
+        };
 
-        stompClient.activate();
-        return () => stompClient.deactivate();
+        const wsTimeout = setTimeout(() => {
+            if (!wsConnected) startPolling();
+        }, 4000);
+
+        try {
+            stompClient = new Client({
+                webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+                reconnectDelay: 5000,
+                connectHeaders: { Authorization: `Bearer ${token}` },
+                onConnect: () => {
+                    wsConnected = true;
+                    clearTimeout(wsTimeout);
+                    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+                    console.log('[WS] Conectat la /topic/complaints/' + id);
+
+                    stompClient.subscribe(`/topic/complaints/${id}`, (frame) => {
+                        if (!frame.body) return;
+                        try {
+                            const incoming = JSON.parse(frame.body);
+                            if (!incoming?.id) return;
+
+                            // Ignoram echo-ul propriului mesaj trimis via POST
+                            if (processedIdsRef.current.has(incoming.id)) {
+                                processedIdsRef.current.delete(incoming.id);
+                                return;
+                            }
+
+                            // Mesaj de la alt user — adaugam direct
+                            setComments(prev => {
+                                if (prev.some(c => c.id === incoming.id)) return prev;
+                                return [...prev, incoming];
+                            });
+                        } catch (err) {
+                            console.error('[WS] Eroare parsare mesaj:', err);
+                        }
+                    });
+                },
+                onDisconnect: () => {
+                    wsConnected = false;
+                    console.log('[WS] Deconectat, activam polling');
+                    startPolling();
+                },
+                onStompError: (frame) => {
+                    wsConnected = false;
+                    console.error('[WS] STOMP error:', frame);
+                    startPolling();
+                },
+                onWebSocketError: (err) => {
+                    wsConnected = false;
+                    console.error('[WS] WebSocket error:', err);
+                    startPolling();
+                },
+            });
+
+            stompClient.activate();
+        } catch (err) {
+            console.error('[WS] Nu am putut initializa clientul:', err);
+            startPolling();
+        }
+
+        return () => {
+            clearTimeout(wsTimeout);
+            if (pollInterval) clearInterval(pollInterval);
+            if (stompClient) stompClient.deactivate();
+        };
     }, [id]);
 
     // ── Click outside status menu ─────────────────────────────────────────────
