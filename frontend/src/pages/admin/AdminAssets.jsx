@@ -104,7 +104,7 @@ export default function AdminAssets() {
     };
 
     const dbCategories = assets.map(a => normalizeCategory(a.category)).filter(Boolean);
-    const defaultCategories = ['Laptop', 'Telefon', 'Monitor', 'Tastatura', 'Mouse', 'Casti', 'Altele'];
+    const defaultCategories = ['Laptop', 'Telefon', 'Monitor', 'Tastatura', 'Mouse', 'Casti', 'Storage', 'Altele'];
     const categoriesList = [...new Set([...dbCategories, ...defaultCategories])].filter(c => c !== 'Periferice');
 
     useEffect(() => {

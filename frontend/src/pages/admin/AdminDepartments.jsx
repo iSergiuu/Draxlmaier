@@ -16,7 +16,7 @@ function StatBadge({ icon: Icon, label, value, color }) {
     );
 }
 
-function DeptCard({ dept, onEdit, onDelete, onSelect }) {
+function DeptCard({ dept, dashboardStats, onEdit, onDelete, onSelect }) {
     const [stats, setStats] = useState(null);
 
     useEffect(() => {
@@ -31,9 +31,16 @@ function DeptCard({ dept, onEdit, onDelete, onSelect }) {
         fetchStats();
     }, [dept.id]);
 
+    const employeeCount = dashboardStats?.employeesPerDepartment?.find(
+        d => d.departmentName === dept.name
+    )?.count ?? 0;
+
+    const assetCount = dashboardStats?.assetsPerDepartment?.find(
+        d => d.departmentName === dept.name
+    )?.count ?? 0;
+
     return (
         <div className="bg-brand-card border border-brand-border rounded-xl shadow-sm hover:border-brand-primary/40 transition-all duration-200 flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between p-5 pb-3">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-brand-bg rounded-lg text-brand-primary border border-brand-border">
@@ -53,11 +60,10 @@ function DeptCard({ dept, onEdit, onDelete, onSelect }) {
                 </div>
             </div>
 
-            {/* Stats */}
             <div className="px-5 pb-4 flex gap-2">
-                    <StatBadge icon={Users}         label="Angajati"  value={dept.employeeCount ?? 0} color="#3b82f6" />
-                    <StatBadge icon={Package}       label="Asseturi"  value={dept.assetCount    ?? 0} color="#10b981" />
-                    <StatBadge icon={MessageSquare} label="Plangeri"  value={stats?.totalComplaits ?? 0} color="#f59e0b" />
+                <StatBadge icon={Users}         label="Angajati" value={employeeCount}              color="#3b82f6" />
+                <StatBadge icon={Package}       label="Asseturi" value={assetCount}                 color="#10b981" />
+                <StatBadge icon={MessageSquare} label="Plangeri" value={stats?.totalComplaits ?? 0} color="#f59e0b" />
             </div>
         </div>
     );
@@ -198,6 +204,7 @@ function DeleteModal({ dept, onClose, onDeleted }) {
 
 export default function AdminDepartments() {
     const [departments, setDepartments] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState(null);
     const [isLoading, setIsLoading]     = useState(true);
     const [error, setError]             = useState(null);
 
@@ -208,11 +215,14 @@ export default function AdminDepartments() {
         const tok = token();
         if (!tok) { setError("Nu esti autentificat."); setIsLoading(false); return; }
         try {
-            const res = await fetch(`${API}/departments`, {
-                headers: { 'Authorization': `Bearer ${tok}` }
-            });
-            if (!res.ok) throw new Error('Eroare la preluarea departamentelor.');
-            setDepartments(await res.json());
+            const [deptRes, dashRes] = await Promise.all([
+                fetch(`${API}/departments`, { headers: { 'Authorization': `Bearer ${tok}` } }),
+                fetch(`${API}/dashboard/stats`, { headers: { 'Authorization': `Bearer ${tok}` } }),
+            ]);
+            if (!deptRes.ok) throw new Error('Eroare la preluarea departamentelor.');
+            if (!dashRes.ok) throw new Error('Eroare la preluarea statisticilor.');
+            setDepartments(await deptRes.json());
+            setDashboardStats(await dashRes.json());
         } catch (err) {
             setError(err.message);
         } finally {
@@ -261,6 +271,7 @@ export default function AdminDepartments() {
                         <DeptCard
                             key={dept.id}
                             dept={dept}
+                            dashboardStats={dashboardStats}
                             onEdit={(d) => setAddEditModal(d)}
                             onDelete={(d) => setDeleteModal(d)}
                             onSelect={handleSelect}

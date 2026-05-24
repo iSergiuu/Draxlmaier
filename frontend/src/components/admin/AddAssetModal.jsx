@@ -33,7 +33,7 @@ export default function AddAssetModal({
                         </div>
                         <div className="relative">
                             <label className="block text-sm text-brand-muted mb-1">Atribuire (Optional)</label>
-                            <input type="text" placeholder="Scrie email angajat..." value={newAssetData.userEmail} onChange={handleNewAssetEmailInput} onFocus={() => newAssetData.userEmail && setShowEmailSuggestionsAdd(true)} onBlur={() => setTimeout(() => setShowEmailSuggestionsAdd(false), 200)} className="w-full bg-brand-bg text-brand-text border border-brand-border rounded p-2 focus:outline-brand-primary" />
+                            <input type="text" placeholder="Scrie email-ul angajatului..." value={newAssetData.userEmail} onChange={handleNewAssetEmailInput} onFocus={() => newAssetData.userEmail && setShowEmailSuggestionsAdd(true)} onBlur={() => setTimeout(() => setShowEmailSuggestionsAdd(false), 200)} className="w-full bg-brand-bg text-brand-text border border-brand-border rounded p-2 focus:outline-brand-primary" />
                             {showEmailSuggestionsAdd && filteredEmailsAdd.length > 0 && (
                                 <ul className="absolute z-10 w-full mt-1 bg-brand-card border border-brand-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
                                     {filteredEmailsAdd.map(emp => (
