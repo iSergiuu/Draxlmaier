@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import { useContext } from 'react';
+import { ToastContext } from '../App';
 
 const EyeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -33,6 +35,7 @@ export default function ResetPassword() {
     const [message, setMessage]           = useState('');
     const [success, setSuccess]           = useState(false);
     const navigate = useNavigate();
+    const showToast = useContext(ToastContext);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);

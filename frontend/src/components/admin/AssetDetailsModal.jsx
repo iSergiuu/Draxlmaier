@@ -5,7 +5,7 @@ import CustomSelect from './CustomSelect';
 export default function AssetDetailsModal({
                                               selectedAsset, setSelectedAsset,
                                               isEditing, setIsEditing,
-                                              editData, setEditData,
+                                              editData, setEditData, onDeleteRequest,
                                               categoriesList, isDefective, getAssignee,
                                               getCategoryIcon, handleUpdateAsset, handleDeleteAsset,
                                               assignEmail, setAssignEmail, handleEmailInput,
@@ -222,7 +222,7 @@ export default function AssetDetailsModal({
                 <div className="p-6 border-t border-brand-border bg-brand-bg/50 rounded-b-2xl flex justify-between items-center mt-auto">
                     {!isEditing ? (
                         <>
-                            <button onClick={handleDeleteAsset} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5 text-sm font-medium">
+                            <button onClick={onDeleteRequest} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5 text-sm font-medium">
                                 <Trash2 size={16} /> Sterge
                             </button>
                             <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-brand-primary text-white rounded-lg text-sm hover:opacity-90 transition flex items-center gap-2 font-medium shadow-sm">

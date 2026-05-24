@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ToastContext } from '../App';
 import { motion } from 'framer-motion';
 import {
     Laptop, Smartphone, Monitor, Printer,
@@ -40,6 +41,7 @@ export default function Dashboard() {
 
     const [isModalOpen, setIsModalOpen]     = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const showToast = useContext(ToastContext);
 
     const [complaintTitle, setComplaintTitle]               = useState('');
     const [complaintDescription, setComplaintDescription]   = useState('');
@@ -158,17 +160,17 @@ export default function Dashboard() {
                 }),
             });
             if (res.ok) {
-                alert(`Tichet creat cu succes pentru: ${selectedAsset.name}!`);
+                showToast(`Tichet creat cu succes pentru: ${selectedAsset.name}!`,'success');
                 closeReportModal();
                 setOpenTicketsCount(prev => prev + 1);
                 setMyAssets(prev => prev.map(a => a.id === selectedAsset.id ? { ...a, hasActiveTicket: true } : a));
             } else {
                 const errData = await res.json().catch(() => null);
-                alert(`Eroare la creare tichet: ${errData?.message || 'Date invalide'}`);
+                showToast(`Eroare la creare tichet: ${errData?.message || 'Date invalide'}`,'error');
             }
         } catch (err) {
             console.error('Eroare la trimiterea plângerii:', err);
-            alert('Nu am putut contacta serverul.');
+            showToast('Nu am putut contacta serverul.','error');
         } finally {
             setIsSubmitting(false);
         }

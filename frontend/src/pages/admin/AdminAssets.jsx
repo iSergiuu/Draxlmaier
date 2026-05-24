@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle, Laptop, Smartphone, HardDrive, Keyboard, Mouse, Headphones, Package } from 'lucide-react';
 
+import { useContext } from 'react';
+import { ToastContext } from '../../App';
 import AssetSummaryCards from '../../components/admin/AssetSummaryCards';
 import AssetFilters from '../../components/admin/AssetFilters';
 import AssetList from '../../components/admin/AssetList';
@@ -14,6 +16,7 @@ export default function AdminAssets() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const showToast = useContext(ToastContext);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -40,6 +43,7 @@ export default function AdminAssets() {
     const [showEditEmailSuggestions, setShowEditEmailSuggestions] = useState(false);
 
     const [selectedCategories, setSelectedCategories] = useState([]);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const token = localStorage.getItem('token');
 
@@ -158,9 +162,9 @@ export default function AdminAssets() {
     };
 
     const handleAssignAsset = async () => {
-        if (!assignEmail) return alert('Introdu un email valid!');
+        if (!assignEmail) return showToast('Introdu un email valid!','error');
         const employee = employees.find(emp => emp.email.toLowerCase() === assignEmail.toLowerCase());
-        if (!employee) return alert('Angajatul cu acest email nu a fost gasit in baza de date!');
+        if (!employee) return showToast('Angajatul cu acest email nu a fost gasit in baza de date!','error');
 
         try {
             const response = await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}/assign`, {
@@ -176,7 +180,7 @@ export default function AdminAssets() {
 
             fetchData();
             setSelectedAsset(null);
-        } catch (err) { alert(err.message); }
+        } catch (err) { showToast(err.message, 'error'); }
     };
 
     const handleAddAsset = async (e) => {
@@ -211,12 +215,12 @@ export default function AdminAssets() {
             fetchData();
             setNewAssetData({ name: '', serialNumber: '', category: '', userEmail: '' });
             setIsAddModalOpen(false);
-        } catch (err) { alert(err.message); } finally { setIsSubmitting(false); }
+        } catch (err) { showToast(err.message, 'error'); } finally { setIsSubmitting(false); }
     };
 
     const handleUpdateAsset = async () => {
         if (editData.status === 'ASSIGNED' && (!editData.userEmail || editData.userEmail.trim() === '')) {
-            return alert('Te rog introdu un email pentru a putea atribui echipamentul!');
+            return showToast('Te rog introdu un email pentru a putea atribui echipamentul!','error');
         }
 
         try {
@@ -264,20 +268,21 @@ export default function AdminAssets() {
             setIsEditing(false);
             setSelectedAsset(null);
             fetchData();
-        } catch (err) { alert(err.message); }
+        } catch (err) { showToast(err.message, 'error'); }
     };
 
     const handleDeleteAsset = async () => {
-        if (!window.confirm(`Esti sigur ca vrei sa stergi ${selectedAsset.name}?`)) return;
         try {
             const response = await fetch(`http://localhost:8080/api/assets/${selectedAsset.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error(`Eroare la stergere`);
+            setConfirmDelete(false);
             setSelectedAsset(null);
             fetchData();
-        } catch (err) { alert(err.message); }
+            showToast(`${selectedAsset.name} a fost sters cu succes.`, 'success');
+        } catch (err) { showToast(err.message, 'error'); }
     };
 
     const getCategoryIcon = (category) => {
@@ -386,6 +391,7 @@ export default function AdminAssets() {
 
             <AssetDetailsModal
                 selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset}
+                onDeleteRequest={() => setConfirmDelete(true)}
                 isEditing={isEditing} setIsEditing={setIsEditing}
                 editData={editData} setEditData={setEditData}
                 categoriesList={categoriesList} normalizeCategory={normalizeCategory}
@@ -402,6 +408,32 @@ export default function AdminAssets() {
                 setShowEditEmailSuggestions={setShowEditEmailSuggestions}
                 filteredEditEmails={filteredEditEmails}
             />
+
+            {confirmDelete && selectedAsset && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-red-500/10 rounded-lg">
+                                <AlertCircle size={20} className="text-red-400" />
+                            </div>
+                            <h3 className="text-base font-bold text-brand-text">Sterge echipament</h3>
+                        </div>
+                        <p className="text-sm text-brand-muted">
+                            Esti sigur ca vrei sa stergi <span className="text-brand-text font-semibold">"{selectedAsset.name}"</span>? Actiunea nu poate fi anulata.
+                        </p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setConfirmDelete(false)}
+                                className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                Anuleaza
+                            </button>
+                            <button onClick={handleDeleteAsset}
+                                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
+                                <AlertCircle size={14} /> Sterge
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isAddModalOpen && (
                 <AddAssetModal

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useContext } from 'react';
+import { ToastContext } from '../App';
 import {
     ArrowLeft, CheckCircle2, Send, Clock, User, Shield,
     Info, MessageSquare, MonitorSmartphone, ChevronDown, Package, AlertTriangle
@@ -43,6 +45,7 @@ export default function ComplaintDetails() {
     const { id }       = useParams();
     const navigate     = useNavigate();
     const statusMenuRef = useRef(null);
+    const showToast = useContext(ToastContext);
 
     const [ticket, setTicket]               = useState(null);
     const [comments, setComments]           = useState([]);
@@ -120,7 +123,7 @@ export default function ComplaintDetails() {
                 body:    JSON.stringify({ newStatusId: selectedStatus, comment: statusComment }),
             });
             if (res.ok) window.location.reload();
-            else alert('Eroare la actualizare.');
+            else showToast('Eroare la actualizare.','error');
         } finally { setIsUpdatingStatus(false); }
     };
 

@@ -55,7 +55,7 @@ function DeptCard({ dept, onEdit, onDelete, onSelect }) {
 
             {/* Stats */}
             <div className="px-5 pb-4 flex gap-2">
-<StatBadge icon={Users}         label="Angajati"  value={dept.employeeCount ?? 0} color="#3b82f6" />
+                    <StatBadge icon={Users}         label="Angajati"  value={dept.employeeCount ?? 0} color="#3b82f6" />
                     <StatBadge icon={Package}       label="Asseturi"  value={dept.assetCount    ?? 0} color="#10b981" />
                     <StatBadge icon={MessageSquare} label="Plangeri"  value={stats?.totalComplaits ?? 0} color="#f59e0b" />
             </div>
@@ -82,7 +82,12 @@ function AddEditModal({ dept, onClose, onSave }) {
             });
             if (!res.ok) {
                 const txt = await res.text();
-                throw new Error(txt || 'Eroare la salvare.');
+                let message = 'Eroare la salvare.';
+                try {
+                    const json = JSON.parse(txt);
+                    message = json.message || message;
+                } catch {}
+                throw new Error(message);
             }
             onSave();
         } catch (err) {

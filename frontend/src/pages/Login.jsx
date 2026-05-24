@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import { useContext } from 'react';
+import { ToastContext } from '../App';
 
 const EyeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -27,6 +29,7 @@ export default function Login() {
     const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
+    const showToast = useContext(ToastContext);
 
     // Forgot password state
     const [mode, setMode] = useState('login'); // 'login' | 'forgot' | 'reset'
@@ -65,11 +68,11 @@ export default function Login() {
                 localStorage.setItem('userRole', data.role ? data.role : 'ADMIN');
                 navigate('/dashboard');
             } else {
-                alert("Email sau parola incorecte!");
+                showToast("Email sau parola incorecte!","error");
             }
         } catch (error) {
             console.error("Fetch error:", error);
-            alert("Nu ne-am putut conecta la server.");
+            showToast("Nu ne-am putut conecta la server.","error");
         }
     };
 
@@ -166,7 +169,7 @@ export default function Login() {
                         <button type="submit" className="w-full py-2 px-4 border border-transparent rounded text-white bg-brand-primary hover:opacity-90 font-medium transition-opacity">
                             Intra in cont
                         </button>
-                        <button type="button" onClick={() => { setMode('forgot'); setForgotMessage(''); }}
+                        <button type="button" onClick={() => { setMode('forgot'); setForgotMessage(''); setForgotEmail(credentials.email); }}
                                 className="w-full text-sm text-brand-muted hover:text-brand-text transition-colors text-center">
                             Am uitat parola
                         </button>
@@ -182,7 +185,8 @@ export default function Login() {
                         <input
                             type="email"
                             placeholder="Email"
-                            value={forgotEmail || credentials.email}
+                            value={forgotEmail}
+                            placeholder={credentials.email || "Email"}
                             onChange={(e) => setForgotEmail(e.target.value)}
                             className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded focus:outline-none focus:border-brand-primary transition-colors"
                         />

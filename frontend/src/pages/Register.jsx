@@ -64,16 +64,21 @@ export default function Register() {
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                alert(tempEmail ? "Cont configurat cu succes! Te poți loga acum." : "Cont creat cu succes!");
-                navigate('/login');
-            } else {
-                const errText = await response.text();
-                alert(`Eroare la înregistrare: ${errText}`);
+        if (response.ok) {
+            showToast(tempEmail ? "Cont configurat cu succes! Te poti loga acum." : "Cont creat cu succes!", 'success');
+            navigate('/login');
+        } else {
+            const errText = await response.text();
+            try {
+                const json = JSON.parse(errText);
+                showToast(json.message || 'Eroare la inregistrare.', 'error');
+            } catch {
+                showToast(errText || 'Eroare la inregistrare.', 'error');
             }
+        }
         } catch (error) {
             console.error("Register error:", error);
-            alert("Nu am putut comunica cu serverul.");
+            showToast("Nu am putut comunica cu serverul.", 'error');
         }
     };
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { ToastContext } from '../../App';
 import { Plus, Trash2 } from 'lucide-react';
 import EmployeeSummaryCards from '../../components/admin/EmployeeSummaryCards';
 import EmployeeFilters from '../../components/admin/EmployeeFilters';
@@ -33,6 +34,7 @@ export default function AdminEmployees() {
     const [sortOrder, setSortOrder] = useState('NEWEST');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
     const [modalDept, setModalDept] = useState('');
     const [modalCount, setModalCount] = useState(1);
 
@@ -42,6 +44,7 @@ export default function AdminEmployees() {
     const [generatedPasswords, setGeneratedPasswords] = useState({});
 
     const token = localStorage.getItem('token');
+    const showToast = useContext(ToastContext);
 
     const getDeptColorObj = (deptName) => {
         const fallback = { hex: '#6b7280', class: 'bg-gray-500/10 text-gray-500 border-gray-500/20' };
@@ -87,7 +90,7 @@ export default function AdminEmployees() {
 
     const handleGenerateAccounts = async (e) => {
         e.preventDefault();
-        if (!modalDept) return alert("Selectează un departament!");
+        if (!modalDept) return showToast('Selectează un departament!', 'warning');
 
         try {
             const res = await fetch(`http://localhost:8080/api/employees/generate-temp-account?departmentId=${modalDept}&count=${modalCount}`, {
@@ -110,40 +113,9 @@ export default function AdminEmployees() {
                 setActiveTab('GENERATED');
             } else {
                 const err = await res.text();
-                alert(`Eroare la generare: ${err}`);
+                showToast(`Eroare la generare: ${err}`, 'error');
             }
-        } catch (error) { alert("Eroare de rețea."); }
-    };
-
-    const handleDeleteAllGenerated = async () => {
-        if (window.confirm("Sigur vrei să ștergi TOATE conturile generate neatribuite?")) {
-            try {
-                const res = await fetch('http://localhost:8080/api/employees/temporary-accounts', {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) fetchData();
-                else alert("A apărut o eroare la ștergere.");
-            } catch (error) { alert("Nu s-au putut șterge conturile."); }
-        }
-    };
-
-    const handleDeleteSingleAccount = async (id, email) => {
-        if (window.confirm(`Sigur vrei să ștergi contul temporar ${email}?`)) {
-            try {
-                const res = await fetch(`http://localhost:8080/api/employees/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    setSelectedEmployee(null);
-                    fetchData();
-                } else {
-                    const err = await res.text();
-                    alert(`Eroare la ștergere: ${err}`);
-                }
-            } catch (error) { alert("Eroare de rețea la ștergere."); }
-        }
+        } catch (error) { showToast('Eroare de rețea.', 'error'); }
     };
 
     const handleUpdateEmployee = async () => {
@@ -162,15 +134,15 @@ export default function AdminEmployees() {
                 setSelectedEmployee(null);
             } else {
                 const err = await response.text();
-                alert(`Eroare la salvarea modificărilor: ${err}`);
+                showToast(`Eroare la salvarea modificărilor: ${err}`, 'error');
             }
-        } catch (error) { alert("Eroare de rețea la actualizare."); }
+        } catch (error) { showToast('Eroare de rețea la actualizare.', 'error'); }
     };
 
     const copyToClipboard = (email, password, securityCode, deptName) => {
         const text = `Date de acces platformă DRX (Departament: ${deptName || 'Nespecificat'})\n\nEmail: ${email}\nParolă: ${password}\nCod Securitate: ${securityCode || 'N/A'}\n\nIntrodu aceste date la prima logare pentru a-ți configura contul.`;
         navigator.clipboard.writeText(text);
-        alert("Datele au fost copiate în clipboard!");
+        showToast('Datele au fost copiate în clipboard!', 'success');
     };
 
     // Calcul date
@@ -213,7 +185,7 @@ export default function AdminEmployees() {
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-brand-text">Management Angajați</h3>
                 <div className="flex gap-3">
-                    <button onClick={handleDeleteAllGenerated} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2 rounded-lg font-medium flex items-center transition-colors">
+                    <button onClick={() => setConfirmDeleteAll(true)} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 px-4 py-2 rounded-lg font-medium flex items-center transition-colors">
                         <Trash2 className="w-5 h-5 mr-1" /> Curăță Inactive
                     </button>
                     <button onClick={() => setIsModalOpen(true)} className="bg-brand-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-sm">
@@ -267,7 +239,6 @@ export default function AdminEmployees() {
                     setVisiblePasswords={setVisiblePasswords}
                     generatedPasswords={generatedPasswords}
                     setSelectedEmployee={setSelectedEmployee}
-                    handleDeleteSingleAccount={handleDeleteSingleAccount}
                     copyToClipboard={copyToClipboard}
                 />
             )}
@@ -287,11 +258,46 @@ export default function AdminEmployees() {
                     departments={departments} getDeptColorObj={getDeptColorObj}
                     isDeptChanged={selectedDeptId !== (departments.find(d => d.name === selectedEmployee.departmentName)?.id || '')}
                     handleUpdateEmployee={handleUpdateEmployee}
-                    handleDeleteSingleAccount={handleDeleteSingleAccount}
                     visiblePasswords={visiblePasswords} setVisiblePasswords={setVisiblePasswords}
                     generatedPasswords={generatedPasswords} copyToClipboard={copyToClipboard}
                     assets={assets} complaints={complaints}
                 />
+            )}
+
+            {confirmDeleteAll && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-brand-card border border-brand-border rounded-xl shadow-xl w-full max-w-sm mx-4 p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-red-500/10 rounded-lg">
+                                <Trash2 size={20} className="text-red-400" />
+                            </div>
+                            <h3 className="text-base font-bold text-brand-text">Sterge conturi inactive</h3>
+                        </div>
+                        <p className="text-sm text-brand-muted">
+                            Esti sigur ca vrei sa stergi <span className="text-brand-text font-semibold">toate</span> conturile generate neatribuite? Actiunea nu poate fi anulata.
+                        </p>
+                        <div className="flex gap-2">
+                            <button onClick={() => setConfirmDeleteAll(false)}
+                                className="flex-1 py-2 px-4 border border-brand-border rounded-lg text-brand-muted hover:text-brand-text transition-colors text-sm">
+                                Anuleaza
+                            </button>
+                            <button onClick={async () => {
+                                setConfirmDeleteAll(false);
+                                try {
+                                    const res = await fetch('http://localhost:8080/api/employees/temporary-accounts', {
+                                        method: 'DELETE',
+                                        headers: { 'Authorization': `Bearer ${token}` }
+                                    });
+                                    if (res.ok) { fetchData(); showToast('Conturile inactive au fost sterse.', 'success'); }
+                                    else showToast('A aparut o eroare la stergere.', 'error');
+                                } catch { showToast('Nu s-au putut sterge conturile.', 'error'); }
+                            }}
+                                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
+                                <Trash2 size={14} /> Sterge tot
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
