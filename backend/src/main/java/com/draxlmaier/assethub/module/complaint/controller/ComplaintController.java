@@ -26,7 +26,6 @@ public class ComplaintController {
     private final ComplaintService complaintService;
     private final CommentService commentService;
 
-
     @PostMapping
     public ResponseEntity<ComplaintResponseDTO> createComplaint(@Valid @RequestBody ComplaintRequestDTO requestDTO) {
         ComplaintResponseDTO response = complaintService.createComplaint(requestDTO);
@@ -34,6 +33,7 @@ public class ComplaintController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<List<ComplaintResponseDTO>> getAllComplaints() {
         return ResponseEntity.ok(complaintService.getAllComplaints());
     }

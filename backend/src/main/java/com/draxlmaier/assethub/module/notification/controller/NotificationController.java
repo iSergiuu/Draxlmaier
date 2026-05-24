@@ -8,6 +8,7 @@ import com.draxlmaier.assethub.module.notification.repository.NotificationReposi
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
@@ -50,7 +51,6 @@ public class NotificationController {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Notificarea nu a fost gasita"));
 
-        // Ne asiguram ca user-ul isi marcheaza doar notificarile lui
         if (notification.getUser().getId().equals(currentUser.getId())) {
             notification.setRead(true);
             notificationRepository.save(notification);
@@ -65,11 +65,35 @@ public class NotificationController {
         Employee currentUser = employeeRepository.findByEmail(email).orElseThrow();
 
         List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndReadFalse(currentUser.getId());
-
         unreadNotifications.forEach(notification -> notification.setRead(true));
-
         notificationRepository.saveAll(unreadNotifications);
 
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable UUID id) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Employee currentUser = employeeRepository.findByEmail(email).orElseThrow();
+
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notificarea nu a fost găsită"));
+
+        if (notification.getUser().getId().equals(currentUser.getId())) {
+            notificationRepository.delete(notification);
+        }
+
+        return ResponseEntity.noContent().build(); // Status 204 No Content
+    }
+
+    @DeleteMapping("/clear-all")
+    @Transactional
+    public ResponseEntity<Void> clearAllNotifications() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Employee currentUser = employeeRepository.findByEmail(email).orElseThrow();
+
+        notificationRepository.deleteAllByUserId(currentUser.getId());
+
+        return ResponseEntity.noContent().build(); // Status 204 No Content
     }
 }
