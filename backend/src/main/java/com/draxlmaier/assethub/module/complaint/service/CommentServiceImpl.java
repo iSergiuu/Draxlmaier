@@ -12,6 +12,7 @@ import com.draxlmaier.assethub.module.employee.model.Employee;
 import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
 import com.draxlmaier.assethub.module.notification.service.NotificationManagerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,9 @@ public class CommentServiceImpl implements CommentService {
     private final ComplaintRepository complaintRepository;
     private final EmployeeRepository employeeRepository;
     private final ComplaintWorkflowRepository workflowRepository;
-    private final NotificationManagerService notificationManager; // Injectăm serviciul de notificări
+    private final NotificationManagerService notificationManager;
+
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional
@@ -68,7 +71,11 @@ public class CommentServiceImpl implements CommentService {
             notificationManager.sendToUser(complaint.getAuthor(), "Răspuns nou la tichet", notificationMsg, complaint.getId());
         }
 
-        return mapToResponseDTO(savedComment);
+        CommentResponseDTO responseDTO = mapToResponseDTO(savedComment);
+
+        messagingTemplate.convertAndSend("/topic/complaints/" + complaintId, responseDTO);
+
+        return responseDTO;
     }
 
     @Override

@@ -13,11 +13,13 @@ import com.draxlmaier.assethub.module.complaint.model.ComplaintWorkflow;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintRepository;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintStatusRepository;
 import com.draxlmaier.assethub.module.complaint.repository.ComplaintWorkflowRepository;
+import com.draxlmaier.assethub.module.notification.service.EmailService;
 import com.draxlmaier.assethub.module.notification.service.NotificationManagerService;
 import com.draxlmaier.assethub.module.employee.model.Employee;
 import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,13 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final ComplaintWorkflowRepository workflowRepository;
     private final ComplaintMapper complaintMapper;
     private final EntityManager entityManager;
+
+    // NOU: Injectăm serviciul de email-uri
+    private final EmailService emailService;
+
+    // Citim URL-ul de frontend din properties, dar punem un default de siguranță
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Override
     @Transactional
@@ -132,6 +141,11 @@ public class ComplaintServiceImpl implements ComplaintService {
         if (!savedComplaint.getAuthor().getId().equals(currentUser.getId())) {
             String userMsg = "Tichetul tău a fost trecut în statusul: " + newStatus.getCode() + ". Motiv: " + statusDTO.comment();
             notificationManager.sendToUser(savedComplaint.getAuthor(), "Status Tichet Actualizat", userMsg, savedComplaint.getId());
+
+            // NOU: Dacă tichetul s-a închis (terminal), trimitem și email-ul pentru feedback
+            if (newStatus.isTerminal()) {
+                sendFeedbackEmail(savedComplaint);
+            }
         }
 
         return complaintMapper.toResponseDTO(savedComplaint);
@@ -167,7 +181,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         List<String> validStatuses = Arrays.asList("NEW", "IN_REVIEW");
 
-        // Apelul actualizat
         return complaintRepository.findByAuthorIdNotAndAssignedToIsNullAndStatus_CodeInAndDeletedAtIsNull(
                         currentUser.getId(), validStatuses).stream()
                 .map(complaintMapper::toResponseDTO)
@@ -182,7 +195,6 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         List<String> validStatuses = Arrays.asList("IN_PROGRESS");
 
-        // Apelul actualizat
         return complaintRepository.findByAssignedToIdAndStatus_CodeInAndDeletedAtIsNull(
                         currentUser.getId(), validStatuses).stream()
                 .map(complaintMapper::toResponseDTO)
@@ -199,5 +211,30 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .createdAt(OffsetDateTime.now())
                 .build();
         workflowRepository.save(workflow);
+    }
+
+    private void sendFeedbackEmail(Complaint complaint) {
+        String authorEmail = complaint.getAuthor().getEmail();
+
+        if (authorEmail == null || authorEmail.isEmpty()) {
+            return;
+        }
+
+        String feedbackLink = frontendUrl + "/feedback/" + complaint.getId();
+        String subject = "AssetHub: Spune-ne părerea ta despre tichetul rezolvat!";
+
+        String emailBody = "Salut " + complaint.getAuthor().getFirstName() + ",\n\n"
+                + "Tichetul tău '" + complaint.getTitle() + "' a fost proaspăt închis.\n\n"
+                + "Ne-ar ajuta foarte mult să știm cum a fost experiența ta cu echipa de suport. Te rugăm să ne lași o scurtă evaluare accesând link-ul de mai jos:\n\n"
+                + feedbackLink + "\n\n"
+                + "Părerea ta ne ajută să ne îmbunătățim mereu serviciile.\n\n"
+                + "O zi excelentă,\n"
+                + "Echipa AssetHub";
+
+        try {
+            emailService.sendEmail(authorEmail, subject, emailBody);
+        } catch (Exception e) {
+            System.out.println("Nu s-a putut trimite email-ul de feedback către: " + authorEmail);
+        }
     }
 }
