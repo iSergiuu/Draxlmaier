@@ -18,11 +18,13 @@ import AdminDepartments from './pages/admin/AdminDepartments';
 
 export const ToastContext = React.createContext(null);
 
-function ProtectedAdminRoute({ children }) {
+function ProtectedAdminRoute({ children, superAdminOnly = false }) {
     const role = localStorage.getItem('userRole');
     const token = localStorage.getItem('token');
-    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    const isSuperAdmin = role === 'SUPER_ADMIN';
+    const isAdmin = role === 'ADMIN' || isSuperAdmin;
     if (!token || !isAdmin) return <Navigate to="/dashboard" replace />;
+    if (superAdminOnly && !isSuperAdmin) return <Navigate to="/admin/tickets" replace />;
     return children;
 }
 
@@ -43,16 +45,13 @@ function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/profile" element={<Profile />} />
 
-                    {/* Aici se incarca AdminTickets in interiorul Layout-ului */}
                     <Route path="/admin" element={<ProtectedAdminRoute><AdminLayout /></ProtectedAdminRoute>}>
-                        {/* Cand accesezi /admin, te redirectioneaza automat la /admin/tickets */}
                         <Route index element={<Navigate to="tickets" replace />} />
-
-                        <Route path="assets" element={<AdminAssets />} />
-                        <Route path="employees" element={<AdminEmployees />} />
                         <Route path="tickets" element={<AdminTickets />} />
                         <Route path="tickets/:id" element={<ComplaintDetails />} />
-                        <Route path="departments" element={<AdminDepartments />} />
+                        <Route path="employees" element={<ProtectedAdminRoute superAdminOnly><AdminEmployees /></ProtectedAdminRoute>} />
+                        <Route path="assets" element={<ProtectedAdminRoute superAdminOnly><AdminAssets /></ProtectedAdminRoute>} />
+                        <Route path="departments" element={<ProtectedAdminRoute superAdminOnly><AdminDepartments /></ProtectedAdminRoute>} />
                     </Route>
 
                     {/* Rutele pentru tichete */}

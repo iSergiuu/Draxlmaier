@@ -269,11 +269,11 @@ export default function UserMenu() {
 
                                     {isAdmin && (
                                         <button
-                                            onClick={() => handleNavigate('/admin')}
+                                            onClick={() => handleNavigate(userRole === 'SUPER_ADMIN' ? '/admin' : '/admin/tickets')}
                                             className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
                                         >
                                             <ShieldAlert className="w-4 h-4 mr-3" />
-                                            Panou Administrator
+                                            {userRole === 'SUPER_ADMIN' ? 'Panou Administrator' : 'Rezolvă Tichete'}
                                         </button>
                                     )}
 
