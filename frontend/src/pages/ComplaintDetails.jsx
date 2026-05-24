@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useContext } from 'react';
-import { ToastContext } from '../App';
 import {
     ArrowLeft, CheckCircle2, Send, Clock, User, Shield,
     Info, MessageSquare, MonitorSmartphone, ChevronDown, Package, AlertTriangle
 } from 'lucide-react';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 import ThemeSwitcher from '../components/ThemeSwitcher';
 import UserMenu from '../components/UserMenu';
 
@@ -45,7 +45,7 @@ export default function ComplaintDetails() {
     const { id }       = useParams();
     const navigate     = useNavigate();
     const statusMenuRef = useRef(null);
-    const showToast = useContext(ToastContext);
+    const stompClientRef = useRef(null);
 
     const [ticket, setTicket]               = useState(null);
     const [comments, setComments]           = useState([]);
@@ -64,7 +64,7 @@ export default function ComplaintDetails() {
     useEffect(() => {
         const fetchTicketDetails = async () => {
             try {
-                const token = localStorage.getItem('jwt_token');
+                const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
 
                 const [ticketRes, commentsRes] = await Promise.all([
@@ -86,6 +86,40 @@ export default function ComplaintDetails() {
     }, [id, navigate]);
 
     useEffect(() => {
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+        if (!token || !id) return;
+
+        const socket = new SockJS('http://localhost:8080/ws');
+        const stompClient = new Client({
+            webSocketFactory: () => socket,
+            reconnectDelay: 5000,
+            connectHeaders: {
+                'Authorization': `Bearer ${token}`
+            },
+            onConnect: () => {
+                stompClient.subscribe(`/topic/complaints/${id}`, (message) => {
+                    if (message.body) {
+                        const newComment = JSON.parse(message.body);
+                        setComments(prev => {
+                            if (prev.some(c => c.id === newComment.id)) return prev;
+                            return [...prev, newComment];
+                        });
+                    }
+                });
+            }
+        });
+
+        stompClient.activate();
+        stompClientRef.current = stompClient;
+
+        return () => {
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
+            }
+        };
+    }, [id]);
+
+    useEffect(() => {
         const handler = (e) => { if (statusMenuRef.current && !statusMenuRef.current.contains(e.target)) setIsStatusMenuOpen(false); };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
@@ -96,18 +130,20 @@ export default function ComplaintDetails() {
         if (!newComment.trim()) return;
         setSendingComment(true);
         try {
-            const token = localStorage.getItem('jwt_token');
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             const res   = await fetch(`http://localhost:8080/api/complaints/${id}/comments`, {
                 method:  'POST',
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ message: newComment }),
             });
             if (res.ok) {
-                const added = await res.json().catch(() => ({
-                    id: Math.random(), message: newComment,
-                    authorName: 'Eu', createdAt: new Date().toISOString(), isMine: true,
-                }));
-                setComments(prev => [...prev, added]);
+                const added = await res.json().catch(() => null);
+                if (added) {
+                    setComments(prev => {
+                        if (prev.some(c => c.id === added.id)) return prev;
+                        return [...prev, added];
+                    });
+                }
                 setNewComment('');
             }
         } finally { setSendingComment(false); }
@@ -116,14 +152,14 @@ export default function ComplaintDetails() {
     const handleStatusChange = async () => {
         setIsUpdatingStatus(true);
         try {
-            const token = localStorage.getItem('jwt_token');
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             const res   = await fetch(`http://localhost:8080/api/complaints/${id}/status`, {
                 method:  'PATCH',
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ newStatusId: selectedStatus, comment: statusComment }),
             });
             if (res.ok) window.location.reload();
-            else showToast('Eroare la actualizare.','error');
+            else alert('Eroare la actualizare.');
         } finally { setIsUpdatingStatus(false); }
     };
 
