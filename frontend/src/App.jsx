@@ -15,6 +15,9 @@ import AdminAssets from './pages/admin/AdminAssets';
 import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminDepartments from './pages/admin/AdminDepartments';
+import DeptLayout from './pages/dept/DeptLayout';
+import DeptTickets from './pages/dept/DeptTickets';
+import DeptEmployees from './pages/dept/DeptEmployees';
 
 export const ToastContext = React.createContext(null);
 
@@ -22,7 +25,8 @@ function ProtectedAdminRoute({ children, superAdminOnly = false }) {
     const role = localStorage.getItem('userRole');
     const token = localStorage.getItem('token');
     const isSuperAdmin = role === 'SUPER_ADMIN';
-    const isAdmin = role === 'ADMIN' || isSuperAdmin;
+    const isAdmin = role === 'ADMIN' || isSuperAdmin || isDeptResponsible;
+    const isDeptResponsible = role === 'DEPT_RESPONSIBLE';
     if (!token || !isAdmin) return <Navigate to="/dashboard" replace />;
     if (superAdminOnly && !isSuperAdmin) return <Navigate to="/admin/tickets" replace />;
     return children;
@@ -52,6 +56,13 @@ function App() {
                         <Route path="employees" element={<ProtectedAdminRoute superAdminOnly><AdminEmployees /></ProtectedAdminRoute>} />
                         <Route path="assets" element={<ProtectedAdminRoute superAdminOnly><AdminAssets /></ProtectedAdminRoute>} />
                         <Route path="departments" element={<ProtectedAdminRoute superAdminOnly><AdminDepartments /></ProtectedAdminRoute>} />
+                    </Route>
+
+                    <Route path="/dept" element={<ProtectedAdminRoute><DeptLayout /></ProtectedAdminRoute>}>
+                        <Route index element={<Navigate to="tickets" replace />} />
+                        <Route path="tickets" element={<DeptTickets />} />
+                        <Route path="tickets/:id" element={<ComplaintDetails />} />
+                        <Route path="employees" element={<DeptEmployees />} />
                     </Route>
 
                     {/* Rutele pentru tichete */}

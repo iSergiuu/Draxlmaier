@@ -25,6 +25,7 @@ export default function UserMenu() {
     const adminEmail = localStorage.getItem('userEmail') || 'Utilizator';
     const userRole = localStorage.getItem('userRole');
     const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || userRole === 'SUPER_ADMIN';
+    const isDeptResponsible = userRole === 'DEPT_RESPONSIBLE';
 
     useEffect(() => {
         if (!token) return;
@@ -274,6 +275,16 @@ export default function UserMenu() {
                                         >
                                             <ShieldAlert className="w-4 h-4 mr-3" />
                                             {userRole === 'SUPER_ADMIN' ? 'Panou Administrator' : 'Rezolvă Tichete'}
+                                        </button>
+                                    )}
+
+                                    {isDeptResponsible && (
+                                        <button
+                                            onClick={() => handleNavigate('/dept/tickets')}
+                                            className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
+                                        >
+                                            <ShieldAlert className="w-4 h-4 mr-3" />
+                                            Tichete Departament
                                         </button>
                                     )}
 

@@ -184,6 +184,7 @@ export default function EmployeeDetailsModal({
                                         onChange={setSelectedRole}
                                         options={[
                                             { value: 'USER', label: 'User' },
+                                            { value: 'DEPT_RESPONSIBLE', label: 'Responsabil Departament' },
                                             { value: 'ADMIN', label: 'Admin' },
                                             { value: 'SUPER_ADMIN', label: 'Super Admin' },
                                         ]}
