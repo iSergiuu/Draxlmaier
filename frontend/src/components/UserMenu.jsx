@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, LayoutDashboard, LogOut, ShieldAlert, ClipboardList, Bell, Check, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, ShieldAlert, ClipboardList, Bell, Check, MessageSquare, AlertTriangle, Trash2, X } from 'lucide-react';
 import SockJS from 'sockjs-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Client } from '@stomp/stompjs';
@@ -35,11 +35,11 @@ export default function UserMenu() {
                 const userRes = await fetch('http://localhost:8080/api/employees/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
+
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     setUserId(userData.id);
-                    
+
                     const notifRes = await fetch('http://localhost:8080/api/notifications', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -126,6 +126,36 @@ export default function UserMenu() {
         }
     };
 
+    const handleDeleteNotif = async (id, e) => {
+        e.stopPropagation();
+        try {
+            const res = await fetch(`http://localhost:8080/api/notifications/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setNotifications(notifications.filter(n => n.id !== id));
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleDeleteAll = async (e) => {
+        e.stopPropagation();
+        try {
+            const res = await fetch('http://localhost:8080/api/notifications/clear-all', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setNotifications([]);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleNotifClick = (notif) => {
         setIsNotifOpen(false);
         if (!notif.read) {
@@ -143,12 +173,13 @@ export default function UserMenu() {
 
     return (
         <div className="flex items-center gap-2">
-            
+
+            {/* Notificări */}
             <div className="relative" ref={notifRef}
                 onMouseEnter={() => { clearTimeout(hoverTimeout.current); setIsNotifOpen(true); setIsPinned(false); setIsHovered(false); }}
                 onMouseLeave={() => { hoverTimeout.current = setTimeout(() => setIsNotifOpen(false), 200); }}
             >
-                <button 
+                <button
                     onClick={() => { setIsNotifOpen(!isNotifOpen); closeMenu(); }}
                     className={`p-2 rounded-lg transition-colors focus:outline-none text-brand-text relative ${isNotifOpen ? 'bg-black/10' : 'hover:bg-black/5'}`}
                 >
@@ -162,49 +193,77 @@ export default function UserMenu() {
 
                 <AnimatePresence>
                     {isNotifOpen && (
-                            <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                                className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden origin-top-right"
-                            >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden origin-top-right"
+                        >
+                            {/* Header panou */}
                             <div className="p-3 border-b border-brand-border bg-brand-bg flex justify-between items-center">
                                 <span className="font-bold text-brand-text text-sm">Notificari</span>
-                                {unreadCount > 0 && <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">{unreadCount} noi</span>}
+                                <div className="flex items-center gap-2">
+                                    {unreadCount > 0 && (
+                                        <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">
+                                            {unreadCount} noi
+                                        </span>
+                                    )}
+                                    {notifications.length > 0 && (
+                                        <button
+                                            onClick={handleDeleteAll}
+                                            className="p-1 rounded hover:bg-red-500/10 text-brand-muted hover:text-red-500 transition-colors"
+                                            title="Șterge toate notificările"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            
+
+                            {/* Lista notificări */}
                             <div className="max-h-80 overflow-y-auto divide-y divide-brand-border pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-brand-primary/50">
                                 {notifications.length === 0 ? (
                                     <p className="text-sm text-brand-muted text-center py-6">Nu ai notificari momentan.</p>
                                 ) : (
                                     notifications.map((notif) => (
-                                        <div 
-                                            key={notif.id} 
+                                        <div
+                                            key={notif.id}
                                             onClick={() => handleNotifClick(notif)}
-                                            className={`p-3 text-left transition-colors cursor-pointer flex gap-3 items-start ${notif.read ? 'hover:bg-black/5 opacity-70' : 'bg-brand-primary/5 hover:bg-brand-primary/10'}`}
+                                            className={`group p-3 text-left transition-colors cursor-pointer flex gap-3 items-start ${notif.read ? 'hover:bg-black/5 opacity-70' : 'bg-brand-primary/5 hover:bg-brand-primary/10'}`}
                                         >
                                             <div className="mt-1 text-brand-primary shrink-0">
-                                                {notif.title.toLowerCase().includes('comentariu') || notif.title.toLowerCase().includes('raspuns') 
-                                                    ? <MessageSquare className="w-4 h-4" /> 
+                                                {notif.title.toLowerCase().includes('comentariu') || notif.title.toLowerCase().includes('raspuns')
+                                                    ? <MessageSquare className="w-4 h-4" />
                                                     : <AlertTriangle className="w-4 h-4" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className={`text-xs font-bold text-brand-text break-words ${notif.read ? '' : 'text-brand-primary'}`}>{notif.title}</p>
                                                 <p className="text-xs text-brand-muted mt-0.5 whitespace-pre-wrap break-words">{notif.message}</p>
                                                 <span className="text-[10px] text-brand-muted block mt-1">
-                                                    {new Date(notif.createdAt).toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}
+                                                    {new Date(notif.createdAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            {!notif.read && (
-                                                <button 
-                                                    onClick={(e) => handleMarkAsRead(notif.id, e)}
-                                                    className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors mt-1 shrink-0"
-                                                    title="Marcheaza ca citit"
+                                            <div className="flex flex-col gap-1 shrink-0 mt-1">
+                                                {/* X apare la hover pe notificare */}
+                                                <button
+                                                    onClick={(e) => handleDeleteNotif(notif.id, e)}
+                                                    className="p-1 rounded opacity-0 group-hover:opacity-100 bg-brand-bg border border-brand-border hover:bg-red-500 hover:text-white text-brand-muted transition-all"
+                                                    title="Șterge notificarea"
                                                 >
-                                                    <Check className="w-3 h-3" />
+                                                    <X className="w-3 h-3" />
                                                 </button>
-                                            )}
+                                                {/* Bifă doar pentru necitite */}
+                                                {!notif.read && (
+                                                    <button
+                                                        onClick={(e) => handleMarkAsRead(notif.id, e)}
+                                                        className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors"
+                                                        title="Marcheaza ca citit"
+                                                    >
+                                                        <Check className="w-3 h-3" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -214,6 +273,7 @@ export default function UserMenu() {
                 </AnimatePresence>
             </div>
 
+            {/* Meniu utilizator */}
             <div
                 className="relative"
                 ref={menuRef}
@@ -231,7 +291,7 @@ export default function UserMenu() {
 
                 <AnimatePresence>
                     {isOpen && (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
