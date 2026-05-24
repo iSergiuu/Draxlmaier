@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CustomSelect from './CustomSelect';
-import { Building2, X } from 'lucide-react';
+import { Building2, X, Loader2 } from 'lucide-react';
 
 export default function GenerateAccountsModal({
                                                   isModalOpen, setIsModalOpen,
@@ -8,6 +8,15 @@ export default function GenerateAccountsModal({
                                                   modalCount, setModalCount,
                                                   handleGenerateAccounts, departments
                                               }) {
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        if (loading) return;
+        setLoading(true);
+        await handleGenerateAccounts(e);
+        setLoading(false);
+    };
+
     if (!isModalOpen) return null;
 
     return (
@@ -20,7 +29,7 @@ export default function GenerateAccountsModal({
                 <h3 className="text-xl font-bold mb-2 text-brand-text">Generează Conturi Noi</h3>
                 <p className="text-brand-muted text-sm mb-6">Utilizatorii vor primi o adresă temporară de tip <span className="font-mono text-brand-primary text-xs">tempXXXXX@draxlmaier.com</span>.</p>
 
-                <form onSubmit={handleGenerateAccounts} className="space-y-4 overflow-visible">
+                <form onSubmit={handleSubmit} className="space-y-4 overflow-visible">
                     <div className="relative z-50">
                         <label className="block text-xs font-semibold uppercase tracking-wider text-brand-muted mb-1">Departament Asignat</label>
                         <CustomSelect
@@ -47,7 +56,9 @@ export default function GenerateAccountsModal({
                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-brand-border text-brand-text rounded-lg text-sm hover:bg-brand-bg transition">
                             Anulează
                         </button>
-                        <button type="submit" className="px-4 py-2 bg-brand-primary text-white rounded-lg text-sm hover:opacity-90 transition">
+                        <button type="submit" disabled={loading}
+                            className="px-4 py-2 bg-brand-primary text-white rounded-lg text-sm hover:opacity-90 transition disabled:opacity-60 flex items-center gap-2">
+                            {loading && <Loader2 size={14} className="animate-spin" />}
                             Generează
                         </button>
                     </div>
