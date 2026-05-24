@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, User, Eye, EyeOff, Copy, Building2, Laptop, AlertCircle } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 
@@ -12,6 +12,7 @@ export default function EmployeeDetailsModal({
                                                  generatedPasswords, copyToClipboard,
                                                  assets, complaints
                                              }) {
+    const [showAssetsModal, setShowAssetsModal] = useState(false);
     if (!selectedEmployee) return null;
 
     const isEmpActive = selectedEmployee.isActive === true || selectedEmployee.is_active === true;
@@ -36,6 +37,7 @@ export default function EmployeeDetailsModal({
     }, {});
 
     return (
+        <>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all p-4 overflow-y-auto">
             <div className="bg-brand-card w-full max-w-lg rounded-2xl shadow-xl border border-brand-border flex flex-col max-h-[90vh] overflow-visible">
 
@@ -120,20 +122,21 @@ export default function EmployeeDetailsModal({
                             <p className="text-brand-text font-mono mt-1 text-sm">{selectedEmployee.email}</p>
                         </div>
 
-                        <div className="border-t border-brand-border pt-5">
-                            <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-3">
-                                <Laptop size={14} className="text-brand-primary" /> Echipamente Alocate ({userAssets.length})
-                            </label>
-                            {userAssets.length > 0 ? (
-                                <div className="space-y-2">
-                                    {userAssets.map(asset => (
-                                        <div key={asset.id} className="bg-brand-bg px-3 py-2 rounded border border-brand-border text-sm flex justify-between">
-                                            <span className="font-medium text-brand-text">{asset.name}</span>
-                                            <span className="text-brand-muted font-mono">{asset.serialNumber}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
+                       <div className="border-t border-brand-border pt-5">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1">
+                                    <Laptop size={14} className="text-brand-primary" /> Echipamente Alocate ({userAssets.length})
+                                </label>
+                                {userAssets.length > 0 && (
+                                    <button
+                                        onClick={() => setShowAssetsModal(true)}
+                                        className="text-xs text-brand-primary hover:opacity-70 transition-opacity font-medium"
+                                    >
+                                        Vezi toate →
+                                    </button>
+                                )}
+                            </div>
+                            {userAssets.length === 0 && (
                                 <p className="text-sm text-brand-muted bg-brand-bg/50 px-3 py-2 rounded italic">Acest angajat nu are echipamente alocate.</p>
                             )}
                         </div>
@@ -211,5 +214,35 @@ export default function EmployeeDetailsModal({
                 </div>
             </div>
         </div>
+
+        {showAssetsModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div className="bg-brand-card border border-brand-border rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[80vh]">
+                    <div className="flex items-center justify-between p-5 border-b border-brand-border">
+                        <h4 className="font-bold text-brand-text flex items-center gap-2">
+                            <Laptop size={16} className="text-brand-primary" />
+                            Echipamente — {selectedEmployee.firstName} {selectedEmployee.lastName}
+                        </h4>
+                        <button onClick={() => setShowAssetsModal(false)} className="p-1.5 text-brand-muted hover:text-brand-text transition-colors">
+                            <X size={18} />
+                        </button>
+                    </div>
+                    <div className="overflow-y-auto p-4 space-y-2">
+                        {userAssets.map(asset => (
+                            <div key={asset.id} className="bg-brand-bg px-3 py-2.5 rounded-lg border border-brand-border text-sm flex justify-between items-center">
+                                <span className="font-medium text-brand-text">{asset.name}</span>
+                                <span className="text-brand-muted font-mono text-xs">{asset.serialNumber}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 border-t border-brand-border">
+                        <button onClick={() => setShowAssetsModal(false)} className="w-full py-2 border border-brand-border rounded-lg text-sm text-brand-muted hover:text-brand-text transition-colors">
+                            Închide
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 }
