@@ -60,6 +60,44 @@
         --color-primary-hover: #ff0000; --border-color: #404040;
     }
 
+    @layer utilities {
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: var(--bg-main);
+            border-radius: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary);
+        }
+    }
+
+    @layer base {
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 8px;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary);
+        }
+    }
+
     /* Seteaza fundalul intregii pagini conform temei active */
     body, html {
         background-color: var(--brand-bg);
