@@ -30,6 +30,7 @@ export default function DeptEmployees() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+    const [modalCount, setModalCount] = useState(1);
 
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [selectedDeptId, setSelectedDeptId] = useState('');
@@ -85,7 +86,7 @@ export default function DeptEmployees() {
         const myDept = departments.find(d => d.name === me?.departmentName);
         if (!myDept) return showToast('Departamentul tău nu a fost găsit.', 'error');
         try {
-            const res = await fetch(`${API}/employees/generate-temp-account?departmentId=${myDept.id}&count=1`, {
+            const res = await fetch(`${API}/employees/generate-temp-account?departmentId=${myDept.id}&count=${modalCount}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token()}` }
             });
@@ -175,11 +176,11 @@ export default function DeptEmployees() {
                 />
             )}
 
-            <GenerateAccountsModal
+             <GenerateAccountsModal
                 isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen}
                 modalDept={departments.find(d => d.name === me?.departmentName)?.id || ''}
                 setModalDept={() => {}}
-                modalCount={1} setModalCount={() => {}}
+                modalCount={modalCount} setModalCount={setModalCount}
                 handleGenerateAccounts={handleGenerateAccounts}
                 departments={departments.filter(d => d.name === me?.departmentName)}
             />

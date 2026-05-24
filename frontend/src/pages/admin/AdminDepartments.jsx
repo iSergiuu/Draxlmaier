@@ -70,9 +70,29 @@ function DeptCard({ dept, dashboardStats, onEdit, onDelete, onSelect }) {
 }
 
 function AddEditModal({ dept, onClose, onSave }) {
-    const [name, setName] = useState(dept?.name || '');
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
+    const [name, setName]       = useState(dept?.name || '');
+    const [managerId, setManagerId] = useState(dept?.managerId || '');
+    const [employees, setEmployees] = useState([]);
+    const [saving, setSaving]   = useState(false);
+    const [error, setError]     = useState('');
+
+    const [managerSearch, setManagerSearch] = useState('');
+        const [showSuggestions, setShowSuggestions] = useState(false);
+
+        useEffect(() => {
+            if (dept) return;
+            fetch(`${API}/employees`, { headers: { 'Authorization': `Bearer ${token()}` } })
+                .then(r => r.ok ? r.json() : [])
+                .then(data => setEmployees(data.filter(e => e.isActive)))
+                .catch(() => {});
+        }, []);
+
+    const filteredEmployees = managerSearch.length > 1
+        ? employees.filter(e =>
+            e.email.toLowerCase().includes(managerSearch.toLowerCase()) ||
+            `${e.firstName} ${e.lastName}`.toLowerCase().includes(managerSearch.toLowerCase())
+          )
+        : [];
 
     const handleSave = async () => {
         if (!name.trim()) return setError('Numele este obligatoriu.');
@@ -84,7 +104,10 @@ function AddEditModal({ dept, onClose, onSave }) {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
-                body: JSON.stringify({ name: name.trim() })
+                body: JSON.stringify({ 
+                name: name.trim(),
+                ...(managerId ? { managerId } : {})
+                 })
             });
             if (!res.ok) {
                 const txt = await res.text();
@@ -124,6 +147,45 @@ function AddEditModal({ dept, onClose, onSave }) {
                     autoFocus
                     className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
                 />
+
+                {!dept && (
+                    <div className="relative">
+                        <label className="text-xs text-brand-muted mb-1 block">Manager departament</label>
+                        <input
+                            type="text"
+                            placeholder="Cauta dupa email sau nume..."
+                            value={managerSearch}
+                            onChange={(e) => { setManagerSearch(e.target.value); setManagerId(''); setShowSuggestions(true); }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
+                        />
+                        {managerId && (
+                            <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                                <Check size={11} /> {managerSearch}
+                            </p>
+                        )}
+                        {showSuggestions && filteredEmployees.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                                {filteredEmployees.map(e => (
+                                    <button
+                                        key={e.id}
+                                        type="button"
+                                        onMouseDown={() => {
+                                            setManagerId(e.id);
+                                            setManagerSearch(`${e.firstName} ${e.lastName} — ${e.email}`);
+                                            setShowSuggestions(false);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-xs hover:bg-brand-primary/10 transition-colors border-b border-brand-border last:border-0"
+                                    >
+                                        <span className="text-brand-text font-medium">{e.firstName} {e.lastName}</span>
+                                        <span className="text-brand-muted ml-2">{e.email}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {error && (
                     <p className="text-red-400 text-xs flex items-center gap-1.5">
