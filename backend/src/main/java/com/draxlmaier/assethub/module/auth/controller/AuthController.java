@@ -21,11 +21,13 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
 
+    // Inregistreaza un utilizator nou in sistem.
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
+    // Autentifica un utilizator existent si returneaza un token JWT.
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginRequestDTO request) {
         return ResponseEntity.ok(authService.login(request));

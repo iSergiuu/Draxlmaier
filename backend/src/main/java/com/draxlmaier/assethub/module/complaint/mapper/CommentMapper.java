@@ -12,7 +12,7 @@ public class CommentMapper {
         if (dto == null) return null;
 
         return ComplaintComment.builder()
-                .message(dto.message()) // Modificat pentru Record
+                .message(dto.message())
                 .internal(dto.isInternal())
                 .build();
     }
