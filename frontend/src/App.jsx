@@ -13,6 +13,7 @@ import ComplaintDetails from './pages/ComplaintDetails';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminAssets from './pages/admin/AdminAssets';
 import AdminEmployees from './pages/admin/AdminEmployees';
+import AdminTickets from './pages/admin/AdminTickets';
 import AdminDepartments from './pages/admin/AdminDepartments';
 
 export const ToastContext = React.createContext(null);
@@ -34,13 +35,15 @@ function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/profile" element={<Profile />} />
 
-                    {/* Aici se incarca AdminAssets in interiorul Layout-ului */}
+                    {/* Aici se incarca AdminTickets in interiorul Layout-ului */}
                     <Route path="/admin" element={<AdminLayout />}>
-                        {/* Cand accesezi /admin, te redirectioneaza automat la /admin/assets */}
-                        <Route index element={<Navigate to="assets" replace />} />
+                        {/* Cand accesezi /admin, te redirectioneaza automat la /admin/tickets */}
+                        <Route index element={<Navigate to="tickets" replace />} />
 
                         <Route path="assets" element={<AdminAssets />} />
                         <Route path="employees" element={<AdminEmployees />} />
+                        <Route path="tickets" element={<AdminTickets />} />
+                        <Route path="tickets/:id" element={<ComplaintDetails />} />
                         <Route path="departments" element={<AdminDepartments />} />
                     </Route>
 

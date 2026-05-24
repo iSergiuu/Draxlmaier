@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import ThemeSwitcher from '../../components/ThemeSwitcher';
 import UserMenu from '../../components/UserMenu';
-import { LayoutDashboard, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, Ticket } from 'lucide-react';
 
 export default function AdminLayout() {
     return (
@@ -16,12 +16,16 @@ export default function AdminLayout() {
 
                 <nav className="flex-1 px-4 space-y-2 mt-4">
                     {/* Folosim NavLink în loc de button ca să schimbe culoarea automat când ești pe pagină */}
-                    <NavLink to="/admin/assets" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
-                        <LayoutDashboard className="w-5 h-5 mr-3" /> Echipamente
+                    <NavLink to="/admin/tickets" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                        <Ticket className="w-5 h-5 mr-3" /> Tichete
                     </NavLink>
 
                     <NavLink to="/admin/employees" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
                         <Users className="w-5 h-5 mr-3" /> Angajați
+                    </NavLink>
+
+                    <NavLink to="/admin/assets" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                        <LayoutDashboard className="w-5 h-5 mr-3" /> Echipamente
                     </NavLink>
 
                     <NavLink to="/admin/departments" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
@@ -41,7 +45,6 @@ export default function AdminLayout() {
                 </header>
 
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-bg p-6 transition-colors duration-300">
-                    {/* Aici se vor injecta automat paginile de Echipamente, Angajați etc. */}
                     <Outlet />
                 </main>
             </div>
