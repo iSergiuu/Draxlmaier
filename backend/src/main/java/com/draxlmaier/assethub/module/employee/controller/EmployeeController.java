@@ -2,7 +2,9 @@ package com.draxlmaier.assethub.module.employee.controller;
 
 import com.draxlmaier.assethub.module.employee.dto.EmployeeRequestDTO;
 import com.draxlmaier.assethub.module.employee.dto.EmployeeResponseDTO;
+import com.draxlmaier.assethub.module.employee.dto.RoleChangeRequestDTO;
 import com.draxlmaier.assethub.module.employee.service.EmployeeService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +44,14 @@ public class EmployeeController {
     @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<EmployeeResponseDTO> toggleEmployeeStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(employeeService.toggleEmployeeStatus(id));
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<EmployeeResponseDTO> changeRole(
+            @PathVariable UUID id,
+            @Valid @RequestBody RoleChangeRequestDTO request) {
+        return ResponseEntity.ok(employeeService.changeEmployeeRole(id, request.roleCode()));
     }
 
     @PostMapping("/generate-temp-account")

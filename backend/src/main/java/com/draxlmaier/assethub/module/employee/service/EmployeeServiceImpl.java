@@ -52,7 +52,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public List<EmployeeResponseDTO> generateEmployeeCodes(UUID departmentId, int count) {
-        // 1. Căutăm departamentul o singură dată, înainte de buclă
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new BusinessException("Departamentul specificat nu există!"));
 
@@ -62,13 +61,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         List<EmployeeResponseDTO> createdEmployees = new ArrayList<>();
         String passwordHash = passwordEncoder.encode("Temp123!");
 
-        // 2. Rulăm bucla pentru a genera numărul exact de conturi cerut
         for (int i = 0; i < count; i++) {
             String uniqueSuffix;
             String uniqueCode;
             String tempEmail;
 
-            // Generăm combinații unice pentru fiecare cont în parte
             do {
                 uniqueSuffix = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
                 uniqueCode = "DRX-" + uniqueSuffix;
@@ -86,12 +83,10 @@ public class EmployeeServiceImpl implements EmployeeService {
             employee.setRole(userRole);
             employee.setDepartment(department);
 
-            // Salvăm angajatul și îl adăugăm în lista de răspuns
             Employee savedEmployee = employeeRepository.save(employee);
             createdEmployees.add(mapToDTO(savedEmployee));
         }
 
-        // Returnăm lista cu toate conturile generate
         return createdEmployees;
     }
 
@@ -129,6 +124,27 @@ public class EmployeeServiceImpl implements EmployeeService {
         return mapToDTO(employeeRepository.save(employee));
     }
 
+    @Override
+    @Transactional
+    public EmployeeResponseDTO changeEmployeeRole(UUID id, String roleCode) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Angajatul nu a fost găsit!"));
+
+        Role newRole = roleRepository.findByCode(roleCode.toUpperCase())
+                .orElseThrow(() -> new BusinessException("Rolul " + roleCode + " nu a fost găsit în baza de date!"));
+
+        employee.setRole(newRole);
+
+        return mapToDTO(employeeRepository.save(employee));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllTemporaryAccounts() {
+        List<Employee> tempAccounts = employeeRepository.findByIsActiveFalseAndEmailStartingWith("temp_");
+        employeeRepository.deleteAll(tempAccounts);
+    }
+
     private EmployeeResponseDTO mapToDTO(Employee employee) {
         String departmentName = employee.getDepartment() != null ? employee.getDepartment().getName() : "Neatribuit";
         String roleCode = employee.getRole() != null ? employee.getRole().getCode() : "USER";
@@ -144,12 +160,5 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getIsActive(),
                 employee.getCreatedAt()
         );
-    }
-
-    @Override
-    @Transactional
-    public void deleteAllTemporaryAccounts() {
-        List<Employee> tempAccounts = employeeRepository.findByIsActiveFalseAndEmailStartingWith("temp_");
-        employeeRepository.deleteAll(tempAccounts);
     }
 }

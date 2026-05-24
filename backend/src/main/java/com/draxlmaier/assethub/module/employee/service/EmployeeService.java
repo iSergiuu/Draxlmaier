@@ -13,6 +13,8 @@ public interface EmployeeService {
     EmployeeResponseDTO updateEmployee(UUID id, EmployeeRequestDTO request);
     EmployeeResponseDTO toggleEmployeeStatus(UUID id);
 
+    EmployeeResponseDTO changeEmployeeRole(UUID id, String roleCode);
+
     List<EmployeeResponseDTO> generateEmployeeCodes(UUID departmentId, int count);
 
     void deleteAllTemporaryAccounts();
