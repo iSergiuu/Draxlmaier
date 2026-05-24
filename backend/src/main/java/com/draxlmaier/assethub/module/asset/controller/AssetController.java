@@ -21,20 +21,21 @@ public class AssetController {
 
     private final AssetService assetService;
 
-    // Doar Admin și Responsabilul de Departament pot crea asset-uri noi
+    // Doar Super Admin, Admin și Responsabilul de Departament pot crea asset-uri noi
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> createAsset(@Valid @RequestBody AssetRequestDTO requestDTO) {
         return ResponseEntity.status(HttpStatus.CREATED).body(assetService.createAsset(requestDTO));
     }
 
-    // Oricine este autentificat (USER, DEPT_RESPONSIBLE, ADMIN) poate vedea lista totală de asset-uri (ex: panou de management)
+    // Oricine este autentificat (USER, DEPT_RESPONSIBLE, ADMIN, SUPER_ADMIN) poate vedea lista totală de asset-uri
     @GetMapping
     public ResponseEntity<List<AssetResponseDTO>> getAllAssets() {
         List<AssetResponseDTO> response = assetService.getAllAssets();
         return ResponseEntity.ok(response);
     }
 
-    // NOU: Endpoint special care returnează doar echipamentele utilizatorului conectat curent
+    // Endpoint special care returnează doar echipamentele utilizatorului conectat curent
     @GetMapping("/me")
     public ResponseEntity<List<AssetResponseDTO>> getMyAssets() {
         List<AssetResponseDTO> response = assetService.getMyAssets();
@@ -48,25 +49,25 @@ public class AssetController {
         return ResponseEntity.ok(response);
     }
 
-    // Doar Admin și Responsabilul de Departament pot edita un asset
+    // Doar Super Admin, Admin și Responsabilul de Departament pot edita un asset
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> updateAsset(@PathVariable UUID id, @Valid @RequestBody AssetRequestDTO requestDTO) {
         AssetResponseDTO response = assetService.updateAsset(id, requestDTO);
         return ResponseEntity.ok(response);
     }
 
-    // Doar Admin poate șterge definitiv un asset din sistem
+    // Doar Super Admin și Admin pot șterge definitiv un asset din sistem
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<Void> deleteAsset(@PathVariable UUID id) {
         assetService.deleteAsset(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Doar Admin și Responsabilul de Departament pot aloca echipamente angajaților
+    // Doar Super Admin, Admin și Responsabilul de Departament pot aloca echipamente angajaților
     @PostMapping("/{id}/assign")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<AssetResponseDTO> assignAsset(
             @PathVariable UUID id,
             @Valid @RequestBody ClaimAssetRequestDTO requestDTO) {
