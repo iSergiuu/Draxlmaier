@@ -44,13 +44,13 @@ public class ComplaintController {
     }
 
     @GetMapping("/global")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<List<ComplaintResponseDTO>> getGlobalTickets() {
         return ResponseEntity.ok(complaintService.getGlobalTickets());
     }
 
     @GetMapping("/assigned")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<List<ComplaintResponseDTO>> getMyAssignedTickets() {
         return ResponseEntity.ok(complaintService.getMyAssignedTickets());
     }
@@ -61,7 +61,7 @@ public class ComplaintController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN', 'ADMIN', 'ROLE_ADMIN', 'DEPT_RESPONSIBLE', 'ROLE_DEPT_RESPONSIBLE')")
     public ResponseEntity<ComplaintResponseDTO> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody StatusChangeRequestDTO statusDTO) {

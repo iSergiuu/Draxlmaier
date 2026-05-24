@@ -4,6 +4,7 @@ import com.draxlmaier.assethub.module.employee.dto.EmployeeRequestDTO;
 import com.draxlmaier.assethub.module.employee.dto.EmployeeResponseDTO;
 import com.draxlmaier.assethub.module.employee.service.EmployeeService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,22 +27,25 @@ public class EmployeeController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees() {
         return ResponseEntity.ok(employeeService.getAllEmployees());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<EmployeeResponseDTO> updateEmployee(@PathVariable UUID id, @RequestBody EmployeeRequestDTO request) {
         return ResponseEntity.ok(employeeService.updateEmployee(id, request));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<EmployeeResponseDTO> toggleEmployeeStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(employeeService.toggleEmployeeStatus(id));
     }
 
-    // Endpoint modificat pentru a accepta generarea multiplă de conturi temporare
     @PostMapping("/generate-temp-account")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<EmployeeResponseDTO>> generateTempAccounts(
             @RequestParam UUID departmentId,
             @RequestParam int count) {
@@ -49,8 +53,9 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/temporary-accounts")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<Void> deleteAllTemporaryAccounts() {
         employeeService.deleteAllTemporaryAccounts();
-        return ResponseEntity.noContent().build(); // 204 No Content este standard pentru un DELETE de succes
+        return ResponseEntity.noContent().build();
     }
 }

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,28 +28,29 @@ public class DepartmentController {
     }
 
     @GetMapping("/{id}/stats")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<DepartmentStatsDTO> getDepartmentStats(@PathVariable UUID id) {
         return ResponseEntity.ok(departmentService.getDepartmentStats(id));
     }
 
-    // Endpoint pentru Creare (POST)
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<DepartmentResponseDTO> createDepartment(@Valid @RequestBody DepartmentRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(departmentService.createDepartment(request));
     }
 
-    // Endpoint pentru Editare (PUT)
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<DepartmentResponseDTO> updateDepartment(
             @PathVariable UUID id,
             @Valid @RequestBody DepartmentRequestDTO request) {
         return ResponseEntity.ok(departmentService.updateDepartment(id, request));
     }
 
-    // Endpoint pentru Ștergere (DELETE)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<Void> deleteDepartment(@PathVariable UUID id) {
         departmentService.deleteDepartment(id);
-        return ResponseEntity.noContent().build(); // Returnează un status 204 (Succes, fără continut)
+        return ResponseEntity.noContent().build();
     }
 }
