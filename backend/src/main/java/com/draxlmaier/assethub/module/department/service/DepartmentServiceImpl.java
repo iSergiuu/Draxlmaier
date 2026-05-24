@@ -8,6 +8,10 @@ import com.draxlmaier.assethub.module.department.dto.DepartmentResponseDTO;
 import com.draxlmaier.assethub.module.department.dto.DepartmentStatsDTO;
 import com.draxlmaier.assethub.module.department.model.Department;
 import com.draxlmaier.assethub.module.department.repository.DepartmentRepository;
+import com.draxlmaier.assethub.module.employee.model.Employee;
+import com.draxlmaier.assethub.module.employee.model.Role;
+import com.draxlmaier.assethub.module.employee.repository.EmployeeRepository;
+import com.draxlmaier.assethub.module.employee.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,8 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
     private final ComplaintRepository complaintRepository;
+    private final EmployeeRepository employeeRepository;
+    private final RoleRepository roleRepository;
 
     @Override
     public List<DepartmentResponseDTO> getAllDepartments(){
@@ -48,13 +54,18 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     @Transactional
     public DepartmentResponseDTO createDepartment(DepartmentRequestDTO request) {
-        // Validare: nu permitem două departamente cu același nume
         if (departmentRepository.existsByName(request.name())) {
             throw new BusinessException("Un departament cu numele '" + request.name() + "' există deja!");
         }
 
+        Employee manager = employeeRepository.findById(request.managerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Managerul specificat nu a fost găsit!"));
+
+        promoteToDeptResponsibleIfNeeded(manager);
+
         Department department = new Department();
         department.setName(request.name());
+        department.setManager(manager);
         department.setCreatedAt(OffsetDateTime.now());
 
         return mapToDTO(departmentRepository.save(department));
@@ -66,12 +77,18 @@ public class DepartmentServiceImpl implements DepartmentService {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Departamentul nu a fost găsit pentru editare!"));
 
-        // Dacă încercăm să-i schimbăm numele într-unul care există deja la alt departament
         if (!department.getName().equals(request.name()) && departmentRepository.existsByName(request.name())) {
             throw new BusinessException("Un departament cu numele '" + request.name() + "' există deja!");
         }
 
+        Employee manager = employeeRepository.findById(request.managerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Managerul specificat nu a fost găsit!"));
+
+        promoteToDeptResponsibleIfNeeded(manager);
+
         department.setName(request.name());
+        department.setManager(manager);
+
         return mapToDTO(departmentRepository.save(department));
     }
 
@@ -84,10 +101,28 @@ public class DepartmentServiceImpl implements DepartmentService {
         departmentRepository.delete(department);
     }
 
+    private void promoteToDeptResponsibleIfNeeded(Employee employee) {
+        if ("USER".equalsIgnoreCase(employee.getRole().getCode())) {
+            Role deptRole = roleRepository.findByCode("DEPT_RESPONSIBLE")
+                    .orElseThrow(() -> new RuntimeException("Rolul DEPT_RESPONSIBLE nu a fost găsit în sistem!"));
+
+            employee.setRole(deptRole);
+            employeeRepository.save(employee);
+        }
+    }
+
     private DepartmentResponseDTO mapToDTO(Department department){
+        String managerName = department.getManager() != null
+                ? department.getManager().getFirstName() + " " + department.getManager().getLastName()
+                : "N/A";
+
+        UUID managerId = department.getManager() != null ? department.getManager().getId() : null;
+
         return new DepartmentResponseDTO(
                 department.getId(),
                 department.getName(),
+                managerId,
+                managerName,
                 department.getCreatedAt()
         );
     }
