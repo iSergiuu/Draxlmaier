@@ -349,7 +349,7 @@ export default function UserMenu() {
                                         className="w-full text-left px-4 py-2.5 text-brand-text hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
                                     >
                                         <ClipboardList className="w-4 h-4 mr-3 text-brand-primary" />
-                                        Problemele Mele
+                                        Sesizările Mele
                                     </button>
 
                                     {isAdmin && (

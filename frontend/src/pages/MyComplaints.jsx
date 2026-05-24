@@ -11,20 +11,20 @@ import UserMenu from '../components/UserMenu';
 
 const containerVariants = {
     hidden: { opacity: 0 },
-    show:   { opacity: 1, transition: { staggerChildren: 0.07 } },
+    show: { opacity: 1, transition: { staggerChildren: 0.07 } },
 };
 const itemVariants = {
     hidden: { opacity: 0, y: 16 },
-    show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
 };
 
 const STATUS_CONFIG = {
-    NEW:         { label: 'Nou',        icon: AlertCircle,   dot: 'bg-blue-400',  pill: 'bg-blue-500/10 text-blue-400 border-blue-400/30' },
-    IN_REVIEW:   { label: 'În analiză', icon: Clock,         dot: 'bg-purple-400', pill: 'bg-purple-500/10 text-purple-400 border-purple-400/30' },
-    IN_PROGRESS: { label: 'În lucru',   icon: Clock,         dot: 'bg-amber-400',  pill: 'bg-amber-500/10 text-amber-400 border-amber-400/30' },
-    RESOLVED:    { label: 'Rezolvat',   icon: CheckCircle,   dot: 'bg-green-400',  pill: 'bg-green-500/10 text-green-400 border-green-400/30' },
-    CLOSED:      { label: 'Închis',     icon: CheckCircle,   dot: 'bg-green-400',  pill: 'bg-green-500/10 text-green-400 border-green-400/30' },
-    REJECTED:    { label: 'Respins',    icon: AlertTriangle, dot: 'bg-red-400',    pill: 'bg-red-500/10 text-red-400 border-red-400/30' },
+    NEW: { label: 'Nou', icon: AlertCircle, dot: 'bg-blue-400', pill: 'bg-blue-500/10 text-blue-400 border-blue-400/30' },
+    IN_REVIEW: { label: 'În analiză', icon: Clock, dot: 'bg-purple-400', pill: 'bg-purple-500/10 text-purple-400 border-purple-400/30' },
+    IN_PROGRESS: { label: 'În lucru', icon: Clock, dot: 'bg-amber-400', pill: 'bg-amber-500/10 text-amber-400 border-amber-400/30' },
+    RESOLVED: { label: 'Rezolvat', icon: CheckCircle, dot: 'bg-green-400', pill: 'bg-green-500/10 text-green-400 border-green-400/30' },
+    CLOSED: { label: 'Închis', icon: CheckCircle, dot: 'bg-green-400', pill: 'bg-green-500/10 text-green-400 border-green-400/30' },
+    REJECTED: { label: 'Respins', icon: AlertTriangle, dot: 'bg-red-400', pill: 'bg-red-500/10 text-red-400 border-red-400/30' },
 };
 
 const getStatus = (status) => {
@@ -33,10 +33,10 @@ const getStatus = (status) => {
 };
 
 const PRIORITY_CONFIG = {
-    CRITICAL: { label: 'Critică',  class: 'bg-red-500/10 text-red-400 border-red-400/30' },
-    HIGH:     { label: 'Ridicată', class: 'bg-orange-500/10 text-orange-400 border-orange-400/30' },
-    MEDIUM:   { label: 'Medie',    class: 'bg-amber-500/10 text-amber-400 border-amber-400/30' },
-    LOW:      { label: 'Scăzută',  class: 'bg-brand-bg text-brand-muted border-brand-border' },
+    CRITICAL: { label: 'Critică', class: 'bg-red-500/10 text-red-400 border-red-400/30' },
+    HIGH: { label: 'Ridicată', class: 'bg-orange-500/10 text-orange-400 border-orange-400/30' },
+    MEDIUM: { label: 'Medie', class: 'bg-amber-500/10 text-amber-400 border-amber-400/30' },
+    LOW: { label: 'Scăzută', class: 'bg-brand-bg text-brand-muted border-brand-border' },
 };
 
 const getPriority = (priority) => {
@@ -46,13 +46,13 @@ const getPriority = (priority) => {
 
 export default function MyComplaints() {
     const [complaints, setComplaints] = useState([]);
-    const [loading, setLoading]       = useState(true);
-    const [error, setError]           = useState(null);
-    const [search, setSearch]         = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('Toate');
-    const [sortOrder, setSortOrder]   = useState('desc');
+    const [sortOrder, setSortOrder] = useState('desc');
     const [isSortOpen, setIsSortOpen] = useState(false);
-    
+
     const sortRef = useRef(null);
     const navigate = useNavigate();
 
@@ -99,8 +99,7 @@ export default function MyComplaints() {
     const visible = complaints
         .filter(t => {
             const statusKey = (t.status || t.statusCode || '').toUpperCase();
-            
-            // FILTRUL STRICT: Dacă e închis, îl ascundem definitiv din UI
+
             if (statusKey === 'CLOSED') {
                 return false;
             }
@@ -109,7 +108,7 @@ export default function MyComplaints() {
                 (t.title || '').toLowerCase().includes(search.toLowerCase()) ||
                 (t.description || '').toLowerCase().includes(search.toLowerCase());
             const matchStatus = filterStatus === 'Toate' || statusKey === STATUS_FILTER_MAP[filterStatus];
-            
+
             return matchSearch && matchStatus;
         })
         .sort((a, b) => {
@@ -177,7 +176,7 @@ export default function MyComplaints() {
                                 </span>
                                 <ChevronDown className={`w-4 h-4 text-brand-muted transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
                             </button>
-                            
+
                             <AnimatePresence>
                                 {isSortOpen && (
                                     <motion.div
@@ -210,11 +209,10 @@ export default function MyComplaints() {
                             <button
                                 key={f}
                                 onClick={() => setFilterStatus(f)}
-                                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
-                                    filterStatus === f
-                                        ? 'bg-brand-primary text-white border-brand-primary'
-                                        : 'border-brand-border text-brand-muted hover:text-brand-text bg-brand-card'
-                                }`}
+                                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${filterStatus === f
+                                    ? 'bg-brand-primary text-white border-brand-primary'
+                                    : 'border-brand-border text-brand-muted hover:text-brand-text bg-brand-card'
+                                    }`}
                             >
                                 {f}
                             </button>
@@ -258,10 +256,10 @@ export default function MyComplaints() {
                         >
                             {visible.map((ticket) => {
                                 const statusKey = (ticket.status || ticket.statusCode || '').toUpperCase();
-                                const status    = getStatus(statusKey);
-                                const priority  = getPriority(ticket.priority);
-                                const ticketNum  = ticket.ticketNumber || String(ticket.id).substring(0, 6).toUpperCase();
-                                const date       = ticket.createdAt
+                                const status = getStatus(statusKey);
+                                const priority = getPriority(ticket.priority);
+                                const ticketNum = ticket.ticketNumber || String(ticket.id).substring(0, 6).toUpperCase();
+                                const date = ticket.createdAt
                                     ? new Date(ticket.createdAt).toLocaleDateString('ro-RO')
                                     : null;
 
@@ -272,31 +270,31 @@ export default function MyComplaints() {
                                         whileHover={{ y: -4, transition: { duration: 0.15 } }}
                                         className="bg-brand-card border border-brand-border rounded-2xl flex flex-col hover:border-brand-primary hover:shadow-md transition-all duration-200"
                                     >
-                                        <div className={`h-1 w-full rounded-t-2xl ${status.dot}`} />
-
                                         <div className="p-5 flex flex-col gap-3 flex-1">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-mono font-bold text-brand-muted bg-brand-bg border border-brand-border px-2 py-0.5 rounded-md">
-                                                    #{ticketNum}
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={`w-3 h-3 rounded-full ${status.dot} ring-1 ring-white/10`} />
+                                                    <span className="text-[11px] font-mono font-bold text-brand-muted bg-brand-bg border border-brand-border px-2 py-0.5 rounded-md">
+                                                        #{ticketNum}
+                                                    </span>
+                                                </div>
                                                 <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${priority.class}`}>
                                                     {priority.label}
                                                 </span>
                                             </div>
 
                                             <div className="flex-1">
-                                                <h2 className="text-sm font-bold text-brand-text line-clamp-1 leading-snug">
+                                                <h2 className="text-sm font-bold text-brand-text line-clamp-1 leading-snug break-all">
                                                     {ticket.title}
                                                 </h2>
-                                                <p className="text-xs text-brand-muted mt-1.5 line-clamp-2 leading-relaxed">
+                                                <p className="text-xs text-brand-muted mt-1.5 line-clamp-2 leading-relaxed break-all">
                                                     {ticket.description}
                                                 </p>
                                             </div>
 
                                             <div className="border-t border-brand-border pt-3 flex flex-col gap-2.5 mt-auto">
                                                 <div className="flex items-center justify-between">
-                                                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${status.pill}`}>
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                                                    <span className={`inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full border ${status.pill}`}>
                                                         {status.label}
                                                     </span>
                                                     {date && (

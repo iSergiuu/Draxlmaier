@@ -25,36 +25,36 @@ const ASSET_ICONS_CONFIG = [
 
 const containerVariants = {
     hidden: { opacity: 0 },
-    show:   { opacity: 1, transition: { staggerChildren: 0.07 } },
+    show: { opacity: 1, transition: { staggerChildren: 0.07 } },
 };
 const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
 };
 
 export default function Dashboard() {
-    const [myAssets, setMyAssets]           = useState([]);
+    const [myAssets, setMyAssets] = useState([]);
     const [openTicketsCount, setOpenTicketsCount] = useState(0);
-    const [loading, setLoading]             = useState(true);
-    const [error, setError]                 = useState(null);
-    const [activeFilter, setActiveFilter]   = useState('Toate');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeFilter, setActiveFilter] = useState('Toate');
 
-    const [isModalOpen, setIsModalOpen]     = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
     
     const showToast = useContext(ToastContext);
 
-    const [complaintTitle, setComplaintTitle]               = useState('');
-    const [complaintDescription, setComplaintDescription]   = useState('');
-    const [complaintPriority, setComplaintPriority]         = useState('MEDIUM');
-    const [isSubmitting, setIsSubmitting]                   = useState(false);
+    const [complaintTitle, setComplaintTitle] = useState('');
+    const [complaintDescription, setComplaintDescription] = useState('');
+    const [complaintPriority, setComplaintPriority] = useState('MEDIUM');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token            = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
                 const currentUserEmail = localStorage.getItem('userEmail');
                 if (!token || !currentUserEmail) { navigate('/login'); return; }
 
@@ -109,9 +109,9 @@ export default function Dashboard() {
     };
 
     const getAssetIcon = (asset) => {
-        const s     = `${asset.name || ''} ${asset.category || ''}`.toLowerCase();
+        const s = `${asset.name || ''} ${asset.category || ''}`.toLowerCase();
         const found = ASSET_ICONS_CONFIG.find(c => c.keywords.some(k => s.includes(k)));
-        const Icon  = found ? found.icon : Box;
+        const Icon = found ? found.icon : Box;
         return <Icon className="w-5 h-5" />;
     };
 
@@ -433,17 +433,31 @@ export default function Dashboard() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-brand-muted mb-1.5 uppercase tracking-wide">
-                                    Descriere detaliată
-                                </label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-semibold text-brand-muted uppercase tracking-wide">
+                                        Descriere detaliată
+                                    </label>
+                                    <span className={`text-[11px] font-semibold ${complaintDescription.length >= 250 ? 'text-red-500' : 'text-brand-muted'}`}>
+                                        {complaintDescription.length}/250
+                                    </span>
+                                </div>
                                 <textarea
                                     required
                                     rows={4}
+                                    maxLength={250}
                                     value={complaintDescription}
                                     onChange={e => setComplaintDescription(e.target.value)}
                                     placeholder="Descrie detaliat ce s-a întâmplat..."
-                                    className="w-full bg-brand-bg text-brand-text border border-brand-border rounded-xl px-4 py-2.5 text-sm resize-none focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all placeholder:text-brand-muted leading-relaxed"
+                                    className={`w-full bg-brand-bg text-brand-text border rounded-xl px-4 py-2.5 text-sm resize-none focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all placeholder:text-brand-muted leading-relaxed ${
+                                        complaintDescription.length >= 250 ? 'border-red-500 focus:ring-red-500/50' : 'border-brand-border'
+                                    }`}
                                 />
+                                {complaintDescription.length >= 250 && (
+                                    <p className="text-[10px] text-red-500 mt-1.5 font-medium flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Ai atins limita maximă de 250 de caractere.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-3 pt-2 border-t border-brand-border">
