@@ -30,12 +30,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional(readOnly = true) // ADĂUGAT: Ține sesiunea deschisă pentru a citi profilul curent
     public EmployeeResponseDTO getMyProfile() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return getEmployeeProfile(email);
     }
 
     @Override
+    @Transactional(readOnly = true) // ADĂUGAT: Ține sesiunea deschisă pentru a citi profilul unui user
     public EmployeeResponseDTO getEmployeeProfile(String email) {
         Employee employee = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("Angajatul cu email-ul " + email + " nu a fost găsit!"));
@@ -43,6 +45,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional(readOnly = true) // ADĂUGAT: Ține sesiunea deschisă pentru toată lista
     public List<EmployeeResponseDTO> getAllEmployees() {
         return employeeRepository.findAll().stream()
                 .map(this::mapToDTO)
