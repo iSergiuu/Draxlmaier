@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, LayoutDashboard, LogOut, ShieldAlert, ClipboardList, Bell, Check, MessageSquare, AlertTriangle, Trash2, X } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, ShieldAlert, ClipboardList, Bell, Check, MessageSquare, AlertTriangle, Trash2, X, CheckCheck } from 'lucide-react';
 import SockJS from 'sockjs-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Client } from '@stomp/stompjs';
@@ -126,6 +126,26 @@ export default function UserMenu() {
         }
     };
 
+    const handleMarkAllAsRead = async (e) => {
+        e.stopPropagation();
+        const unreadNotifs = notifications.filter(n => !n.read);
+        if (unreadNotifs.length === 0) return;
+
+        try {
+            await Promise.all(
+                unreadNotifs.map(n => 
+                    fetch(`http://localhost:8080/api/notifications/${n.id}/read`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                )
+            );
+            setNotifications(notifications.map(n => ({ ...n, read: true })));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleDeleteNotif = async (id, e) => {
         e.stopPropagation();
         try {
@@ -174,7 +194,6 @@ export default function UserMenu() {
     return (
         <div className="flex items-center gap-2">
 
-            {/* Notificări */}
             <div className="relative" ref={notifRef}
                 onMouseEnter={() => { clearTimeout(hoverTimeout.current); setIsNotifOpen(true); setIsPinned(false); setIsHovered(false); }}
                 onMouseLeave={() => { hoverTimeout.current = setTimeout(() => setIsNotifOpen(false), 200); }}
@@ -200,14 +219,23 @@ export default function UserMenu() {
                             transition={{ duration: 0.2, ease: "easeOut" }}
                             className="absolute right-0 top-12 w-80 bg-brand-card border border-brand-border rounded-xl shadow-xl z-50 overflow-hidden origin-top-right"
                         >
-                            {/* Header panou */}
                             <div className="p-3 border-b border-brand-border bg-brand-bg flex justify-between items-center">
-                                <span className="font-bold text-brand-text text-sm">Notificari</span>
+                                <span className="font-bold text-brand-text text-sm">Notificări</span>
                                 <div className="flex items-center gap-2">
                                     {unreadCount > 0 && (
-                                        <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">
-                                            {unreadCount} noi
-                                        </span>
+                                        <>
+                                            <button 
+                                                onClick={handleMarkAllAsRead}
+                                                className="text-[10px] text-brand-muted hover:text-brand-primary flex items-center gap-1 transition-colors"
+                                                title="Marchează toate ca citite"
+                                            >
+                                                <CheckCheck className="w-3.5 h-3.5" />
+                                                Citește toate
+                                            </button>
+                                            <span className="text-xs bg-brand-primary/20 text-brand-primary px-2 py-0.5 rounded-full font-semibold">
+                                                {unreadCount} noi
+                                            </span>
+                                        </>
                                     )}
                                     {notifications.length > 0 && (
                                         <button
@@ -221,10 +249,9 @@ export default function UserMenu() {
                                 </div>
                             </div>
 
-                            {/* Lista notificări */}
                             <div className="max-h-80 overflow-y-auto divide-y divide-brand-border pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-brand-primary/50">
                                 {notifications.length === 0 ? (
-                                    <p className="text-sm text-brand-muted text-center py-6">Nu ai notificari momentan.</p>
+                                    <p className="text-sm text-brand-muted text-center py-6">Nu ai notificări momentan.</p>
                                 ) : (
                                     notifications.map((notif) => (
                                         <div
@@ -245,7 +272,6 @@ export default function UserMenu() {
                                                 </span>
                                             </div>
                                             <div className="flex flex-col gap-1 shrink-0 mt-1">
-                                                {/* X apare la hover pe notificare */}
                                                 <button
                                                     onClick={(e) => handleDeleteNotif(notif.id, e)}
                                                     className="p-1 rounded opacity-0 group-hover:opacity-100 bg-brand-bg border border-brand-border hover:bg-red-500 hover:text-white text-brand-muted transition-all"
@@ -253,12 +279,11 @@ export default function UserMenu() {
                                                 >
                                                     <X className="w-3 h-3" />
                                                 </button>
-                                                {/* Bifă doar pentru necitite */}
                                                 {!notif.read && (
                                                     <button
                                                         onClick={(e) => handleMarkAsRead(notif.id, e)}
                                                         className="p-1 rounded bg-brand-bg border border-brand-border hover:bg-green-500 hover:text-white text-brand-muted transition-colors"
-                                                        title="Marcheaza ca citit"
+                                                        title="Marchează ca citit"
                                                     >
                                                         <Check className="w-3 h-3" />
                                                     </button>
@@ -273,7 +298,6 @@ export default function UserMenu() {
                 </AnimatePresence>
             </div>
 
-            {/* Meniu utilizator */}
             <div
                 className="relative"
                 ref={menuRef}

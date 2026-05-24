@@ -41,6 +41,7 @@ export default function Dashboard() {
 
     const [isModalOpen, setIsModalOpen]     = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    
     const showToast = useContext(ToastContext);
 
     const [complaintTitle, setComplaintTitle]               = useState('');
@@ -160,17 +161,17 @@ export default function Dashboard() {
                 }),
             });
             if (res.ok) {
-                showToast(`Tichet creat cu succes pentru: ${selectedAsset.name}!`,'success');
+                showToast(`Tichet creat cu succes pentru: ${selectedAsset.name}!`, 'success');
                 closeReportModal();
                 setOpenTicketsCount(prev => prev + 1);
                 setMyAssets(prev => prev.map(a => a.id === selectedAsset.id ? { ...a, hasActiveTicket: true } : a));
             } else {
                 const errData = await res.json().catch(() => null);
-                showToast(`Eroare la creare tichet: ${errData?.message || 'Date invalide'}`,'error');
+                showToast(`Eroare la creare tichet: ${errData?.message || 'Date invalide'}`, 'error');
             }
         } catch (err) {
             console.error('Eroare la trimiterea plângerii:', err);
-            showToast('Nu am putut contacta serverul.','error');
+            showToast('Nu am putut contacta serverul.', 'error');
         } finally {
             setIsSubmitting(false);
         }

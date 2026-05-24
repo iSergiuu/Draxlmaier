@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ToastContext } from '../App';
 import {
     ArrowLeft, CheckCircle2, Send, Clock, User, Shield,
     Info, MessageSquare, MonitorSmartphone, ChevronDown, Package, AlertTriangle
@@ -43,6 +44,8 @@ export default function ComplaintDetails() {
     const navigate      = useNavigate();
     const statusMenuRef = useRef(null);
     const messagesEndRef = useRef(null);
+    
+    const showToast = useContext(ToastContext);
 
     const [currentUser, setCurrentUser]           = useState(null);
     const [ticket, setTicket]                     = useState(null);
@@ -156,7 +159,11 @@ export default function ComplaintDetails() {
                 }
             } else {
                 setNewComment(messageText);
+                showToast('Nu am putut trimite mesajul.', 'error');
             }
+        } catch {
+            setNewComment(messageText);
+            showToast('Eroare de conexiune la trimiterea mesajului.', 'error');
         } finally {
             setSendingComment(false);
         }
@@ -171,9 +178,17 @@ export default function ComplaintDetails() {
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ newStatusId: selectedStatus, comment: statusComment }),
             });
-            if (res.ok) window.location.reload();
-            else alert('Eroare la actualizare.');
-        } finally { setIsUpdatingStatus(false); }
+            if (res.ok) {
+                showToast('Status actualizat cu succes!', 'success');
+                setTimeout(() => window.location.reload(), 1000); // Lăsăm toast-ul să fie vizibil 1s înainte de reload
+            } else {
+                showToast('Eroare la actualizare.', 'error');
+            }
+        } catch {
+            showToast('Eroare de conexiune.', 'error');
+        } finally { 
+            setIsUpdatingStatus(false); 
+        }
     };
 
     if (loading) return (
@@ -407,7 +422,7 @@ export default function ComplaintDetails() {
                                 )}
                             </div>
 
-                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-brand-primary/50">
+                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-brand-border [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-brand-primary/50">
                                 {comments.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center gap-2 opacity-40">
                                         <MessageSquare className="w-8 h-8 text-brand-muted" />
@@ -434,7 +449,7 @@ export default function ComplaintDetails() {
                                                         {new Date(c.createdAt).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
-                                                <div className={`px-4 py-2.5 text-sm leading-relaxed rounded-2xl ${
+                                                <div className={`px-4 py-2.5 text-sm leading-relaxed rounded-2xl overflow-hidden ${
                                                     isMine ? 'bg-brand-primary text-white rounded-tr-sm' : 'bg-brand-bg border border-brand-border text-brand-text rounded-tl-sm'
                                                 }`}>
                                                     <p className="whitespace-pre-wrap m-0 break-words" style={{ overflowWrap: 'anywhere' }}>
