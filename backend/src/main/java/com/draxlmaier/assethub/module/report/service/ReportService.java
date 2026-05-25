@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -15,9 +16,9 @@ import java.util.*;
 public class ReportService {
 
     private final EntityManager entityManager;
-
     private final List<ReportExporter> exporters;
 
+    @Transactional(readOnly = true)
     public byte[] generateReport(ReportRequestDTO request) {
         ReportExporter selectedExporter = exporters.stream()
                 .filter(exporter -> exporter.supportsFormat(request.getFormat()))
@@ -36,12 +37,12 @@ public class ReportService {
                 } else if (key.equals("createdBefore")) {
                     jpql.append(" AND e.createdAt <= :createdBefore");
                 } else if (key.equals("departmentName")) {
-                            if ("ASSET".equalsIgnoreCase(request.getEntityType())) {
-                                jpql.append(" AND e.assignedTo.department.name = :departmentName");
-                            } else {
-                                jpql.append(" AND e.department.name = :departmentName");
-                            }
-                        } else {
+                    if ("ASSET".equalsIgnoreCase(request.getEntityType())) {
+                        jpql.append(" AND e.assignedTo.department.name = :departmentName");
+                    } else {
+                        jpql.append(" AND e.department.name = :departmentName");
+                    }
+                } else {
                     jpql.append(" AND e.").append(key).append(" = :").append(key.replace(".", ""));
                 }
             }
@@ -55,8 +56,10 @@ public class ReportService {
         TypedQuery<Object> query = entityManager.createQuery(jpql.toString(), Object.class);
         if (filters != null && !filters.isEmpty()) {
             for (Map.Entry<String, String> entry : filters.entrySet()) {
-                if (entry.getKey().equals("createdAfter") || entry.getKey().equals("createdBefore")) {
+                if (entry.getKey().equals("createdAfter")) {
                     query.setParameter(entry.getKey(), java.time.OffsetDateTime.parse(entry.getValue() + "T00:00:00+00:00"));
+                } else if (entry.getKey().equals("createdBefore")) {
+                    query.setParameter(entry.getKey(), java.time.OffsetDateTime.parse(entry.getValue() + "T23:59:59.999+00:00"));
                 } else if (entry.getKey().equals("isActive")) {
                     query.setParameter(entry.getKey(), Boolean.parseBoolean(entry.getValue()));
                 } else {
@@ -89,23 +92,22 @@ public class ReportService {
 
     private Object extractValue(Object obj, String fieldName) {
         try {
-            // Mapări speciale pentru câmpuri virtuale
             if (obj instanceof com.draxlmaier.assethub.module.asset.model.Asset asset) {
                 if (fieldName.equals("assignedToName")) {
                     return asset.getAssignedTo() != null
-                        ? asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName()
-                        : null;
+                            ? asset.getAssignedTo().getFirstName() + " " + asset.getAssignedTo().getLastName()
+                            : "N/A";
                 }
                 if (fieldName.equals("assignedToEmail")) {
-                    return asset.getAssignedTo() != null ? asset.getAssignedTo().getEmail() : null;
+                    return asset.getAssignedTo() != null ? asset.getAssignedTo().getEmail() : "N/A";
                 }
             }
             if (obj instanceof com.draxlmaier.assethub.module.employee.model.Employee emp) {
                 if (fieldName.equals("departmentName")) {
-                    return emp.getDepartment() != null ? emp.getDepartment().getName() : null;
+                    return emp.getDepartment() != null ? emp.getDepartment().getName() : "N/A";
                 }
                 if (fieldName.equals("roleCode")) {
-                    return emp.getRole() != null ? emp.getRole().getCode() : null;
+                    return emp.getRole() != null ? emp.getRole().getCode() : "N/A";
                 }
             }
 
@@ -125,8 +127,16 @@ public class ReportService {
     }
 
     private Object getFieldValue(Object obj, String fieldName) throws Exception {
-        Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(obj);
+        Class<?> clazz = obj.getClass();
+        while (clazz != null) {
+            try {
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return field.get(obj);
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            }
+        }
+        return null;
     }
 }

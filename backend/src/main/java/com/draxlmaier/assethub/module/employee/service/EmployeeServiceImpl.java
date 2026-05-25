@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -85,6 +86,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             employee.setIsActive(false);
             employee.setRole(userRole);
             employee.setDepartment(department);
+            employee.setCreatedAt(OffsetDateTime.now());
 
             Employee savedEmployee = employeeRepository.save(employee);
             createdEmployees.add(mapToDTO(savedEmployee));
