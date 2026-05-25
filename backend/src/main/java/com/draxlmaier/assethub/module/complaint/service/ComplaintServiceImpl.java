@@ -42,11 +42,8 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final ComplaintWorkflowRepository workflowRepository;
     private final ComplaintMapper complaintMapper;
     private final EntityManager entityManager;
-
-    // NOU: Injectăm serviciul de email-uri
     private final EmailService emailService;
 
-    // Citim URL-ul de frontend din properties, dar punem un default de siguranță
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
@@ -134,6 +131,10 @@ public class ComplaintServiceImpl implements ComplaintService {
             complaint.setResolvedAt(OffsetDateTime.now());
         }
 
+        if ("CLOSED".equalsIgnoreCase(newStatus.getCode())) {
+            complaint.setDeletedAt(OffsetDateTime.now());
+        }
+
         Complaint savedComplaint = complaintRepository.save(complaint);
 
         saveWorkflowStep(savedComplaint, currentUser, oldStatus, newStatus, statusDTO.comment());
@@ -142,7 +143,6 @@ public class ComplaintServiceImpl implements ComplaintService {
             String userMsg = "Tichetul tău a fost trecut în statusul: " + newStatus.getCode() + ". Motiv: " + statusDTO.comment();
             notificationManager.sendToUser(savedComplaint.getAuthor(), "Status Tichet Actualizat", userMsg, savedComplaint.getId());
 
-            // NOU: Dacă tichetul s-a închis (terminal), trimitem și email-ul pentru feedback
             if (newStatus.isTerminal()) {
                 sendFeedbackEmail(savedComplaint);
             }
