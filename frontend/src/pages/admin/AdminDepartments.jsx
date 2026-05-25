@@ -79,6 +79,11 @@ function DeptCard({ dept, dashboardStats, onEdit, onDelete }) {
                         </div>
                         <div className="min-w-0">
                             <p className="text-xs font-semibold text-brand-text truncate">{dept.managerName}</p>
+                                {dept.managerEmail && (
+                                    <p className="text-xs text-brand-muted truncate flex items-center gap-1">
+                                        <Mail size={10} /> {dept.managerEmail}
+                                    </p>
+                                )}
                         </div>
                     </div>
                 ) : (
@@ -105,15 +110,20 @@ function AddEditModal({ dept, onClose, onSave }) {
             .catch(() => {});
     }, []);
     
-    const filteredEmployees = managerSearch.length > 1
-        ? employees.filter(e =>
+    const filteredEmployees = employees.filter(e =>
+        e.isActive &&
+        (e.roleCode === 'USER' || e.roleCode === 'DEPT_RESPONSIBLE' || !e.roleCode) &&
+        (managerSearch.length === 0 ||
             e.email.toLowerCase().includes(managerSearch.toLowerCase()) ||
-            `${e.firstName} ${e.lastName}`.toLowerCase().includes(managerSearch.toLowerCase())
-          )
-        : [];
+            `${e.firstName} ${e.lastName}`.toLowerCase().includes(managerSearch.toLowerCase()))
+    );
+
+    const selectedEmployee = employees.find(e => e.id === managerId);
+    const isFromWrongDept = selectedEmployee && dept?.name && 
+        selectedEmployee.departmentName !== dept?.name;
 
     const handleSave = async () => {
-        if (!name.trim()) return setError('Numele este obligatoriu.');
+        if (isFromWrongDept) return setError('Responsabilul selectat este din alt departament.');
         setSaving(true);
         setError('');
         try {
@@ -136,6 +146,15 @@ function AddEditModal({ dept, onClose, onSave }) {
                 } catch {}
                 throw new Error(message);
             }
+
+            if (dept && managerId && managerId !== dept.managerId) {
+                await fetch(`${API}/departments/${dept.id}/manager`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token()}` },
+                    body: JSON.stringify({ managerId })
+                });
+            }
+
             onSave();
         } catch (err) {
             setError(err.message);
@@ -167,41 +186,66 @@ function AddEditModal({ dept, onClose, onSave }) {
                 />
 
                 <div className="relative">
-                    <label className="text-xs text-brand-muted mb-1 block">Responsabil departament (optional)</label>
-                        <input
-                            type="text"
-                            placeholder="Cauta dupa email sau nume..."
-                            value={managerSearch}
-                            onChange={(e) => { setManagerSearch(e.target.value); setManagerId(''); setShowSuggestions(true); }}
-                            onFocus={() => setShowSuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                            className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
-                        />
-                        {managerId && (
-                            <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                                <Check size={11} /> {managerSearch}
-                            </p>
-                        )}
-                        {showSuggestions && filteredEmployees.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
-                                {filteredEmployees.map(e => (
-                                    <button
-                                        key={e.id}
-                                        type="button"
+                    <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-1.5 block">
+                        Responsabil departament (opțional)
+                    </label>
+                    <input
+                        type="text"
+                        placeholder="Caută după nume sau email..."
+                        value={managerSearch}
+                        onChange={(e) => { setManagerSearch(e.target.value); setManagerId(''); setShowSuggestions(true); }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        className="w-full px-3 py-2 bg-brand-bg text-brand-text border border-brand-border rounded-lg focus:outline-none focus:border-brand-primary transition-colors text-sm"
+                    />
+
+                    {managerId && (() => {
+                        const sel = employees.find(e => e.id === managerId);
+                        const wrongDept = sel && dept?.name && sel.departmentName !== dept?.name;
+                        return sel ? (
+                            <div className={`mt-1.5 px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
+                                wrongDept
+                                    ? 'bg-red-500/10 border border-red-400/30 text-red-400'
+                                    : 'bg-brand-primary/10 border border-brand-primary/30 text-brand-primary'
+                            }`}>
+                                {wrongDept
+                                    ? `⚠ ${sel.firstName} ${sel.lastName} este în departamentul "${sel.departmentName}"`
+                                    : `✓ ${sel.firstName} ${sel.lastName} — ${sel.email}`
+                                }
+                            </div>
+                        ) : null;
+                    })()}
+
+                    {showSuggestions && filteredEmployees.length > 0 && (
+                        <ul className="absolute z-50 w-full mt-1 bg-brand-card border border-brand-border rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                            {filteredEmployees.map(emp => {
+                                const wrongDept = dept?.name && emp.departmentName !== dept?.name;
+                                return (
+                                    <li
+                                        key={emp.id}
                                         onMouseDown={() => {
-                                            setManagerId(e.id);
-                                            setManagerSearch(`${e.firstName} ${e.lastName} — ${e.email}`);
+                                            if (wrongDept) return;
+                                            setManagerId(emp.id);
+                                            setManagerSearch(`${emp.firstName} ${emp.lastName}`);
                                             setShowSuggestions(false);
                                         }}
-                                        className="w-full text-left px-3 py-2 text-xs hover:bg-brand-primary/10 transition-colors border-b border-brand-border last:border-0"
+                                        className={`px-3 py-2.5 text-sm border-b border-brand-border last:border-0 ${
+                                            wrongDept ? 'opacity-50 cursor-not-allowed' : 'hover:bg-brand-bg cursor-pointer'
+                                        }`}
                                     >
-                                        <span className="text-brand-text font-medium">{e.firstName} {e.lastName}</span>
-                                        <span className="text-brand-muted ml-2">{e.email}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                                <span className="font-medium text-brand-text">{emp.firstName} {emp.lastName}</span>
+                                                <span className="text-brand-muted text-xs block">{emp.email}</span>
+                                            </div>
+                                            {wrongDept && <span className="text-xs text-red-400 shrink-0">Alt dept.</span>}
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
 
                 {error && (
                     <p className="text-red-400 text-xs flex items-center gap-1.5">

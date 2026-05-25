@@ -12,6 +12,7 @@ export default function EmployeeList({
                 <thead>
                 <tr className="bg-brand-bg/50 border-b border-brand-border text-brand-muted text-xs font-semibold uppercase tracking-wider">
                     <th className="p-4">Identificator / Nume</th>
+                    <th className="p-4">Rol</th>
                     <th className="p-4">Departament</th>
                     {activeTab === 'ACTIVE' && <th className="p-4">Plângeri</th>}
                     <th className="p-4 text-right"></th>
@@ -58,9 +59,23 @@ export default function EmployeeList({
                             </td>
 
                             <td className="p-4">
-                                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium border rounded-full ${colorObj.class}`}>
-                                        {emp.departmentName || 'Nespecificat'}
+                                {emp.roleCode && (
+                                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium border rounded-full ${
+                                        emp.roleCode === 'SUPER_ADMIN' ? 'bg-red-500/10 text-red-400 border-red-400/30' :
+                                        emp.roleCode === 'ADMIN' ? 'bg-amber-500/10 text-amber-400 border-amber-400/30' :
+                                        emp.roleCode === 'DEPT_RESPONSIBLE' ? 'bg-purple-500/10 text-purple-400 border-purple-400/30' :
+                                        'bg-brand-bg text-brand-muted border-brand-border'
+                                    }`}>
+                                        {emp.roleCode === 'SUPER_ADMIN' ? 'Super Admin' :
+                                        emp.roleCode === 'ADMIN' ? 'Admin' :
+                                        emp.roleCode === 'DEPT_RESPONSIBLE' ? 'Resp. Dept.' : 'User'}
                                     </span>
+                                )}
+                            </td>
+                            <td className="p-4">
+                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium border rounded-full ${colorObj.class}`}>
+                                    {emp.departmentName || 'Nespecificat'}
+                                </span>
                             </td>
 
                             {activeTab === 'ACTIVE' && (
@@ -93,7 +108,7 @@ export default function EmployeeList({
                 })}
                 {processedEmployees.length === 0 && (
                     <tr>
-                        <td colSpan={activeTab === 'ACTIVE' ? "4" : "3"} className="text-center p-8 text-brand-muted">
+                        <td colSpan={activeTab === 'ACTIVE' ? "5" : "4"} className="text-center p-8 text-brand-muted">
                             Nu s-au găsit înregistrări în această categorie.
                         </td>
                     </tr>

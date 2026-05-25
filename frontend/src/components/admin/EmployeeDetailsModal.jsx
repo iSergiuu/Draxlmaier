@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, User, Eye, EyeOff, Copy, Building2, Laptop, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Eye, EyeOff, Copy, Building2, Laptop, AlertCircle, Lock } from 'lucide-react';
 import CustomSelect from './CustomSelect';
 
 export default function EmployeeDetailsModal({
@@ -13,7 +13,29 @@ export default function EmployeeDetailsModal({
                                                  assets, complaints
                                              }) {
     const [showAssetsModal, setShowAssetsModal] = useState(false);
+    const [deptResponsibles, setDeptResponsibles] = useState({});
+
+    useEffect(() => {
+        if (!selectedEmployee) return;
+        fetch('http://localhost:8080/api/departments', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+            .then(r => r.ok ? r.json() : [])
+            .then(depts => {
+                const map = {};
+                depts.forEach(d => { if (d.managerId) map[d.managerId] = d.name; });
+                setDeptResponsibles(map);
+            })
+            .catch(() => {});
+    }, [selectedEmployee]);
+
     if (!selectedEmployee) return null;
+
+    const isCurrentResponsible = selectedEmployee.roleCode === 'DEPT_RESPONSIBLE'
+        && !!deptResponsibles[selectedEmployee.id];
+    const responsibleWarning = isCurrentResponsible
+        ? `Acest angajat este responsabilul departamentului "${deptResponsibles[selectedEmployee.id]}". Alege mai întâi un alt responsabil pentru a-i modifica rolul sau departamentul.`
+        : null;
 
     const isEmpActive = selectedEmployee.isActive === true || selectedEmployee.is_active === true;
     const securityCode = selectedEmployee.securityCode || selectedEmployee.security_code || selectedEmployee.employeeNumber || 'N/A';
@@ -160,11 +182,19 @@ export default function EmployeeDetailsModal({
                         </div>
 
                         <div className="border-t border-brand-border pt-5 pb-2 space-y-4">
+
+                            {responsibleWarning && (
+                                <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
+                                    <Lock size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-amber-400 leading-relaxed">{responsibleWarning}</p>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
                                     <Building2 size={14} className="text-brand-primary" /> Mută în alt departament
                                 </label>
-                                <div className="relative z-50">
+                                <div className={`relative z-50 ${isCurrentResponsible ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <CustomSelect
                                         value={selectedDeptId}
                                         onChange={setSelectedDeptId}
@@ -178,7 +208,7 @@ export default function EmployeeDetailsModal({
                                 <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
                                     <User size={14} className="text-brand-primary" /> Schimbă rolul
                                 </label>
-                                <div className="relative z-40">
+                                <div className={`relative z-40 ${isCurrentResponsible ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <CustomSelect
                                         value={selectedRole}
                                         onChange={setSelectedRole}
@@ -204,7 +234,7 @@ export default function EmployeeDetailsModal({
                     >
                         Închide
                     </button>
-                    {(isEmpActive && (isDeptChanged || selectedRole !== (selectedEmployee.roleCode || 'USER'))) && (
+                    {(isEmpActive && !isCurrentResponsible && (isDeptChanged || selectedRole !== (selectedEmployee.roleCode || 'USER'))) && (
                         <button
                             onClick={handleUpdateEmployee}
                             className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1"

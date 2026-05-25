@@ -9,6 +9,7 @@ export default function AssetFilters({
                                         departmentFilter, setDepartmentFilter,
                                         departmentsList,
                                         sortOrder, setSortOrder,
+                                        roleFilter, setRoleFilter,
                                     }) {
     return (
         <div className="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-wrap items-center gap-4 relative z-10 shadow-sm transition-colors duration-300">
@@ -46,6 +47,22 @@ export default function AssetFilters({
                     options={[{value: 'ALL', label: 'Toate Departamentele'}, ...departmentsList.map(d => ({value: d.id, label: d.name}))]}
                     icon={Building}
                     placeholder="Departament"
+                />
+            </div>
+
+            <div className="w-48 z-10 relative">
+                <CustomSelect
+                    value={roleFilter}
+                    onChange={setRoleFilter}
+                    options={[
+                        { value: 'ALL', label: 'Toate rolurile' },
+                        { value: 'USER', label: 'User' },
+                        { value: 'DEPT_RESPONSIBLE', label: 'Resp. Dept.' },
+                        { value: 'ADMIN', label: 'Admin' },
+                        { value: 'SUPER_ADMIN', label: 'Super Admin' },
+                    ]}
+                    icon={Tag}
+                    placeholder="Rol..."
                 />
             </div>
 

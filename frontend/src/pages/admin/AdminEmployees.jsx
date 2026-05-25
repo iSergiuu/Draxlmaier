@@ -28,6 +28,7 @@ export default function AdminEmployees() {
     const [activeTab, setActiveTab] = useState('ACTIVE');
     const [searchQuery, setSearchQuery] = useState('');
     const [emailSearchQuery, setEmailSearchQuery] = useState('');
+    const [roleFilter, setRoleFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [departmentFilter, setDepartmentFilter] = useState('ALL');
     const [sortOrder, setSortOrder] = useState('NEWEST');
@@ -164,6 +165,7 @@ export default function AdminEmployees() {
     };
 
     const processedEmployees = employees.filter(emp => {
+        if (roleFilter !== 'ALL' && emp.roleCode !== roleFilter) return false;
         if (activeTab === 'ACTIVE' && !emp.isActive) return false;
         if (activeTab === 'GENERATED' && emp.isActive) return false;
 
@@ -227,6 +229,7 @@ export default function AdminEmployees() {
                     departmentFilter={departmentFilter} setDepartmentFilter={setDepartmentFilter}
                     departmentsList={departments}
                     sortOrder={sortOrder} setSortOrder={setSortOrder}
+                    roleFilter={roleFilter} setRoleFilter={setRoleFilter}
                 />
             )}
 
