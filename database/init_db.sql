@@ -1,257 +1,154 @@
--- ============================================================
---  ASSET COMPLAINT HUB — Schema PostgreSQL 
---  Proiect: Dräxlmaier IT Day 2026
--- ============================================================
-
--- Activarea extensiei pentru UUID
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- ============================================================
--- FUNCȚIE: Actualizare automată updated_at
--- ============================================================
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE 'plpgsql';
-
--- ============================================================
--- FUNCȚIE: Înregistrare automată în complaint_workflow
---          la orice schimbare de status pe complaints
--- [ÎMBUNĂTĂȚIRE #1] — Trigger automat de audit al statusului
---
--- IMPORTANT pentru backend:
---   Înainte de orice UPDATE pe complaints.status_id, executați
---   în aceeași tranzacție:
---     SET LOCAL app.current_user_id = '<uuid-ul userului logat>';
---   Fără această linie, triggerul va folosi author_id ca fallback.
--- ============================================================
-CREATE OR REPLACE FUNCTION log_complaint_status_change()
-RETURNS TRIGGER AS $$
-DECLARE
-    v_changed_by UUID;
-BEGIN
-    IF OLD.status_id IS DISTINCT FROM NEW.status_id THEN
-
-        -- Citim cine face schimbarea din variabila de sesiune setată de backend
-        -- SET LOCAL app.current_user_id = '<uuid>' trebuie apelat de backend
-        -- înainte de UPDATE, în aceeași tranzacție
-        BEGIN
-            v_changed_by := current_setting('app.current_user_id')::UUID;
-        EXCEPTION WHEN OTHERS THEN
-            -- Fallback dacă backend-ul uită să seteze variabila
-            -- (înregistrează autorul plângerii, nu cel care schimbă statusul)
-            v_changed_by := NEW.author_id;
-        END;
-
-        INSERT INTO complaint_workflow (complaint_id, changed_by_id, old_status_id, new_status_id, comment)
-        VALUES (NEW.id, v_changed_by, OLD.status_id, NEW.status_id, 'Schimbare automată de status');
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE 'plpgsql';
-
--- Rolurile utilizatorilor
-CREATE TABLE roles (
-    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    code        VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT
+CREATE SCHEMA "public";
+CREATE TABLE "assets" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"name" varchar(255) NOT NULL,
+	"serial_number" varchar(100) NOT NULL CONSTRAINT "assets_serial_number_key" UNIQUE,
+	"category" varchar(100),
+	"assigned_to_id" uuid,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"deleted_at" timestamp with time zone,
+	"status" varchar(20),
+	CONSTRAINT "assets_status_check" CHECK (((status)::text = ANY ((ARRAY['AVAILABLE'::character varying, 'ASSIGNED'::character varying, 'DEFECTIVE'::character varying])::text[])))
 );
-
--- Statusurile plângerilor
-CREATE TABLE complaint_statuses (
-    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    code        VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
-    is_terminal BOOLEAN     DEFAULT FALSE,  -- TRUE pentru CLOSED, REJECTED, RESOLVED
-    sort_order  SMALLINT    DEFAULT 0       -- [ÎMBUNĂTĂȚIRE #2] Ordine afișare în UI/rapoarte
+CREATE TABLE "complaint_comments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"complaint_id" uuid NOT NULL,
+	"author_id" uuid NOT NULL,
+	"message" text NOT NULL,
+	"is_internal" boolean DEFAULT false,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"deleted_at" timestamp with time zone
 );
-
--- Departamente
-CREATE TABLE departments (
-    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        VARCHAR(255) NOT NULL,
-    manager_id  UUID,                       -- FK către employees (adăugat după)
-    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at  TIMESTAMPTZ                 -- Soft delete
+CREATE TABLE "complaint_feedbacks" (
+	"id" uuid PRIMARY KEY,
+	"complaint_id" uuid NOT NULL CONSTRAINT "complaint_feedbacks_complaint_id_key" UNIQUE,
+	"rating" integer NOT NULL,
+	"comment" text,
+	"created_at" timestamp with time zone NOT NULL
 );
-
--- Angajați
-CREATE TABLE employees (
-    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    email           VARCHAR(255) UNIQUE NOT NULL,
-    first_name      VARCHAR(100) NOT NULL,
-    last_name       VARCHAR(100) NOT NULL,
-    department_id   UUID        NOT NULL,
-    role_id         UUID        NOT NULL,
-    is_active       BOOLEAN     DEFAULT TRUE,
-    -- [ÎMBUNĂTĂȚIRE #3] Parolă hash pentru autentificare backend
-    employee_number VARCHAR(50) UNIQUE NOT NULL,
-    password_hash   VARCHAR(255),
-    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at      TIMESTAMPTZ,
-    CONSTRAINT fk_employee_dept FOREIGN KEY (department_id) REFERENCES departments(id),
-    CONSTRAINT fk_employee_role FOREIGN KEY (role_id)       REFERENCES roles(id)
+CREATE TABLE "complaint_statuses" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"code" varchar(50) NOT NULL CONSTRAINT "complaint_statuses_code_key" UNIQUE,
+	"description" text,
+	"is_terminal" boolean DEFAULT false,
+	"sort_order" smallint DEFAULT 0
 );
-
--- Rezolvarea referinței circulare departments <-> employees
-ALTER TABLE departments
-    ADD CONSTRAINT fk_dept_manager
-    FOREIGN KEY (manager_id) REFERENCES employees(id) ON DELETE SET NULL;
-
--- Asset-uri
-CREATE TABLE assets (
-    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    name            VARCHAR(255) NOT NULL,
-    serial_number   VARCHAR(100) UNIQUE NOT NULL,
-    -- [ÎMBUNĂTĂȚIRE #4] Câmp pentru categoria asset-ului (LAPTOP, PHONE, PERIPHERAL etc.)
-    category        VARCHAR(100),
-    assigned_to_id  UUID,
-    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at      TIMESTAMPTZ,
-    CONSTRAINT fk_asset_employee FOREIGN KEY (assigned_to_id) REFERENCES employees(id)
+CREATE TABLE "complaint_workflow" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"complaint_id" uuid NOT NULL,
+	"changed_by_id" uuid NOT NULL,
+	"old_status_id" uuid,
+	"new_status_id" uuid NOT NULL,
+	"comment" text,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
-
--- Plângeri (entitatea centrală)
-CREATE TABLE complaints (
-    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    -- [ÎMBUNĂTĂȚIRE #5] Număr lizibil pentru utilizator (ex: #C-047)
-    ticket_number   SERIAL      UNIQUE,
-    title           VARCHAR(255) NOT NULL,
-    description     TEXT        NOT NULL,
-    asset_id        UUID        NOT NULL,
-    author_id       UUID        NOT NULL,
-    status_id       UUID        NOT NULL,
-    -- [ÎMBUNĂTĂȚIRE #6] Angajat responsabil de rezolvare (poate fi diferit de autor)
-    assigned_to_id  UUID,
-    -- [ÎMBUNĂTĂȚIRE #7] Prioritate plângere (LOW, MEDIUM, HIGH, CRITICAL)
-    priority        VARCHAR(20) DEFAULT 'MEDIUM'
-                    CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
-    -- [ÎMBUNĂTĂȚIRE #8] Data limită estimată de rezolvare — util pentru rapoarte SLA
-    due_date        TIMESTAMPTZ,
-    -- [ÎMBUNĂTĂȚIRE #9] Data la care s-a rezolvat efectiv — calcul timp de rezolvare
-    resolved_at     TIMESTAMPTZ,
-    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at      TIMESTAMPTZ,
-    CONSTRAINT fk_complaint_asset   FOREIGN KEY (asset_id)       REFERENCES assets(id),
-    CONSTRAINT fk_complaint_author  FOREIGN KEY (author_id)      REFERENCES employees(id),
-    CONSTRAINT fk_complaint_status  FOREIGN KEY (status_id)      REFERENCES complaint_statuses(id),
-    CONSTRAINT fk_complaint_handler FOREIGN KEY (assigned_to_id) REFERENCES employees(id)
+CREATE TABLE "complaints" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"ticket_number" serial CONSTRAINT "complaints_ticket_number_key" UNIQUE,
+	"title" varchar(255) NOT NULL,
+	"description" text NOT NULL,
+	"asset_id" uuid NOT NULL,
+	"author_id" uuid NOT NULL,
+	"status_id" uuid NOT NULL,
+	"assigned_to_id" uuid,
+	"priority" varchar(20) DEFAULT 'MEDIUM',
+	"due_date" timestamp with time zone,
+	"resolved_at" timestamp with time zone,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"deleted_at" timestamp with time zone,
+	"is_escalated" boolean DEFAULT false,
+	CONSTRAINT "complaints_priority_check" CHECK (((priority)::text = ANY ((ARRAY['LOW'::character varying, 'MEDIUM'::character varying, 'HIGH'::character varying, 'CRITICAL'::character varying])::text[])))
 );
-
--- Comentarii
-CREATE TABLE complaint_comments (
-    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    complaint_id    UUID        NOT NULL,
-    author_id       UUID        NOT NULL,
-    message         TEXT        NOT NULL,
-    -- [ÎMBUNĂTĂȚIRE #10] Vizibilitate comentariu: intern (admin/responsabil) sau public (vizibil și angajatului)
-    is_internal     BOOLEAN     DEFAULT FALSE,
-    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at      TIMESTAMPTZ,
-    CONSTRAINT fk_comment_complaint FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE,
-    CONSTRAINT fk_comment_author    FOREIGN KEY (author_id)    REFERENCES employees(id)
+CREATE TABLE "departments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"name" varchar(255) NOT NULL,
+	"manager_id" uuid,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"deleted_at" timestamp with time zone
 );
-
--- Istoricul schimbărilor de status (Audit Trail — imutabil, fără updated_at)
-CREATE TABLE complaint_workflow (
-    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    complaint_id    UUID        NOT NULL,
-    changed_by_id   UUID        NOT NULL,
-    old_status_id   UUID,                   -- NULL pentru prima înregistrare (status inițial)
-    new_status_id   UUID        NOT NULL,
-    comment         TEXT,
-    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_wf_complaint   FOREIGN KEY (complaint_id)   REFERENCES complaints(id) ON DELETE CASCADE,
-    CONSTRAINT fk_wf_author      FOREIGN KEY (changed_by_id)  REFERENCES employees(id),
-    CONSTRAINT fk_wf_old_status  FOREIGN KEY (old_status_id)  REFERENCES complaint_statuses(id),
-    CONSTRAINT fk_wf_new_status  FOREIGN KEY (new_status_id)  REFERENCES complaint_statuses(id)
+CREATE TABLE "employees" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"email" varchar(255) NOT NULL CONSTRAINT "employees_email_key" UNIQUE,
+	"first_name" varchar(100) NOT NULL,
+	"last_name" varchar(100) NOT NULL,
+	"department_id" uuid NOT NULL,
+	"role_id" uuid NOT NULL,
+	"is_active" boolean DEFAULT true,
+	"employee_number" varchar(50) NOT NULL CONSTRAINT "employees_employee_number_key" UNIQUE,
+	"password_hash" varchar(255),
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	"deleted_at" timestamp with time zone
 );
-
--- updated_at automat
-CREATE TRIGGER trg_upd_dept
-    BEFORE UPDATE ON departments
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
-CREATE TRIGGER trg_upd_emp
-    BEFORE UPDATE ON employees
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
-CREATE TRIGGER trg_upd_asset
-    BEFORE UPDATE ON assets
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
-CREATE TRIGGER trg_upd_complaint
-    BEFORE UPDATE ON complaints
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
-CREATE TRIGGER trg_upd_comment
-    BEFORE UPDATE ON complaint_comments
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
--- [ÎMBUNĂTĂȚIRE #1] Trigger audit status — se înregistrează automat în workflow
--- ATENȚIE: aplicat DUPĂ triggerul de updated_at
-CREATE TRIGGER trg_log_complaint_status
-    AFTER UPDATE ON complaints
-    FOR EACH ROW EXECUTE PROCEDURE log_complaint_status_change();
-
--- Originale
-CREATE INDEX idx_emp_email        ON employees(email)          WHERE deleted_at IS NULL;
-CREATE INDEX idx_complaint_status ON complaints(status_id)     WHERE deleted_at IS NULL;
-CREATE INDEX idx_asset_serial     ON assets(serial_number)     WHERE deleted_at IS NULL;
-CREATE INDEX idx_wf_complaint     ON complaint_workflow(complaint_id, created_at DESC);
-
--- [ÎMBUNĂTĂȚIRE #11] Indexuri adiționale pentru query-urile frecvente
-CREATE INDEX idx_complaint_author   ON complaints(author_id)        WHERE deleted_at IS NULL;
-CREATE INDEX idx_complaint_asset    ON complaints(asset_id)         WHERE deleted_at IS NULL;
-CREATE INDEX idx_complaint_handler  ON complaints(assigned_to_id)   WHERE deleted_at IS NULL;
-CREATE INDEX idx_comment_complaint  ON complaint_comments(complaint_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_emp_dept           ON employees(department_id)     WHERE deleted_at IS NULL;
--- Index pentru rapoarte per prioritate + status
-CREATE INDEX idx_complaint_priority ON complaints(priority, status_id) WHERE deleted_at IS NULL;
-
--- Roluri
-INSERT INTO roles (code, description) VALUES
-    ('USER',             'Utilizator standard / Angajat'),
-    ('DEPT_RESPONSIBLE', 'Responsabil de departament'),
-    ('ADMIN',            'Administrator sistem IT');
-
--- Statusuri (cu ordine de afișare și marcare terminale)
-INSERT INTO complaint_statuses (code, is_terminal, sort_order, description) VALUES
-    ('NEW',         FALSE, 1, 'Plângere nou înregistrată'),
-    ('IN_REVIEW',   FALSE, 2, 'În curs de analiză'),
-    ('IN_PROGRESS', FALSE, 3, 'În curs de rezolvare'),
-    ('RESOLVED',    TRUE,  4, 'Problemă soluționată'),
-    ('CLOSED',      TRUE,  5, 'Închis definitiv'),
-    ('REJECTED',    TRUE,  6, 'Respins / Invalid');
-
--- [ÎMBUNĂTĂȚIRE #12] Departament și admin inițial pentru pornirea aplicației
-INSERT INTO departments (id, name) VALUES
-    ('00000000-0000-0000-0000-000000000001', 'IT'),
-    ('00000000-0000-0000-0000-000000000002', 'HR'),
-    ('00000000-0000-0000-0000-000000000003', 'Finance');
-
-INSERT INTO employees (id, email, first_name, last_name, department_id, role_id, employee_number, password_hash)
-SELECT
-    '00000000-0000-0000-0000-000000000010',
-    'admin@draexlmaier.com',
-    'Admin',
-    'System',
-    '00000000-0000-0000-0000-000000000001',
-    r.id,
-    '777',
-    -- [NOTĂ] Înlocuiți acest hash cu unul generat de backend înainte de deploy password123
-    '$2a$10$kypbnGGCpJ7UQlysnqzJG.6H.dUewn7UPVWA3Ip.E.8U4jlVnFNnu'
-FROM roles r WHERE r.code = 'ADMIN';
-
--- Setare manager departament IT = admin-ul creat
-UPDATE departments
-SET manager_id = '00000000-0000-0000-0000-000000000010'
-WHERE id = '00000000-0000-0000-0000-000000000001';
+CREATE TABLE "notifications" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"user_id" uuid NOT NULL,
+	"title" varchar(255) NOT NULL,
+	"message" text NOT NULL,
+	"is_read" boolean DEFAULT false,
+	"reference_id" uuid,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE "password_reset_tokens" (
+	"id" uuid PRIMARY KEY,
+	"token" varchar(255) NOT NULL CONSTRAINT "password_reset_tokens_token_key" UNIQUE,
+	"employee_id" uuid NOT NULL,
+	"expiry_date" timestamp with time zone NOT NULL
+);
+CREATE TABLE "roles" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"code" varchar(50) NOT NULL CONSTRAINT "roles_code_key" UNIQUE,
+	"description" text
+);
+CREATE UNIQUE INDEX "assets_pkey" ON "assets" ("id");
+CREATE UNIQUE INDEX "assets_serial_number_key" ON "assets" ("serial_number");
+CREATE INDEX "idx_asset_serial" ON "assets" ("serial_number");
+CREATE UNIQUE INDEX "complaint_comments_pkey" ON "complaint_comments" ("id");
+CREATE INDEX "idx_comment_complaint" ON "complaint_comments" ("complaint_id");
+CREATE UNIQUE INDEX "complaint_feedbacks_complaint_id_key" ON "complaint_feedbacks" ("complaint_id");
+CREATE UNIQUE INDEX "complaint_feedbacks_pkey" ON "complaint_feedbacks" ("id");
+CREATE UNIQUE INDEX "complaint_statuses_code_key" ON "complaint_statuses" ("code");
+CREATE UNIQUE INDEX "complaint_statuses_pkey" ON "complaint_statuses" ("id");
+CREATE UNIQUE INDEX "complaint_workflow_pkey" ON "complaint_workflow" ("id");
+CREATE INDEX "idx_wf_complaint" ON "complaint_workflow" ("complaint_id","created_at");
+CREATE UNIQUE INDEX "complaints_pkey" ON "complaints" ("id");
+CREATE UNIQUE INDEX "complaints_ticket_number_key" ON "complaints" ("ticket_number");
+CREATE INDEX "idx_complaint_asset" ON "complaints" ("asset_id");
+CREATE INDEX "idx_complaint_author" ON "complaints" ("author_id");
+CREATE INDEX "idx_complaint_handler" ON "complaints" ("assigned_to_id");
+CREATE INDEX "idx_complaint_priority" ON "complaints" ("priority","status_id");
+CREATE INDEX "idx_complaint_status" ON "complaints" ("status_id");
+CREATE UNIQUE INDEX "departments_pkey" ON "departments" ("id");
+CREATE UNIQUE INDEX "employees_email_key" ON "employees" ("email");
+CREATE UNIQUE INDEX "employees_employee_number_key" ON "employees" ("employee_number");
+CREATE UNIQUE INDEX "employees_pkey" ON "employees" ("id");
+CREATE INDEX "idx_emp_dept" ON "employees" ("department_id");
+CREATE INDEX "idx_emp_email" ON "employees" ("email");
+CREATE INDEX "idx_notif_user_unread" ON "notifications" ("user_id");
+CREATE UNIQUE INDEX "notifications_pkey" ON "notifications" ("id");
+CREATE UNIQUE INDEX "password_reset_tokens_pkey" ON "password_reset_tokens" ("id");
+CREATE UNIQUE INDEX "password_reset_tokens_token_key" ON "password_reset_tokens" ("token");
+CREATE UNIQUE INDEX "roles_code_key" ON "roles" ("code");
+CREATE UNIQUE INDEX "roles_pkey" ON "roles" ("id");
+ALTER TABLE "assets" ADD CONSTRAINT "fk_asset_employee" FOREIGN KEY ("assigned_to_id") REFERENCES "employees"("id");
+ALTER TABLE "complaint_comments" ADD CONSTRAINT "fk_comment_author" FOREIGN KEY ("author_id") REFERENCES "employees"("id");
+ALTER TABLE "complaint_comments" ADD CONSTRAINT "fk_comment_complaint" FOREIGN KEY ("complaint_id") REFERENCES "complaints"("id") ON DELETE CASCADE;
+ALTER TABLE "complaint_feedbacks" ADD CONSTRAINT "fk_complaint_feedback" FOREIGN KEY ("complaint_id") REFERENCES "complaints"("id");
+ALTER TABLE "complaint_workflow" ADD CONSTRAINT "fk_wf_author" FOREIGN KEY ("changed_by_id") REFERENCES "employees"("id");
+ALTER TABLE "complaint_workflow" ADD CONSTRAINT "fk_wf_complaint" FOREIGN KEY ("complaint_id") REFERENCES "complaints"("id") ON DELETE CASCADE;
+ALTER TABLE "complaint_workflow" ADD CONSTRAINT "fk_wf_new_status" FOREIGN KEY ("new_status_id") REFERENCES "complaint_statuses"("id");
+ALTER TABLE "complaint_workflow" ADD CONSTRAINT "fk_wf_old_status" FOREIGN KEY ("old_status_id") REFERENCES "complaint_statuses"("id");
+ALTER TABLE "complaints" ADD CONSTRAINT "fk_complaint_asset" FOREIGN KEY ("asset_id") REFERENCES "assets"("id");
+ALTER TABLE "complaints" ADD CONSTRAINT "fk_complaint_author" FOREIGN KEY ("author_id") REFERENCES "employees"("id");
+ALTER TABLE "complaints" ADD CONSTRAINT "fk_complaint_handler" FOREIGN KEY ("assigned_to_id") REFERENCES "employees"("id");
+ALTER TABLE "complaints" ADD CONSTRAINT "fk_complaint_status" FOREIGN KEY ("status_id") REFERENCES "complaint_statuses"("id");
+ALTER TABLE "departments" ADD CONSTRAINT "fk_dept_manager" FOREIGN KEY ("manager_id") REFERENCES "employees"("id") ON DELETE SET NULL;
+ALTER TABLE "employees" ADD CONSTRAINT "fk_employee_dept" FOREIGN KEY ("department_id") REFERENCES "departments"("id");
+ALTER TABLE "employees" ADD CONSTRAINT "fk_employee_role" FOREIGN KEY ("role_id") REFERENCES "roles"("id");
+ALTER TABLE "notifications" ADD CONSTRAINT "fk_notification_user" FOREIGN KEY ("user_id") REFERENCES "employees"("id") ON DELETE CASCADE;
+ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "fk_employee_password_token" FOREIGN KEY ("employee_id") REFERENCES "employees"("id") ON DELETE CASCADE;
+CREATE VIEW "v_dashboard_stats" TABLESPACE public AS (SELECT ( SELECT count(*) AS count FROM assets WHERE assets.deleted_at IS NULL) AS total_assets, ( SELECT count(*) AS count FROM assets WHERE assets.assigned_to_id IS NOT NULL AND assets.deleted_at IS NULL) AS allocated_assets, ( SELECT count(*) AS count FROM assets WHERE assets.assigned_to_id IS NULL AND assets.deleted_at IS NULL) AS available_assets, ( SELECT count(DISTINCT a.id) AS count FROM assets a JOIN complaints c ON a.id = c.asset_id JOIN complaint_statuses cs ON c.status_id = cs.id WHERE cs.is_terminal = false AND c.deleted_at IS NULL AND a.deleted_at IS NULL) AS broken_assets, ( SELECT count(*) AS count FROM assets WHERE assets.deleted_at IS NOT NULL) AS deleted_assets, ( SELECT count(*) AS count FROM complaints WHERE complaints.deleted_at IS NULL) AS total_tickets, ( SELECT count(*) AS count FROM complaints c JOIN complaint_statuses cs ON c.status_id = cs.id WHERE cs.code::text = 'NEW'::text AND c.deleted_at IS NULL) AS new_tickets, ( SELECT count(*) AS count FROM complaints c JOIN complaint_statuses cs ON c.status_id = cs.id WHERE cs.code::text = 'IN_PROGRESS'::text AND c.deleted_at IS NULL) AS in_progress_tickets, ( SELECT count(*) AS count FROM complaints c JOIN complaint_statuses cs ON c.status_id = cs.id WHERE cs.code::text = 'RESOLVED'::text AND c.deleted_at IS NULL) AS resolved_tickets, ( SELECT count(*) AS count FROM complaints WHERE complaints.deleted_at IS NOT NULL) AS deleted_tickets);
