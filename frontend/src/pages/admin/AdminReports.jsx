@@ -88,12 +88,16 @@ function getDateRange(preset) {
 }
 
 export default function AdminReports() {
+    const role = localStorage.getItem('userRole');
+    const isDeptResponsible = role === 'DEPT_RESPONSIBLE';
+
     const [entityType,    setEntityType]    = useState('COMPLAINT');
     const [format,        setFormat]        = useState('PDF');
     const [datePreset,    setDatePreset]    = useState('30d');
     const [customFrom,    setCustomFrom]    = useState('');
     const [customTo,      setCustomTo]      = useState('');
     const [departments,   setDepartments]   = useState([]);
+    const [myDeptName,    setMyDeptName]    = useState('');
     const [selectedDepts, setSelectedDepts] = useState([]);
     const [generating,    setGenerating]    = useState(false);
     const [error,         setError]         = useState('');
@@ -103,6 +107,13 @@ export default function AdminReports() {
             .then(r => r.ok ? r.json() : [])
             .then(setDepartments)
             .catch(() => {});
+
+        if (isDeptResponsible) {
+            fetch(`${API}/employees/me`, { headers: { 'Authorization': `Bearer ${token()}` } })
+                .then(r => r.ok ? r.json() : null)
+                .then(me => { if (me?.departmentName) setMyDeptName(me.departmentName); })
+                .catch(() => {});
+        }
     }, []);
 
     const toggleDept = (name) => {
@@ -122,8 +133,11 @@ export default function AdminReports() {
             const filters = {};
             if (from) filters.createdAfter  = from;
             if (to)   filters.createdBefore = to;
-            if (selectedDepts.length === 1 && (entityType === 'EMPLOYEE' || entityType === 'ASSET'))
+            if (isDeptResponsible && myDeptName) {
+                filters.departmentName = myDeptName;
+            } else if (selectedDepts.length === 1 && (entityType === 'EMPLOYEE' || entityType === 'ASSET')) {
                 filters.departmentName = selectedDepts[0];
+            }
 
             const actualEntity = entityType === 'GENERATED_ACCOUNTS' ? 'EMPLOYEE' : entityType;
             if (entityType === 'GENERATED_ACCOUNTS') {
@@ -213,8 +227,8 @@ export default function AdminReports() {
                     ))}
                 </Section>
 
-                {/* Departamente */}
-                {departments.length > 0 && (entityType === 'EMPLOYEE' || entityType === 'ASSET') && (
+                {/* Departamente - doar pentru SUPER_ADMIN */}
+                {!isDeptResponsible && departments.length > 0 && (entityType === 'EMPLOYEE' || entityType === 'ASSET') && (
                     <Section title="Departament (opțional)">
                         <button
                             onClick={() => setSelectedDepts(departments.map(d => d.name))}

@@ -10,7 +10,8 @@ export default function EmployeeDetailsModal({
                                                  selectedRole, setSelectedRole,
                                                  visiblePasswords, setVisiblePasswords,
                                                  generatedPasswords, copyToClipboard,
-                                                 assets, complaints
+                                                 assets, complaints,
+                                                 readOnly = false
                                              }) {
     const [showAssetsModal, setShowAssetsModal] = useState(false);
     const [deptResponsibles, setDeptResponsibles] = useState({});
@@ -181,7 +182,7 @@ export default function EmployeeDetailsModal({
                             )}
                         </div>
 
-                        <div className="border-t border-brand-border pt-5 pb-2 space-y-4">
+                        {!readOnly && <div className="border-t border-brand-border pt-5 pb-2 space-y-4">
 
                             {responsibleWarning && (
                                 <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
@@ -190,19 +191,21 @@ export default function EmployeeDetailsModal({
                                 </div>
                             )}
 
-                            <div>
-                                <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
-                                    <Building2 size={14} className="text-brand-primary" /> Mută în alt departament
-                                </label>
-                                <div className={`relative z-50 ${isCurrentResponsible ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    <CustomSelect
-                                        value={selectedDeptId}
-                                        onChange={setSelectedDeptId}
-                                        options={departments.map(d => ({value: d.id, label: d.name}))}
-                                        placeholder="Alege noul departament..."
-                                    />
+                            {!['ADMIN', 'SUPER_ADMIN'].includes(selectedEmployee.roleCode) && (
+                                <div>
+                                    <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
+                                        <Building2 size={14} className="text-brand-primary" /> Mută în alt departament
+                                    </label>
+                                    <div className={`relative z-50 ${isCurrentResponsible ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        <CustomSelect
+                                            value={selectedDeptId}
+                                            onChange={setSelectedDeptId}
+                                            options={departments.map(d => ({value: d.id, label: d.name}))}
+                                            placeholder="Alege noul departament..."
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div>
                                 <label className="text-xs font-semibold text-brand-muted uppercase tracking-wider flex items-center gap-1 mb-2">
@@ -222,7 +225,7 @@ export default function EmployeeDetailsModal({
                                     />
                                 </div>
                             </div>
-                        </div>
+                        </div>}
                     </div>
                 )}
 

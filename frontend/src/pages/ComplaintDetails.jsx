@@ -60,7 +60,7 @@ export default function ComplaintDetails() {
     const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
 
     const userRole        = localStorage.getItem('userRole')?.toUpperCase();
-    const canChangeStatus = userRole === 'ADMIN' || userRole === 'DEPT_RESPONSIBLE';
+    const canChangeStatus = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

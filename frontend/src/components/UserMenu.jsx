@@ -21,10 +21,11 @@ export default function UserMenu() {
     const notifRef = useRef(null);
     const navigate = useNavigate();
 
-    const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
     const adminEmail = localStorage.getItem('userEmail') || 'Utilizator';
     const userRole = localStorage.getItem('userRole');
-    const isAdmin = userRole === 'ADMIN' || userRole === 'admin' || userRole === 'SUPER_ADMIN';
+    const role = userRole;
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'DEPT_RESPONSIBLE';
     const isDeptResponsible = userRole === 'DEPT_RESPONSIBLE';
 
     useEffect(() => {
@@ -352,13 +353,22 @@ export default function UserMenu() {
                                         Sesizările Mele
                                     </button>
 
-                                    {isAdmin && (
+                                    {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
                                         <button
-                                            onClick={() => handleNavigate(userRole === 'SUPER_ADMIN' ? '/admin' : '/admin/tickets')}
+                                            onClick={() => handleNavigate(role === 'ADMIN' ? '/admin/tickets' : '/admin')}
                                             className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
                                         >
                                             <ShieldAlert className="w-4 h-4 mr-3" />
-                                            {userRole === 'SUPER_ADMIN' ? 'Panou Administrator' : 'Rezolvă Tichete'}
+                                            {role === 'ADMIN' ? 'Rezolvă Tichete' : 'Panou Administrator'}
+                                        </button>
+                                    )}
+                                    {role === 'DEPT_RESPONSIBLE' && (
+                                        <button
+                                            onClick={() => handleNavigate('/dept/tickets')}
+                                            className="w-full text-left px-4 py-2.5 text-brand-primary hover:bg-brand-primary/10 font-medium transition-colors flex items-center"
+                                        >
+                                            <ShieldAlert className="w-4 h-4 mr-3" />
+                                            Panou Departament
                                         </button>
                                     )}
 

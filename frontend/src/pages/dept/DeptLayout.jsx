@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import ThemeSwitcher from '../../components/ThemeSwitcher';
 import UserMenu from '../../components/UserMenu';
-import { Ticket, Users } from 'lucide-react';
+import { Ticket, Users, BarChart2, FileText } from 'lucide-react';
 
 export default function DeptLayout() {
     const [me, setMe] = useState(null);
@@ -33,6 +33,12 @@ export default function DeptLayout() {
                     </NavLink>
                     <NavLink to="/dept/employees" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
                         <Users className="w-5 h-5 mr-3" /> Angajați
+                    </NavLink>
+                    <NavLink to="/dept/stats" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                        <BarChart2 className="w-5 h-5 mr-3" /> Statistici
+                    </NavLink>
+                    <NavLink to="/dept/reports" className={({isActive}) => `w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-brand-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`}>
+                        <FileText className="w-5 h-5 mr-3" /> Rapoarte
                     </NavLink>
                 </nav>
             </div>

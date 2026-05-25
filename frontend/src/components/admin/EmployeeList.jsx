@@ -73,9 +73,13 @@ export default function EmployeeList({
                                 )}
                             </td>
                             <td className="p-4">
-                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium border rounded-full ${colorObj.class}`}>
-                                    {emp.departmentName || 'Nespecificat'}
-                                </span>
+                                {['ADMIN', 'SUPER_ADMIN'].includes(emp.roleCode) ? (
+                                    <span className="text-brand-muted text-sm">—</span>
+                                ) : (
+                                    <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium border rounded-full ${colorObj.class}`}>
+                                        {emp.departmentName || 'Nespecificat'}
+                                    </span>
+                                )}
                             </td>
 
                             {activeTab === 'ACTIVE' && (

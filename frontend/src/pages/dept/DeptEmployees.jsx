@@ -193,7 +193,8 @@ export default function DeptEmployees() {
                     departments={departments.filter(d => d.name === me?.departmentName)}
                     getDeptColorObj={getDeptColorObj}
                     isDeptChanged={false}
-                    handleUpdateEmployee={handleUpdateEmployee}
+                    handleUpdateEmployee={null}
+                    readOnly={true}
                     visiblePasswords={visiblePasswords} setVisiblePasswords={setVisiblePasswords}
                     generatedPasswords={generatedPasswords} copyToClipboard={copyToClipboard}
                     assets={assets} complaints={complaints}

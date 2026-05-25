@@ -19,6 +19,8 @@ import DeptLayout from './pages/dept/DeptLayout';
 import DeptTickets from './pages/dept/DeptTickets';
 import DeptEmployees from './pages/dept/DeptEmployees';
 import AdminReports from './pages/admin/AdminReports';
+import DeptStats from './pages/dept/DeptStats';
+import DeptReports from './pages/dept/DeptReports';
 
 export const ToastContext = React.createContext(null);
 
@@ -57,11 +59,13 @@ function App() {
                         <Route path="reports" element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminReports /></ProtectedRoute>} />
                     </Route>
 
-                    <Route path="/dept" element={<ProtectedRoute allowedRoles={['DEPT_RESPONSIBLE']}><DeptLayout /></ProtectedRoute>}>
+                   <Route path="/dept" element={<ProtectedRoute allowedRoles={['DEPT_RESPONSIBLE']}><DeptLayout /></ProtectedRoute>}>
                         <Route index element={<Navigate to="tickets" replace />} />
                         <Route path="tickets" element={<DeptTickets />} />
                         <Route path="tickets/:id" element={<ComplaintDetails />} />
                         <Route path="employees" element={<DeptEmployees />} />
+                        <Route path="stats" element={<DeptStats />} />
+                        <Route path="reports" element={<DeptReports />} />
                     </Route>
 
                     {/* Rutele pentru tichete */}
