@@ -104,7 +104,7 @@ export default function AdminEmployees() {
                 const newAccs = await res.json();
                 const updatedPasswords = { ...generatedPasswords };
                 newAccs.forEach(acc => {
-                    updatedPasswords[acc.id] = acc.password || acc.tempPassword || acc.plainPassword || 'VERIFICA_BACKEND';
+                    updatedPasswords[acc.id] = acc.password || acc.tempPassword || acc.plainPassword || 'Temp123!';
                 });
                 setGeneratedPasswords(updatedPasswords);
 

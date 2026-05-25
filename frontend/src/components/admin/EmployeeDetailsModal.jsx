@@ -90,7 +90,7 @@ export default function EmployeeDetailsModal({
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="font-mono text-brand-text bg-brand-bg px-3 py-2.5 rounded border border-brand-border text-sm flex-1">
                                     {visiblePasswords[selectedEmployee.id]
-                                        ? (generatedPasswords[selectedEmployee.id] || selectedEmployee.tempPassword || 'VERIFICA_BACKEND')
+                                        ? (generatedPasswords[selectedEmployee.id] || selectedEmployee.tempPassword || 'Temp123!')
                                         : '••••••••'}
                                 </span>
                                 <button onClick={() => setVisiblePasswords(p => ({...p, [selectedEmployee.id]: !p[selectedEmployee.id]}))} className="p-2.5 border border-brand-border rounded bg-brand-bg text-brand-muted hover:text-brand-text">
@@ -109,7 +109,7 @@ export default function EmployeeDetailsModal({
                         <div className="pt-2">
                             <button
                                 onClick={() => {
-                                    const pass = generatedPasswords[selectedEmployee.id] || selectedEmployee.tempPassword || 'VERIFICA_BACKEND';
+                                    const pass = generatedPasswords[selectedEmployee.id] || selectedEmployee.tempPassword || 'Temp123!';
                                     copyToClipboard(selectedEmployee.email, pass, securityCode, selectedEmployee.departmentName);
                                 }}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary hover:opacity-90 text-white rounded-lg text-sm font-medium transition-colors"
